@@ -7,9 +7,9 @@ This service handles all password validation logic using industry-standard tools
 
 Separates business logic from Pydantic models for better testability and architecture.
 """
-import logging
+from app.core.logging_config import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class PasswordValidationError(ValueError):

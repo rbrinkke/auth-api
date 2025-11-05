@@ -2,19 +2,26 @@
 Main FastAPI application.
 
 Initializes the Auth API with all routes, middleware, and lifecycle hooks.
+
+Production-ready with:
+- Structured JSON logging
+- Security headers
+- Hardened exception handling
+- API documentation protection
 """
-import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.responses import JSONResponse, Response
 from slowapi import _rate_limit_exceeded_handler, Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 
 from app.config import settings
+from app.core.logging_config import get_logger
 from app.core.redis_client import redis_client
 from app.db.connection import db
 from app.routes import (
@@ -26,12 +33,8 @@ from app.routes import (
     verify
 )
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO if not settings.debug else logging.DEBUG,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
+# Initialize structured logging
+logger = get_logger(__name__)
 
 
 @asynccontextmanager
@@ -116,6 +119,48 @@ app.state.limiter = limiter
 
 # ========== Middleware ==========
 
+# Security headers middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Add security headers to all responses."""
+    response = await call_next(request)
+
+    # Prevent MIME type sniffing
+    response.headers["X-Content-Type-Options"] = "nosniff"
+
+    # Enable XSS protection
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+
+    # Prevent clickjacking
+    response.headers["X-Frame-Options"] = "DENY"
+
+    # Referrer policy
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+
+    # Content Security Policy (basic)
+    response.headers["Content-Security-Policy"] = "default-src 'self'"
+
+    # HSTS (only on HTTPS - only add if not in debug and using HTTPS)
+    if not settings.debug:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+
+    # Hide server details
+    response.headers["Server"] = ""  # Remove server header
+
+    return response
+
+
+# Trusted host middleware (prevent host header attacks)
+# In production, replace with your actual domain(s)
+trusted_hosts = ["localhost", "127.0.0.1"]
+if not settings.debug:
+    trusted_hosts.append(settings.frontend_url.replace("https://", "").replace("http://", ""))
+
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=trusted_hosts
+)
+
 # CORS
 app.add_middleware(
     CORSMiddleware,
@@ -144,11 +189,35 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    """Handle unexpected errors."""
-    logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
+    """
+    Handle unexpected errors without leaking sensitive information.
+
+    SECURITY BEST PRACTICE:
+    - In production: Never expose exception details to clients
+    - Log full error with stack trace for debugging
+    - Return generic message to client
+    """
+    # Log full error for debugging (internal only)
+    logger.error(
+        "Unhandled exception occurred",
+        exc_info=exc,
+        error_type=type(exc).__name__,
+        request_url=str(request.url),
+        request_method=request.method,
+        client_ip=get_remote_address(request)
+    )
+
+    # In production, return generic message (don't leak details)
+    # In debug mode, you might want to include more details for development
+    error_message = (
+        "An unexpected internal error occurred."
+        if not settings.debug
+        else f"Internal error: {str(exc)}"
+    )
+
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "An unexpected error occurred"}
+        content={"detail": error_message}
     )
 
 
@@ -226,11 +295,15 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
-    
+
     uvicorn.run(
         "app.main:app",
         host=settings.host,
         port=settings.port,
         reload=settings.debug,
-        log_level="debug" if settings.debug else "info"
+        log_level="debug" if settings.debug else "info",
+        # Hide server header for security
+        server_header=False,
+        # Additional security headers
+        headers=[("X-Content-Type-Options", "nosniff")]
     )
