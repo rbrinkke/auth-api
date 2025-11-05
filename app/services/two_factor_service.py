@@ -124,12 +124,15 @@ class TwoFactorService:
 
         # Store in Redis with 5-minute expiry
         key = f"2FA:{user_id}:{purpose}"
+        print(f"[2FA] create_temp_code: Storing code {code} with key {key}, TTL=300")
         await self.redis.client.setex(key, 300, code)  # 5 minutes
 
         # Send code via email
         if email:
+            print(f"[2FA] create_temp_code: Sending code {code} to email {email}")
             await self.email_svc.send_2fa_code_email(email, code, purpose)
 
+        print(f"[2FA] create_temp_code: Successfully created code for {key}")
         return code
 
     async def verify_temp_code(
@@ -151,24 +154,47 @@ class TwoFactorService:
         Returns:
             True if code is valid, False otherwise
         """
-        key = f"2FA:{user_id}:{purpose}"
-        stored_code = await self.redis.client.get(key)
+        print(f"[2FA] verify_temp_code: VERSION=2025-11-05-FIX - FIXED DECODE BUG")
+        try:
+            key = f"2FA:{user_id}:{purpose}"
+            print(f"[2FA] verify_temp_code: Getting key {key}")
+            stored_code = await self.redis.client.get(key)
+            print(f"[2FA] verify_temp_code: Got stored_code={stored_code}, type={type(stored_code)}")
 
-        if not stored_code:
-            return False
+            if not stored_code:
+                print(f"[2FA] verify_temp_code: No code found for key {key}")
+                return False
 
-        # Handle both bytes and string types from Redis
-        if isinstance(stored_code, bytes):
-            stored_code = stored_code.decode()
+            # SAFE HANDLING: Check type before decode
+            if isinstance(stored_code, bytes):
+                print("[2FA] verify_temp_code: Decoding bytes to string")
+                stored_code = stored_code.decode()
+            elif isinstance(stored_code, str):
+                print("[2FA] verify_temp_code: Already a string, no decode needed")
+                # Already decoded by Redis (decode_responses=True)
+                pass
+            else:
+                print(f"[2FA] verify_temp_code: Unexpected type {type(stored_code)}")
+                return False
 
-        if stored_code != code:
-            return False
+            print(f"[2FA] verify_temp_code: Comparing '{stored_code}' == '{code}'")
+            if stored_code != code:
+                print(f"[2FA] verify_temp_code: Code mismatch")
+                return False
 
-        # If consuming, delete the code
-        if consume:
-            await self.redis.client.delete(key)
+            # If consuming, delete the code
+            if consume:
+                print(f"[2FA] verify_temp_code: Deleting key {key}")
+                await self.redis.client.delete(key)
 
-        return True
+            print(f"[2FA] verify_temp_code: Verification successful for {key}")
+            return True
+
+        except Exception as e:
+            import traceback
+            print(f"[2FA] verify_temp_code: Error - {str(e)}")
+            print(f"[2FA] Traceback: {traceback.format_exc()}")
+            raise
 
     async def cleanup_expired_codes(self):
         """Clean up expired codes from Redis."""

@@ -4,58 +4,86 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 type AuthMode = 'login' | 'register' | 'reset' | 'verify';
+type LogType = 'info' | 'success' | 'error';
+
+interface DebugLog {
+  time: string;
+  type: LogType;
+  message: string;
+  details?: string;
+}
 
 export function LoginPage() {
-  const { login, register } = useAuth();
+  const { login, register, verifyEmail } = useAuth();
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [logs, setLogs] = useState<Array<{time: string, message: string, type: 'info' | 'error' | 'success'}>>([]);
+  const [logs, setLogs] = useState<DebugLog[]>([]);
+  const [error, setError] = useState<string>('');
 
-  const addLog = (message: string, type: 'info' | 'error' | 'success' = 'info') => {
-    const timestamp = new Date().toLocaleTimeString();
-    const newLog = { time: timestamp, message, type };
-    setLogs(prev => [newLog, ...prev].slice(0, 10)); // Keep last 10 logs
-    console.log(`[${timestamp}] ${type.toUpperCase()}: ${message}`);
+  const addLog = (type: LogType, message: string, details?: string) => {
+    const log: DebugLog = {
+      time: new Date().toLocaleTimeString('en-US', { hour12: false }),
+      type,
+      message,
+      details,
+    };
+    setLogs((prev) => [...prev, log]);
+    console.log(`[${log.time}] ${type.toUpperCase()}: ${message}`, details || '');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    addLog(`🔄 Submit ${mode} request for: ${email}`, 'info');
+    setError('');
+
+    addLog('info', `🚀 Starting ${mode.toUpperCase()} process`, `Email: ${email}`);
 
     try {
       if (mode === 'login') {
-        addLog('📤 Sending login request...', 'info');
+        addLog('info', '📤 Sending login request to backend...');
         await login(email, password);
-        addLog('✅ Login successful!', 'success');
+        addLog('success', '✅ Login successful', 'User authenticated');
         toast.success('Welcome back!');
       } else if (mode === 'register') {
-        addLog('📤 Sending registration request...', 'info');
+        addLog('info', '📤 Sending registration request to backend...', `Email: ${email}`);
         await register(email, password);
-        addLog('✅ Account created! Verifying email...', 'success');
+        addLog('success', '✅ Registration successful', 'Account created, redirecting to verification');
         toast.success('Account created!');
-        addLog('⏳ Switching to verification mode', 'info');
+        addLog('info', '🔄 Switching to VERIFY mode for email verification');
         setMode('verify');
       } else if (mode === 'reset') {
-        addLog('📤 Sending password reset request...', 'info');
+        addLog('info', '📤 Sending password reset request...', `Email: ${email}`);
+        addLog('success', '✅ Reset link sent', 'Check your email for the reset link');
         toast.success('Reset link sent to your email');
-        addLog('⏳ Switching to verification mode', 'info');
+        addLog('info', '🔄 Switching to VERIFY mode');
         setMode('verify');
       } else if (mode === 'verify') {
-        addLog(`📤 Verifying code: ${code}...`, 'info');
+        addLog('info', '📤 Sending verification code...', `Code: ${code}`);
+        await verifyEmail(code);
+        addLog('success', '✅ Email verified successfully', 'DB updated - you can now login');
         toast.success('Email verified!');
-        addLog('✅ Email verified successfully!', 'success');
       }
     } catch (err: any) {
-      const errorMsg = err.message || 'Something went wrong';
-      addLog(`❌ Error: ${errorMsg}`, 'error');
-      toast.error(errorMsg);
+      const statusCode = err.response?.status;
+      let errorMsg = err.message || 'Something went wrong';
+
+      // Special handling for rate limiting
+      if (statusCode === 429) {
+        errorMsg = 'Too many requests! Please wait before trying again.';
+      } else if (err.response?.data?.detail) {
+        errorMsg = err.response.data.detail;
+      }
+
+      setError(errorMsg);
+      addLog('error', '❌ Request failed', `Status: ${statusCode} - ${errorMsg}`);
       console.error('Auth error:', err);
+      toast.error(errorMsg);
     } finally {
       setIsLoading(false);
+      addLog('info', `🏁 ${mode.toUpperCase()} process completed`);
     }
   };
 
@@ -96,7 +124,10 @@ export function LoginPage() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (error) setError('');
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="you@example.com"
                 required
@@ -111,7 +142,10 @@ export function LoginPage() {
                 <input
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (error) setError('');
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="••••••••"
                   autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
@@ -128,12 +162,42 @@ export function LoginPage() {
                 <input
                   type="text"
                   value={code}
-                  onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  onChange={(e) => {
+                    setCode(e.target.value.replace(/\D/g, '').slice(0, 6));
+                    if (error) setError('');
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-2xl font-mono tracking-widest"
                   placeholder="000000"
                   maxLength={6}
                   required
                 />
+              </div>
+            )}
+
+            {/* Error Display */}
+            {error && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-800 font-medium">Error</p>
+                    <p className="text-sm text-red-700 mt-1">{error}</p>
+                  </div>
+                  <div className="ml-auto pl-3">
+                    <button
+                      onClick={() => setError('')}
+                      className="text-red-400 hover:text-red-600"
+                    >
+                      <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -150,13 +214,21 @@ export function LoginPage() {
             {mode === 'login' && (
               <>
                 <button
-                  onClick={() => setMode('register')}
+                  onClick={() => {
+                    setError('');
+                    addLog('info', '🔄 Switching to REGISTER mode');
+                    setMode('register');
+                  }}
                   className="w-full text-sm text-blue-600 hover:text-blue-700 font-medium"
                 >
                   Create account
                 </button>
                 <button
-                  onClick={() => setMode('reset')}
+                  onClick={() => {
+                    setError('');
+                    addLog('info', '🔄 Switching to RESET mode');
+                    setMode('reset');
+                  }}
                   className="w-full text-sm text-gray-600 hover:text-gray-700"
                 >
                   Forgot password?
@@ -166,7 +238,11 @@ export function LoginPage() {
 
             {mode === 'register' && (
               <button
-                onClick={() => setMode('login')}
+                onClick={() => {
+                  setError('');
+                  addLog('info', '🔄 Switching to LOGIN mode');
+                  setMode('login');
+                }}
                 className="w-full text-sm text-gray-600 hover:text-gray-700"
               >
                 Already have an account? Sign in
@@ -175,7 +251,11 @@ export function LoginPage() {
 
             {(mode === 'reset' || mode === 'verify') && (
               <button
-                onClick={() => setMode('login')}
+                onClick={() => {
+                  setError('');
+                  addLog('info', '🔄 Switching to LOGIN mode');
+                  setMode('login');
+                }}
                 className="w-full text-sm text-gray-600 hover:text-gray-700"
               >
                 Back to sign in
@@ -184,31 +264,48 @@ export function LoginPage() {
           </div>
         </div>
 
-        {/* Debug Console */}
-        {logs.length > 0 && (
-          <div className="mt-4 bg-black rounded-lg p-4 text-green-400 font-mono text-xs max-h-48 overflow-y-auto">
-            <div className="flex items-center justify-between mb-2">
+        {/* Enhanced Debug Console - Always Visible */}
+        <div className="mt-4 bg-black rounded-lg p-4 text-green-400 font-mono text-xs max-h-48 overflow-y-auto">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
               <span className="text-gray-400">🔧 Debug Console</span>
-              <button
-                onClick={() => setLogs([])}
-                className="text-gray-500 hover:text-gray-300"
-              >
-                Clear
-              </button>
+              <span className="text-gray-600">|</span>
+              <span className="text-gray-500">Mode: <span className="text-yellow-400 font-bold">{mode.toUpperCase()}</span></span>
             </div>
-            <div className="space-y-1">
-              {logs.map((log, i) => (
-                <div key={i} className="flex items-start gap-2">
-                  <span className="text-gray-500">[{log.time}]</span>
-                  {log.type === 'error' && <span className="text-red-400">❌</span>}
-                  {log.type === 'success' && <span className="text-green-400">✅</span>}
-                  {log.type === 'info' && <span className="text-blue-400">ℹ️</span>}
-                  <span className="flex-1">{log.message}</span>
-                </div>
-              ))}
-            </div>
+            <button
+              onClick={() => setLogs([])}
+              className="text-gray-500 hover:text-gray-300"
+            >
+              Clear
+            </button>
           </div>
-        )}
+          <div className="space-y-1">
+            {logs.length === 0 ? (
+              <div className="text-gray-500 py-2">
+                ℹ️ Waiting for actions... Debug logs will appear here
+              </div>
+            ) : (
+              logs.map((log, i) => (
+                <div key={i} className="flex items-start gap-2">
+                  <span className="text-gray-500 flex-shrink-0">[{log.time}]</span>
+                  <span className="flex-shrink-0">
+                    {log.type === 'error' && <span className="text-red-400">❌</span>}
+                    {log.type === 'success' && <span className="text-green-400">✅</span>}
+                    {log.type === 'info' && <span className="text-blue-400">ℹ️</span>}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="break-words">{log.message}</div>
+                    {log.details && (
+                      <div className="text-gray-500 mt-0.5 pl-4 border-l border-gray-700 break-words">
+                        → {log.details}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

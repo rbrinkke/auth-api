@@ -13,19 +13,12 @@ export function RegisterPage() {
   const { register } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      toast.error('Passwords do not match');
-      return;
-    }
 
     if (password.length < 8) {
       setError('Password must be at least 8 characters');
@@ -116,18 +109,6 @@ export function RegisterPage() {
                   required
                   autoComplete="new-password"
                   helperText="At least 8 characters"
-                  className="bg-white/5 border-white/10"
-                />
-
-                <Input
-                  label="Confirm Password"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  leftIcon={<LockClosedIcon className="w-5 h-5" />}
-                  placeholder="••••••••"
-                  required
-                  autoComplete="new-password"
                   className="bg-white/5 border-white/10"
                 />
 

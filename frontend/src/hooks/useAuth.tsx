@@ -6,6 +6,7 @@ interface User {
   email: string;
   id: string;
   twoFactorEnabled: boolean;
+  pendingVerificationId?: string; // User ID for pending email verification
 }
 
 interface AuthContextType {
@@ -14,6 +15,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
+  verifyEmail: (code: string) => Promise<void>;
   logout: () => void;
   checkAuth: () => void;
 }
@@ -63,7 +65,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (email: string, password: string) => {
     try {
-      await apiService.register({ email, password });
+      const response = await apiService.register({ email, password });
+      // Store user_id for verification
+      const data = response.data as any;
+      setUser({
+        email: data.email,
+        id: data.user_id,
+        twoFactorEnabled: false,
+        pendingVerificationId: data.user_id,
+      });
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const verifyEmail = async (code: string) => {
+    try {
+      if (!user?.pendingVerificationId) {
+        throw new Error('No pending verification');
+      }
+      await apiService.verifyCode(user.pendingVerificationId, code);
+      // Email verified successfully - clear pendingVerificationId
+      setUser({
+        ...user,
+        pendingVerificationId: undefined,
+      });
     } catch (error) {
       throw error;
     }
@@ -80,7 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, register, logout, checkAuth }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, register, verifyEmail, logout, checkAuth }}>
       {children}
     </AuthContext.Provider>
   );

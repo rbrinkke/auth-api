@@ -42,6 +42,7 @@ class RegisterResponse(BaseModel):
     """Response for successful registration."""
     message: str
     email: str
+    user_id: str
 
 
 class LoginRequest(BaseModel):

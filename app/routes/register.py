@@ -100,7 +100,8 @@ async def register(
 
         return RegisterResponse(
             message=f"User registered successfully. A 6-digit verification code has been sent to {result.user.email}.",
-            email=result.user.email
+            email=result.user.email,
+            user_id=str(result.user.id)
         )
 
     except UserAlreadyExistsError as e:
