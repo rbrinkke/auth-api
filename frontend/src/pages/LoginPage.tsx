@@ -215,7 +215,7 @@ export function LoginPage() {
     switch (mode) {
       case 'login': return 'Welcome back';
       case 'register': return 'Create account';
-      case 'reset': return 'Reset password';
+      case 'reset': return 'Forgot password?';
       case 'verify': return 'Enter verification code';
     }
   };
@@ -224,7 +224,7 @@ export function LoginPage() {
     switch (mode) {
       case 'login': return 'Sign in';
       case 'register': return 'Create account';
-      case 'reset': return 'Send reset link';
+      case 'reset': return (password && code) ? 'Reset password' : 'Send reset code';
       case 'verify': return 'Verify';
     }
   };
@@ -259,7 +259,7 @@ export function LoginPage() {
               />
             </div>
 
-            {mode !== 'verify' && (
+            {mode !== 'verify' && mode !== 'reset' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Password
@@ -279,10 +279,31 @@ export function LoginPage() {
               </div>
             )}
 
-            {mode === 'verify' && (
+            {/* In reset mode, show password field ONLY if code is entered */}
+            {mode === 'reset' && code && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Verification code
+                  New password
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (error) setError('');
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                  required
+                />
+              </div>
+            )}
+
+            {(mode === 'verify' || (mode === 'reset' && resetUserId)) && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {mode === 'reset' ? 'Reset code' : 'Verification code'}
                 </label>
                 <input
                   type="text"
