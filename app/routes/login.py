@@ -6,7 +6,7 @@ Implements hard verification: users MUST verify email before login.
 import logging
 
 import asyncpg
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -44,6 +44,7 @@ limiter = Limiter(key_func=get_remote_address)
 )
 @limiter.limit(f"{settings.rate_limit_login_per_minute}/minute")
 async def login(
+    request: Request,
     credentials: LoginRequest,
     conn: asyncpg.Connection = Depends(get_db_connection)
 ):

@@ -13,7 +13,7 @@ services:
       - DEBUG=true
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=activity_db
+      - POSTGRES_DB=activitydb
       - POSTGRES_USER=activity_user
       - POSTGRES_PASSWORD=dev_password_change_in_prod
       - POSTGRES_SCHEMA=activity
@@ -21,9 +21,8 @@ services:
       - REDIS_PORT=6379
       - REDIS_DB=0
       - JWT_SECRET_KEY=dev_secret_key_change_in_production_min_32_chars_required
-      - EMAIL_SERVICE_URL=http://email-service:8000
+      - EMAIL_SERVICE_URL=http://dummy-email:9000
       - FRONTEND_URL=http://localhost:3000
-      - CORS_ORIGINS=http://localhost:3000,http://localhost:8080
     depends_on:
       postgres:
         condition: service_healthy
@@ -39,25 +38,25 @@ services:
       retries: 3
       start_period: 40s
 
-  # ========== PostgreSQLdddd ==========
+  # ========== PostgreSQL ==========
   postgres:
     image: postgres:16-alpine
     container_name: auth-postgres
     environment:
-      - POSTGRES_DB=activity_db
+      - POSTGRES_DB=activitydb
       - POSTGRES_USER=activity_user
       - POSTGRES_PASSWORD=dev_password_change_in_prod
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      # Mount your SQL scripts here
-      # - ./migrations:/docker-entrypoint-initdb.d
+      - ./init-db.sh:/docker-entrypoint-initdb.d/01-init-schema.sh
+      - ./init-procedures.sh:/docker-entrypoint-initdb.d/02-init-procedures.sh
     networks:
       - activity-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U activity_user -d activity_db"]
+      test: ["CMD-SHELL", "pg_isready -U activity_user -d activitydb"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -80,17 +79,34 @@ services:
       timeout: 5s
       retries: 5
 
-  # ========== Email Service (Optional - Mock for Development) ==========
-  # Uncomment if you want to run a local email service
-  # email-service:
-  #   image: mailhog/mailhog:latest
-  #   container_name: email-service
-  #   ports:
-  #     - "8025:8025"  # Web UI
-  #     - "1025:1025"  # SMTP
-  #   networks:
-  #     - activity-network
-  #   restart: unless-stopped
+  # ========== Dummy Email Service ==========
+  dummy-email:
+    build:
+      context: .
+      dockerfile: Dockerfile.email
+    container_name: dummy-email-service
+    ports:
+      - "9000:9000"
+    networks:
+      - activity-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ========== MailHog - View Emails in Web UI ==========
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mailhog
+    ports:
+      - "8025:8025"  # Web UI
+      - "1025:1025"  # SMTP
+    networks:
+      - activity-network
+    restart: unless-stopped
 
 networks:
   activity-network:

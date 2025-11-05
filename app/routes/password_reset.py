@@ -6,7 +6,7 @@ Implements secure password reset flow with time-limited tokens.
 import logging
 
 import asyncpg
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -48,7 +48,8 @@ limiter = Limiter(key_func=get_remote_address)
 )
 @limiter.limit(f"{settings.rate_limit_password_reset_per_5min}/5minutes")
 async def request_password_reset(
-    request: RequestPasswordResetRequest,
+    request: Request,
+    data: RequestPasswordResetRequest,
     background_tasks: BackgroundTasks,
     conn: asyncpg.Connection = Depends(get_db_connection),
     redis: RedisClient = Depends(get_redis)
@@ -68,11 +69,11 @@ async def request_password_reset(
         generic_message = "If an account exists for this email, a password reset link has been sent."
         
         # 1. Find user
-        user = await sp_get_user_by_email(conn, request.email)
+        user = await sp_get_user_by_email(conn, data.email)
         
         # Return generic message even if user doesn't exist
         if not user:
-            logger.info(f"Password reset requested for non-existent email: {request.email}")
+            logger.info(f"Password reset requested for non-existent email: {data.email}")
             return RequestPasswordResetResponse(message=generic_message)
         
         # 2. Generate reset token

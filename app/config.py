@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     # PostgreSQL
     postgres_host: str = Field(default="postgres")
     postgres_port: int = Field(default=5432)
-    postgres_db: str = Field(default="activity_db")
+    postgres_db: str = Field(default="activitydb")
     postgres_user: str = Field(default="activity_user")
     postgres_password: str = Field(default="")
     postgres_schema: str = Field(default="activity")

@@ -16,7 +16,8 @@ class UserRecord:
     def __init__(self, record: asyncpg.Record):
         self.id: UUID = record["id"]
         self.email: str = record["email"]
-        self.hashed_password: str = record["hashed_password"]
+        # hashed_password is optional - only returned by get procedures, not create
+        self.hashed_password: Optional[str] = record.get("hashed_password")
         self.is_verified: bool = record["is_verified"]
         self.is_active: bool = record["is_active"]
         self.created_at = record["created_at"]

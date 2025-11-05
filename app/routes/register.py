@@ -6,7 +6,7 @@ Implements hard verification: user cannot login until email is verified.
 import logging
 
 import asyncpg
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -42,7 +42,8 @@ limiter = Limiter(key_func=get_remote_address)
 )
 @limiter.limit(f"{settings.rate_limit_register_per_hour}/hour")
 async def register(
-    request: RegisterRequest,
+    request: Request,
+    data: RegisterRequest,
     background_tasks: BackgroundTasks,
     conn: asyncpg.Connection = Depends(get_db_connection),
     redis: RedisClient = Depends(get_redis)
@@ -59,11 +60,11 @@ async def register(
     """
     try:
         # 1. Hash the password
-        hashed_password = hash_password(request.password)
+        hashed_password = hash_password(data.password)
         
         # 2. Create user via stored procedure
         try:
-            user = await sp_create_user(conn, request.email, hashed_password)
+            user = await sp_create_user(conn, data.email, hashed_password)
         except asyncpg.UniqueViolationError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

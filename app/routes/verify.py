@@ -6,7 +6,7 @@ Handles both verification and resending verification emails.
 import logging
 
 import asyncpg
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status, Query
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -107,7 +107,8 @@ async def verify_email(
 )
 @limiter.limit(f"{settings.rate_limit_resend_verification_per_5min}/5minutes")
 async def resend_verification(
-    request: ResendVerificationRequest,
+    request: Request,
+    data: ResendVerificationRequest,
     background_tasks: BackgroundTasks,
     conn: asyncpg.Connection = Depends(get_db_connection),
     redis: RedisClient = Depends(get_redis)
@@ -127,11 +128,11 @@ async def resend_verification(
         generic_message = "If an unverified account exists for this email, a verification link has been sent."
         
         # 1. Find user
-        user = await sp_get_user_by_email(conn, request.email)
+        user = await sp_get_user_by_email(conn, data.email)
         
         # Return generic message even if user doesn't exist
         if not user:
-            logger.info(f"Resend verification requested for non-existent email: {request.email}")
+            logger.info(f"Resend verification requested for non-existent email: {data.email}")
             return ResendVerificationResponse(message=generic_message)
         
         # 2. Check if already verified

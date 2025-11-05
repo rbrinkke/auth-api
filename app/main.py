@@ -9,9 +9,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from slowapi import _rate_limit_exceeded_handler
+from slowapi import _rate_limit_exceeded_handler, Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from slowapi.util import get_remote_address
 
 from app.config import settings
 from app.core.redis_client import redis_client
@@ -106,6 +107,12 @@ app = FastAPI(
     docs_url="/docs" if settings.debug else None,
     redoc_url="/redoc" if settings.debug else None,
 )
+
+# ========== SlowAPI Limiter ==========
+# Create limiter instance for rate limiting
+limiter = Limiter(key_func=get_remote_address)
+# Attach limiter to app state for SlowAPI middleware
+app.state.limiter = limiter
 
 # ========== Middleware ==========
 
