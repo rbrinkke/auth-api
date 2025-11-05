@@ -30,7 +30,8 @@ from app.routes import (
     password_reset,
     refresh,
     register,
-    verify
+    verify,
+    twofa as twofa_router
 )
 
 # Initialize structured logging
@@ -97,6 +98,7 @@ app = FastAPI(
     - JWT-based authentication (access + refresh tokens)
     - Refresh token rotation (mandatory security feature)
     - Password reset with time-limited tokens
+    - Two-Factor Authentication (2FA/TOTP) with email codes
     - Rate limiting on sensitive endpoints
     
     **Security:**
@@ -104,6 +106,7 @@ app = FastAPI(
     - Redis-backed token blacklist
     - Email verification required before login
     - All tokens stored in Redis with TTL
+    - 2FA/TOTP with encrypted secrets and backup codes
     """,
     version="1.0.0",
     lifespan=lifespan,
@@ -230,6 +233,7 @@ app.include_router(login.router)
 app.include_router(refresh.router)
 app.include_router(logout.router)
 app.include_router(password_reset.router)
+app.include_router(twofa_router.router)
 
 
 # Health check endpoint

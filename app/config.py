@@ -67,6 +67,16 @@ class Settings(BaseSettings):
     rate_limit_login_per_minute: int = Field(default=5)
     rate_limit_resend_verification_per_5min: int = Field(default=1)
     rate_limit_password_reset_per_5min: int = Field(default=1)
+
+    # 2FA Encryption Key (for TOTP secrets)
+    encryption_key: str = Field(default="")
+
+    @field_validator("encryption_key")
+    @classmethod
+    def validate_encryption_key(cls, v: str) -> str:
+        if not v or len(v) < 32:
+            raise ValueError("ENCRYPTION_KEY must be at least 32 characters for 2FA secret encryption")
+        return v
     
     # CORS
     cors_origins: list[str] = Field(default=["http://localhost:3000"])

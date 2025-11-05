@@ -97,6 +97,45 @@ class EmailService:
             }
         )
     
+    async def send_2fa_code_email(self, email: str, code: str, purpose: str) -> bool:
+        """
+        Send 2FA verification code via email.
+
+        Args:
+            email: Recipient email address
+            code: 6-digit verification code
+            purpose: Purpose of the code (login, reset, verify)
+
+        Returns:
+            True if sent successfully
+        """
+        # Get appropriate subject and message based on purpose
+        subjects = {
+            "login": "Your login verification code",
+            "reset": "Password reset verification code",
+            "verify": "Email verification code"
+        }
+
+        purposes = {
+            "login": "login",
+            "reset": "password reset",
+            "verify": "email verification"
+        }
+
+        subject = subjects.get(purpose, "Verification code")
+        purpose_text = purposes.get(purpose, purpose)
+
+        return await self.send_email(
+            to=email,
+            template="2fa_code",
+            subject=subject,
+            data={
+                "code": code,
+                "purpose": purpose_text,
+                "expires_minutes": 5
+            }
+        )
+
     async def send_password_reset_email(self, email: str, token: str) -> bool:
         """
         Send password reset link.
