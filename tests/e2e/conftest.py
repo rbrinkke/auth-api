@@ -6,6 +6,7 @@ These fixtures provide real HTTP client and API connections for end-to-end testi
 import asyncio
 import os
 import pytest
+from faker import Faker
 
 
 @pytest.fixture(scope="session")
@@ -14,6 +15,42 @@ def event_loop():
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
+
+
+@pytest.fixture(scope="session")
+def faker():
+    """Faker instance for generating realistic test data."""
+    return Faker()
+
+
+@pytest.fixture
+def random_email(faker):
+    """Generate a random unique email address."""
+    return faker.email()
+
+
+@pytest.fixture
+def random_password(faker):
+    """Generate a random strong password."""
+    return faker.password(
+        length=16,
+        special_chars=True,
+        digits=True,
+        upper_case=True,
+        lower_case=True
+    )
+
+
+@pytest.fixture
+def test_user_credentials(random_email, random_password):
+    """
+    Provide random test user credentials for E2E tests.
+    Uses Faker to generate unique credentials for each test.
+    """
+    return {
+        "email": random_email,
+        "password": random_password
+    }
 
 
 @pytest.fixture(scope="session")

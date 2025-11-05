@@ -43,25 +43,27 @@ tests/
 ├── fixtures/
 │   └── database.py            # Test database & Redis fixtures
 │
-├── unit/                           # Fast unit tests (mocked)
-│   ├── conftest.py                 # Unit test fixtures
+├── unit/                               # Fast unit tests (mocked)
+│   ├── conftest.py                     # Unit test fixtures + Faker
 │   ├── test_registration_service.py
 │   ├── test_password_validation_service.py
 │   ├── test_password_reset_service.py
 │   ├── test_email_service.py
-│   └── test_security_edge_cases.py # Security & edge cases
+│   ├── test_security_edge_cases.py     # Security & edge cases
+│   └── test_security_adversarial.py    # JWT forgery, replay attacks
 │
-├── integration/                   # Tests with real DB/Redis
-│   ├── conftest.py                 # Integration fixtures
+├── integration/                       # Tests with real DB/Redis
+│   ├── conftest.py                     # Integration fixtures + Faker
 │   ├── test_registration_flow.py
-│   └── test_concurrency.py         # Race conditions
+│   ├── test_concurrency.py             # Race conditions
+│   └── test_resilience.py              # Chaos engineering & atomicity
 │
-└── e2e/                           # Full API testing
-    ├── conftest.py                 # E2E fixtures
-    ├── test_login_flow.py          # Complete login flow
-    ├── test_token_refresh_flow.py  # JWT refresh flow
-    ├── test_password_reset_flow.py # Password reset flow
-    └── test_rate_limiting.py       # Rate limiting enforcement
+└── e2e/                               # Full API testing
+    ├── conftest.py                     # E2E fixtures + Faker
+    ├── test_login_flow.py              # Complete login flow
+    ├── test_token_refresh_flow.py      # JWT refresh flow
+    ├── test_password_reset_flow.py     # Password reset flow
+    └── test_rate_limiting.py           # Rate limiting enforcement
 ```
 
 ## 🚀 Quick Start
@@ -158,6 +160,94 @@ pytest tests/integration/
 - **Unit** (`tests/unit/conftest.py`): Mocks for fast testing
 - **Integration** (`tests/integration/conftest.py`): Real DB/Redis
 - **E2E** (`tests/e2e/conftest.py`): HTTP client with auth
+
+## 🛡️ "Best of Class" Enhancements
+
+### New Test Categories for Enterprise Resilience
+
+#### 🔥 Chaos Engineering & Resilience (`tests/integration/test_resilience.py`)
+**Critical for Production:** Tests what happens when dependencies fail.
+
+- **DB/Redis Atomicity Test**: Verifies that if Redis fails after DB succeeds, the user is NOT created (prevents "zombie" users)
+- **Failure Cascade Testing**: Ensures partial failures don't corrupt data
+- **Race Condition Handling**: Tests concurrent registrations (10 attempts → exactly 1 success)
+- **Background Task Resilience**: Email failures don't block registration
+- **Transaction Rollback**: Database changes are properly rolled back on failures
+
+**Why Critical:** Auth service can't have "zombie" users who can't verify email!
+
+#### 🔒 Security & Adversarial Testing (`tests/unit/test_security_adversarial.py`)
+**Hacker Mindset Testing:** Attempts to break the system like an attacker.
+
+- **JWT Token Forgery**:
+  - Wrong signature attack (HS256 vs HS512)
+  - Algorithm "none" attack (bypassing verification)
+  - Algorithm swapping (HS256 token, RS256 verification)
+  - Token type mismatch (refresh used as access token)
+
+- **Input Validation Fuzzing**:
+  - SQL injection in email/password fields
+  - Extremely long strings (DoS prevention)
+  - Null bytes and special characters
+  - XML and command injection attempts
+
+- **Replay Attack Prevention**:
+  - Verification tokens single-use only
+  - Password reset tokens single-use only
+  - Refresh token rotation prevents replay
+  - Token deletion after use
+
+#### 🎭 Faker Test Data Hygiene
+**100% Reproducible Testing:** No more hardcoded test data.
+
+```python
+# Before (hardcoded, can cause conflicts)
+email = "test@example.com"
+password = "password123"
+
+# After (unique per test, realistic data)
+@pytest.fixture
+def random_email(faker):
+    return faker.email()  # Unique every time!
+
+@pytest.fixture
+def random_password(faker):
+    return faker.password(length=16, special_chars=True, digits=True)
+```
+
+**Benefits:**
+- Eliminates test pollution and conflicts
+- Discovers edge cases (emails with special chars, etc.)
+- Realistic data matches production scenarios
+- Each test run is independent
+
+#### 🧪 Test Isolation & Makefile Targets
+**Guaranteed Clean State:**
+
+```bash
+# Reset database to pristine state (critical for CI/CD)
+make test-reset
+
+# Run with guaranteed isolation
+make test-isolation
+
+# Run specific test categories
+make test-resilience   # Chaos engineering
+make test-security     # Adversarial testing
+make test-adversarial  # All security tests
+```
+
+**Why Critical:** Ensures 100% reproducible test results in CI/CD pipelines.
+
+## 📊 Enhanced Test Matrix
+
+| Test Type | Purpose | Dependencies | Speed | Critical Scenarios |
+|-----------|---------|--------------|-------|-------------------|
+| **Unit** | Fast, isolated | Mocked | ⚡⚡⚡ | Business logic, edge cases, JWT security |
+| **Resilience** | Atomicity, failures | Real DB/Redis | ⚡⚡ | DB/Redis failures, rollback, zombie prevention |
+| **Integration** | Real infrastructure | Real DB/Redis | ⚡⚡ | User flows, concurrency, token lifecycle |
+| **E2E** | Complete journeys | Running API | ⚡ | Rate limiting, complete flows, replay attacks |
+| **Security** | Adversarial testing | Mocked | ⚡⚡⚡ | Token forgery, injection, bypass attempts |
 
 ## 🧪 Test Types
 

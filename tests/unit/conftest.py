@@ -6,6 +6,7 @@ These fixtures provide mocked dependencies for fast, isolated unit testing.
 import asyncio
 import pytest
 from unittest.mock import AsyncMock
+from faker import Faker
 
 
 @pytest.fixture(scope="session")
@@ -14,6 +15,43 @@ def event_loop():
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
+
+
+@pytest.fixture(scope="session")
+def faker():
+    """Faker instance for generating realistic test data."""
+    return Faker()
+
+
+@pytest.fixture
+def random_email(faker):
+    """Generate a random unique email address."""
+    return faker.email()
+
+
+@pytest.fixture
+def random_password(faker):
+    """Generate a random strong password."""
+    return faker.password(
+        length=16,
+        special_chars=True,
+        digits=True,
+        upper_case=True,
+        lower_case=True
+    )
+
+
+@pytest.fixture
+def random_user_id(faker):
+    """Generate a random UUID-like user ID."""
+    # Generate a realistic UUID-like string
+    return faker.uuid4()
+
+
+@pytest.fixture
+def random_token(faker):
+    """Generate a random token string."""
+    return faker.sha256()
 
 
 @pytest.fixture

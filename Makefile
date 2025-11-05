@@ -1,6 +1,6 @@
 # Makefile for Auth API Test Suite
 
-.PHONY: help install test test-unit test-integration test-e2e test-cov test-html test-watch test-all
+.PHONY: help install test test-unit test-integration test-e2e test-cov test-html test-watch test-all test-parallel test-resilience test-security test-adversarial test-reset test-isolation
 
 # Default target
 help:
@@ -8,16 +8,21 @@ help:
 	@echo "==================="
 	@echo ""
 	@echo "Available commands:"
-	@echo "  install      - Install test dependencies"
-	@echo "  test         - Run all tests"
-	@echo "  test-unit    - Run unit tests only (fast)"
+	@echo "  install       - Install test dependencies"
+	@echo "  test          - Run all tests"
+	@echo "  test-unit     - Run unit tests only (fast)"
 	@echo "  test-integration  - Run integration tests"
-	@echo "  test-e2e     - Run E2E tests (requires API running)"
-	@echo "  test-cov     - Run tests with coverage"
-	@echo "  test-html    - Generate HTML coverage report"
-	@echo "  test-watch   - Run tests in watch mode"
-	@echo "  test-all     - Run all test types with coverage"
+	@echo "  test-e2e      - Run E2E tests (requires API running)"
+	@echo "  test-resilience - Run chaos & resilience tests"
+	@echo "  test-security - Run security & adversarial tests"
+	@echo "  test-adversarial - Run JWT forgery & replay attack tests"
+	@echo "  test-cov      - Run tests with coverage"
+	@echo "  test-html     - Generate HTML coverage report"
+	@echo "  test-watch    - Run tests in watch mode"
+	@echo "  test-all      - Run all test types with coverage"
 	@echo "  test-parallel - Run tests in parallel"
+	@echo "  test-reset    - Reset test database (CLEAN STATE)"
+	@echo "  test-isolation - Ensure test isolation before running"
 	@echo ""
 	@echo "Test markers:"
 	@echo "  - unit       Fast, mocked tests"
@@ -84,6 +89,39 @@ test-parallel:
 	@echo "Running tests in parallel..."
 	pytest tests/unit/ tests/integration/ -n auto --cov=app --cov-report=term-missing
 	@echo "✅ Parallel tests complete"
+
+# Run chaos & resilience tests
+test-resilience:
+	@echo "Running chaos & resilience tests..."
+	@echo "⚠️  Testing DB/Redis atomicity and failure scenarios..."
+	pytest tests/integration/test_resilience.py -v --tb=short
+	@echo "✅ Resilience tests complete"
+
+# Run security & adversarial tests
+test-security:
+	@echo "Running security & adversarial tests..."
+	@echo "🔒 Testing JWT forgery, input validation, and replay attacks..."
+	pytest tests/unit/test_security_adversarial.py -v --tb=short
+	@echo "✅ Security tests complete"
+
+# Run all security-related tests
+test-adversarial: test-security
+	@echo "✅ Adversarial testing complete"
+
+# Reset test database to clean state (CRITICAL for reproducibility)
+test-reset:
+	@echo "⚠️  Resetting test database to clean state..."
+	docker compose -f docker-compose.test.yml down -v 2>/dev/null || true
+	docker compose -f docker-compose.test.yml up -d test-postgres test-redis
+	@sleep 3  # Wait for DB to be ready
+	@echo "✅ Test database reset and ready"
+
+# Ensure test isolation (clean database before running tests)
+test-isolation: test-reset
+	@echo "🧪 Test isolation ensured (clean DB/Redis)"
+	@echo "Running unit tests (no DB needed)..."
+	pytest tests/unit/ -v --tb=short -x
+	@echo "✅ Unit tests passed with clean isolation"
 
 # Run specific test file
 test-file:
