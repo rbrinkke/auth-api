@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  # ========== Auth API ==========
+  auth-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: auth-api
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=true
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=activity_db
+      - POSTGRES_USER=activity_user
+      - POSTGRES_PASSWORD=dev_password_change_in_prod
+      - POSTGRES_SCHEMA=activity
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - JWT_SECRET_KEY=dev_secret_key_change_in_production_min_32_chars_required
+      - EMAIL_SERVICE_URL=http://email-service:8000
+      - FRONTEND_URL=http://localhost:3000
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - activity-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ========== PostgreSQLdddd ==========
+  postgres:
+    image: postgres:16-alpine
+    container_name: auth-postgres
+    environment:
+      - POSTGRES_DB=activity_db
+      - POSTGRES_USER=activity_user
+      - POSTGRES_PASSWORD=dev_password_change_in_prod
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      # Mount your SQL scripts here
+      # - ./migrations:/docker-entrypoint-initdb.d
+    networks:
+      - activity-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U activity_user -d activity_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ========== Redis ==========
+  redis:
+    image: redis:7-alpine
+    container_name: auth-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - activity-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ========== Email Service (Optional - Mock for Development) ==========
+  # Uncomment if you want to run a local email service
+  # email-service:
+  #   image: mailhog/mailhog:latest
+  #   container_name: email-service
+  #   ports:
+  #     - "8025:8025"  # Web UI
+  #     - "1025:1025"  # SMTP
+  #   networks:
+  #     - activity-network
+  #   restart: unless-stopped
+
+networks:
+  activity-network:
+    name: activity-network
+    driver: bridge
+
+volumes:
+  postgres-data:
+    name: auth-postgres-data
+  redis-data:
+    name: auth-redis-data
