@@ -300,7 +300,7 @@ export function LoginPage() {
               </div>
             )}
 
-            {(mode === 'verify' || (mode === 'reset' && resetUserId)) && (
+            {(mode === 'verify' || mode === 'reset') && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   {mode === 'reset' ? 'Reset code' : 'Verification code'}
