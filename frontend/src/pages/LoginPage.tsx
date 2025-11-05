@@ -1,5 +1,5 @@
 // Minimalist Professional Auth Page
-import { useState } from 'react';
+import { useState, Component, ReactNode } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
@@ -13,8 +13,46 @@ interface DebugLog {
   details?: string;
 }
 
+// Error Boundary to prevent blank pages
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error?: Error }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: any) {
+    console.error('[ERROR-BOUNDARY] Caught error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-white rounded-lg shadow-sm border border-red-200 p-8">
+            <h1 className="text-2xl font-semibold text-red-600 mb-4">Something went wrong</h1>
+            <p className="text-gray-600 mb-4">The application encountered an error. Please refresh the page.</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
+            >
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 export function LoginPage() {
-  const { login, register, verifyEmail } = useAuth();
+  console.log('[LOGIN-PAGE] Component rendering, mode:', mode);
+  const { login, register, verifyEmail, user } = useAuth();
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -66,11 +104,35 @@ export function LoginPage() {
         addLog('info', '📤 Sending verification code...', `Code: ${code}`);
 
         console.log('[VERIFY-PAGE] About to call verifyEmail()');
-        const result = await verifyEmail(code);
-        console.log('[VERIFY-PAGE] verifyEmail() returned:', result);
-        addLog('success', '✅ Email verified successfully', 'DB updated - you can now login');
-        toast.success('Email verified!');
-        console.log('[VERIFY-PAGE] Success toast shown');
+        try {
+          const result = await verifyEmail(code);
+          console.log('[VERIFY-PAGE] verifyEmail() returned:', result);
+          addLog('success', '✅ Email verified successfully', 'DB updated - you can now login');
+          toast.success('Email verified!');
+          console.log('[VERIFY-PAGE] Success toast shown');
+        } catch (verifyError: any) {
+          console.log('[VERIFY-PAGE] verifyEmail() threw error:', verifyError);
+          // Don't re-throw - let outer catch handle it
+          const statusCode = verifyError.response?.status;
+          let errorMsg = verifyError.message || 'Something went wrong';
+
+          if (statusCode === 429) {
+            errorMsg = 'Too many requests! Please wait before trying again.';
+          } else if (verifyError.response?.data?.detail) {
+            errorMsg = verifyError.response.data.detail;
+          } else if (statusCode === 400) {
+            // Specific handling for wrong verification code
+            errorMsg = 'Invalid or expired verification code. Please try again.';
+          }
+
+          setError(errorMsg);
+          addLog('error', '❌ Verification failed', `Status: ${statusCode} - ${errorMsg}`);
+          console.error('Verification error:', verifyError);
+          toast.error(errorMsg);
+          setIsLoading(false);
+          addLog('info', `🏁 VERIFY process completed with error`);
+          return; // Exit early, don't continue to outer catch
+        }
       }
     } catch (err: any) {
       console.log('[VERIFY-PAGE] Outer catch - handling error:', err);
@@ -116,7 +178,8 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <ErrorBoundary>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
           <div className="flex items-center justify-between mb-4">
@@ -318,5 +381,6 @@ export function LoginPage() {
         </div>
       </div>
     </div>
+    </ErrorBoundary>
   );
 }
