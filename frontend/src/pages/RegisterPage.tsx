@@ -1,7 +1,7 @@
 // Premium Registration Page with Animated Background
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { EnvelopeIcon, LockClosedIcon, UserIcon } from '@heroicons/react/24/outline';
+import { EnvelopeIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useState } from 'react';
@@ -94,15 +94,6 @@ export function RegisterPage() {
               </motion.div>
 
               <form onSubmit={handleSubmit} className="space-y-5">
-                <Input
-                  label="Full Name"
-                  type="text"
-                  leftIcon={<UserIcon className="w-5 h-5" />}
-                  placeholder="John Doe"
-                  required
-                  className="bg-white/5 border-white/10"
-                />
-
                 <Input
                   label="Email Address"
                   type="email"
