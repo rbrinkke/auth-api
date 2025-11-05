@@ -22,6 +22,60 @@ except ImportError:
     )
 
 
+def _validate_password_strength(password: str) -> str:
+    """
+    Professional password validation using zxcvbn + Have I Been Pwned.
+    This function can be reused across different validators.
+    """
+    # If password tools are not available, skip validation (but log warning)
+    if not _PASSWORD_TOOLS_AVAILABLE:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(
+            "Password strength validation skipped - zxcvbn/pwnedpasswords not installed"
+        )
+        return password
+
+    # Check 1: zxcvbn strength scoring (industry standard from Dropbox)
+    results = zxcvbn(password)
+    score = results['score']  # 0-4 scale (0=very weak, 4=very strong)
+
+    # Require minimum score of 3 (strong or very strong)
+    if score < 3:
+        feedback = results['feedback']
+        warning = feedback.get('warning', '')
+        suggestions = feedback.get('suggestions', [])
+
+        error_msg = f"Weak password detected. {warning}"
+        if suggestions:
+            error_msg += f" Suggestions: {' '.join(suggestions)}"
+
+        raise ValueError(error_msg)
+
+    # Check 2: Have I Been Pwned (via pwnedpasswords)
+    # This checks if the password appears in known data breaches
+    try:
+        # Use blocking call directly (simpler than async)
+        # Pydantic validators can't use async operations anyway
+        pwned = Password(password)
+        leak_count = pwned.check()  # Blocking call, returns int
+
+        # If password is found in breaches, reject it
+        if leak_count > 0:
+            raise ValueError(
+                "This password has been found in known data breaches. "
+                "Please choose a unique password that hasn't been compromised."
+            )
+    except Exception as e:
+        # If pwnedpasswords check fails, log but don't block registration
+        # (we don't want to prevent signups if the external API is down)
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Pwned password check failed: {str(e)}")
+
+    return password
+
+
 class RegisterRequest(BaseModel):
     """Request body for user registration."""
     email: EmailStr
@@ -44,54 +98,7 @@ class RegisterRequest(BaseModel):
     @field_validator("password")
     @classmethod
     def validate_password_strength(cls, v: str) -> str:
-        # If password tools are not available, skip validation (but log warning)
-        if not _PASSWORD_TOOLS_AVAILABLE:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.warning(
-                "Password strength validation skipped - zxcvbn/pwnedpasswords not installed"
-            )
-            return v
-
-        # Check 1: zxcvbn strength scoring (industry standard from Dropbox)
-        results = zxcvbn(v)
-        score = results['score']  # 0-4 scale (0=very weak, 4=very strong)
-
-        # Require minimum score of 3 (strong or very strong)
-        if score < 3:
-            feedback = results['feedback']
-            warning = feedback.get('warning', '')
-            suggestions = feedback.get('suggestions', [])
-
-            error_msg = f"Weak password detected. {warning}"
-            if suggestions:
-                error_msg += f" Suggestions: {' '.join(suggestions)}"
-
-            raise ValueError(error_msg)
-
-        # Check 2: Have I Been Pwned (via pwnedpasswords)
-        # This checks if the password appears in known data breaches
-        try:
-            # Run in thread to avoid blocking the event loop
-            loop = asyncio.get_event_loop()
-            pwned = Password(v)
-            # Use thread executor for sync operation
-            leak_count = loop.run_in_executor(None, pwned.check)
-
-            # If password is found in breaches, reject it
-            if asyncio.run(leak_count) > 0:
-                raise ValueError(
-                    "This password has been found in known data breaches. "
-                    "Please choose a unique password that hasn't been compromised."
-                )
-        except Exception as e:
-            # If pwnedpasswords check fails, log but don't block registration
-            # (we don't want to prevent signups if the external API is down)
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.warning(f"Pwned password check failed: {str(e)}")
-
-        return v
+        return _validate_password_strength(v)
 
 
 class RegisterResponse(BaseModel):
@@ -191,11 +198,8 @@ class ResetPasswordRequest(BaseModel):
     @field_validator("new_password")
     @classmethod
     def validate_password_strength(cls, v: str) -> str:
-        if not any(c.isalpha() for c in v):
-            raise ValueError("Password must contain at least one letter")
-        if not any(c.isdigit() for c in v):
-            raise ValueError("Password must contain at least one digit")
-        return v
+        # Use the same professional validation as registration
+        return _validate_password_strength(v)
 
 
 class ResetPasswordResponse(BaseModel):
