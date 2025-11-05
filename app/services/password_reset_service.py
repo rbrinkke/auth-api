@@ -131,9 +131,9 @@ class PasswordResetService:
             # Step 2: Look up user
             user = await sp_get_user_by_email(self.conn, None)  # We'll use user_id lookup
 
-            # Step 3: Validate new password using service
+            # Step 3: Validate new password using service (async)
             logger.info(f"Validating new password for user {user_id}")
-            self.password_validation_svc.validate_password(new_password)
+            await self.password_validation_svc.validate_password(new_password)
 
             # Step 4: Hash new password
             hashed_password = hash_password(new_password)

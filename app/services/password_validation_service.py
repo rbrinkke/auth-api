@@ -6,7 +6,11 @@ This service handles all password validation logic using industry-standard tools
 - Have I Been Pwned (data breach checking)
 
 Separates business logic from Pydantic models for better testability and architecture.
+
+All I/O operations are async and non-blocking for optimal performance.
 """
+import asyncio
+
 from app.core.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -94,9 +98,11 @@ class PasswordValidationService:
             "validation_passed": True
         }
 
-    def check_breach_status(self, password: str) -> dict:
+    async def check_breach_status(self, password: str) -> dict:
         """
-        Check if password appears in known data breaches via HIBP.
+        Check if password appears in known data breaches via HIBP (async, non-blocking).
+
+        Runs blocking I/O in a thread pool to keep the event loop free.
 
         Args:
             password: Password to check
@@ -115,11 +121,30 @@ class PasswordValidationService:
                 "validation_passed": True
             }
 
+        def blocking_breach_check():
+            """Run the blocking breach check in a thread."""
+            try:
+                # Check against HIBP database
+                # This is a blocking network call, so we run it in a thread
+                pwned = self._Password(password)
+                return pwned.check()  # Returns int (number of times found)
+            except Exception as e:
+                # Return error indicator
+                logger.warning(f"Pwned password check failed: {str(e)}")
+                return -1  # Use -1 to indicate check failed
+
         try:
-            # Check against HIBP database
-            # Using synchronous call (blocking, but safe in service layer)
-            pwned = self._Password(password)
-            leak_count = pwned.check()  # Returns int (number of times found)
+            # Run blocking I/O in thread pool to keep event loop free
+            leak_count = await asyncio.to_thread(blocking_breach_check)
+
+            # Handle check failure (HIBP down or other error)
+            if leak_count == -1:
+                logger.warning("Breach check failed - allowing password through")
+                return {
+                    "leak_count": -1,
+                    "error": "Breach check service unavailable",
+                    "validation_passed": True
+                }
 
             if leak_count > 0:
                 error_msg = (
@@ -137,19 +162,21 @@ class PasswordValidationService:
                 "validation_passed": True
             }
 
+        except PasswordValidationError:
+            raise
         except Exception as e:
             # If breach check fails, log but don't block
             # (we don't want to prevent registration if HIBP is down)
-            logger.warning(f"Pwned password check failed: {str(e)}")
+            logger.error(f"Unexpected error in breach check: {str(e)}")
             return {
                 "leak_count": -1,  # Indicate check failed
                 "error": str(e),
                 "validation_passed": True  # Allow through if check failed
             }
 
-    def validate_password(self, password: str) -> dict:
+    async def validate_password(self, password: str) -> dict:
         """
-        Complete password validation (strength + breach check).
+        Complete password validation (strength + breach check) - async version.
 
         Args:
             password: Password to validate
@@ -160,11 +187,11 @@ class PasswordValidationService:
         Raises:
             PasswordValidationError: If validation fails
         """
-        # Step 1: Check strength
+        # Step 1: Check strength (synchronous, fast operation)
         strength_result = self.validate_strength(password)
 
-        # Step 2: Check breaches
-        breach_result = self.check_breach_status(password)
+        # Step 2: Check breaches (async, uses asyncio.to_thread for blocking I/O)
+        breach_result = await self.check_breach_status(password)
 
         return {
             "password": password,  # Don't log the actual password!

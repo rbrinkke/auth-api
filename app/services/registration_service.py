@@ -108,9 +108,9 @@ class RegistrationService:
             UserAlreadyExistsError: If email already registered
         """
         try:
-            # Step 1: Validate password using dedicated service
+            # Step 1: Validate password using dedicated service (async)
             logger.info(f"Validating password for {email}")
-            self.password_validation_svc.validate_password(password)
+            await self.password_validation_svc.validate_password(password)
 
             # Step 2: Hash password
             logger.info(f"Hashing password for {email}")
@@ -171,8 +171,8 @@ class MockRegistrationService(RegistrationService):
 
     async def register_user(self, email: str, password: str) -> RegistrationResult:
         """Mock registration - no database or email operations."""
-        # Validate password
-        self.password_validation_svc.validate_password(password)
+        # Validate password (async)
+        await self.password_validation_svc.validate_password(password)
 
         # Create mock user
         user = UserRecord(
