@@ -10,7 +10,6 @@ export function LoginPage() {
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [logs, setLogs] = useState<Array<{time: string, message: string, type: 'info' | 'error' | 'success'}>>([]);
@@ -34,11 +33,6 @@ export function LoginPage() {
         addLog('✅ Login successful!', 'success');
         toast.success('Welcome back!');
       } else if (mode === 'register') {
-        if (password !== confirmPassword) {
-          addLog('❌ Passwords do not match', 'error');
-          toast.error('Passwords do not match');
-          return;
-        }
         addLog('📤 Sending registration request...', 'info');
         await register(email, password);
         addLog('✅ Account created! Verifying email...', 'success');
@@ -120,22 +114,7 @@ export function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="••••••••"
-                  required
-                />
-              </div>
-            )}
-
-            {mode === 'register' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Confirm password
-                </label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="••••••••"
+                  autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
                   required
                 />
               </div>
