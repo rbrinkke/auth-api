@@ -2,6 +2,7 @@
 import { useState, Component, ReactNode } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import apiService from '@/services/api';
 
 type AuthMode = 'login' | 'register' | 'reset' | 'verify';
 type LogType = 'info' | 'success' | 'error';
@@ -60,6 +61,7 @@ export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [logs, setLogs] = useState<DebugLog[]>([]);
   const [error, setError] = useState<string>('');
+  const [resetUserId, setResetUserId] = useState<string | null>(null);
 
   const addLog = (type: LogType, message: string, details?: string) => {
     const log: DebugLog = {
@@ -93,11 +95,61 @@ export function LoginPage() {
         addLog('info', '🔄 Switching to VERIFY mode for email verification');
         setMode('verify');
       } else if (mode === 'reset') {
-        addLog('info', '📤 Sending password reset request...', `Email: ${email}`);
-        addLog('success', '✅ Reset link sent', 'Check your email for the reset link');
-        toast.success('Reset link sent to your email');
-        addLog('info', '🔄 Switching to VERIFY mode');
-        setMode('verify');
+        if (!password && !code) {
+          // Step 1: Request reset code
+          addLog('info', '📤 Requesting password reset code...', `Email: ${email}`);
+          const response = await apiService.requestPasswordReset({ email });
+          addLog('success', '✅ Reset code sent', 'Check your email for the reset code');
+          toast.success('Reset code sent to your email');
+          // Stay in reset mode, now show fields for code + new password
+        } else if (password && !code) {
+          // Step 2: Need code
+          addLog('info', '⚠️ Please enter the reset code from your email');
+          setError('Please enter the reset code from your email');
+          setIsLoading(false);
+          return;
+        } else if (code && !password) {
+          // Step 3: Need new password
+          addLog('info', '⚠️ Please enter your new password');
+          setError('Please enter your new password');
+          setIsLoading(false);
+          return;
+        } else {
+          // Step 4: Both code and password entered - get user_id from backend
+          addLog('info', '📤 Getting user ID for password reset...');
+          // First get user by email to get user_id
+          const getUserResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/auth/user-by-email`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+          });
+
+          if (!getUserResponse.ok) {
+            throw new Error('Failed to get user ID');
+          }
+
+          const userData = await getUserResponse.json();
+          const userId = userData.user_id;
+
+          if (!userId) {
+            throw new Error('User not found');
+          }
+
+          // Now reset password with user_id
+          addLog('info', '📤 Resetting password with code...');
+          await apiService.resetPassword({
+            user_id: userId,
+            code,
+            new_password: password
+          });
+
+          addLog('success', '✅ Password reset successful', 'You can now login with your new password');
+          toast.success('Password reset successful!');
+          addLog('info', '🔄 Switching to LOGIN mode');
+          setMode('login');
+          setPassword('');
+          setCode('');
+        }
       } else if (mode === 'verify') {
         console.log('[VERIFY-PAGE] Mode is VERIFY');
         console.log('[VERIFY-PAGE] Code entered:', code);

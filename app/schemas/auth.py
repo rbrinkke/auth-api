@@ -132,6 +132,7 @@ class RequestPasswordResetRequest(BaseModel):
 class RequestPasswordResetResponse(BaseModel):
     """Response for password reset request."""
     message: str
+    user_id: str = None
 
 
 class ResetPasswordRequest(BaseModel):

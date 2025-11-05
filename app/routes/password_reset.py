@@ -99,7 +99,10 @@ async def request_password_reset(
             )
             logger.info(f"Password reset code generated for: {data.email}")
 
-        return RequestPasswordResetResponse(message=generic_message)
+        return RequestPasswordResetResponse(
+            message=generic_message,
+            user_id=user_id
+        )
 
     except HTTPException:
         raise
