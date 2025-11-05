@@ -11,6 +11,63 @@ Ultra-minimalistic authentication service for the Activity App. Built with FastA
 - **Redis Token Storage**: All temporary tokens with automatic TTL
 - **Rate Limiting**: Protection against brute-force attacks
 - **Password Reset**: Time-limited reset tokens (1 hour)
+- **Professional Password Validation**: zxcvbn strength scoring + breach checking
+
+## 🔐 Password Policy
+
+Our authentication service implements enterprise-grade password security using industry-standard tools:
+
+### Requirements
+
+1. **Minimum Length**: 8 characters
+2. **Strength Score**: Must achieve zxcvbn score of 3-4 (strong or very strong)
+3. **Breach Check**: Must NOT appear in known data breaches (Have I Been Pwned)
+4. **Composition**: Use a mix of letters, numbers, and symbols (recommended)
+
+### How It Works
+
+**zxcvbn Strength Scoring (Dropbox):**
+- Score 0: Very weak (e.g., "password")
+- Score 1: Weak (e.g., "password1")
+- Score 2: Fair (e.g., "P@ssw0rd")
+- Score 3: Strong (e.g., "CorrectHorseBatteryStaple!42") ✅
+- Score 4: Very strong (e.g., random complex strings) ✅
+
+**Have I Been Pwned Check:**
+- Queries the HIBP database with k-anonymity
+- Blocks passwords found in 613+ million breached accounts
+- Protects against known compromised credentials
+
+### Password Examples
+
+| Password | zxcvbn Score | Breached? | Result |
+|----------|--------------|-----------|--------|
+| `password` | 0 | Yes | ❌ Rejected |
+| `password123` | 0-1 | Yes | ❌ Rejected |
+| `P@ssw0rd` | 1-2 | Possibly | ❌ Rejected |
+| `MyD3centP@ssw0rd2024` | 3 | No | ✅ Accepted |
+| `CorrectHorseBatteryStaple!42` | 3-4 | No | ✅ Accepted |
+
+### Best Practices
+
+**Good Approaches:**
+- Passphrases: 3-4 random words (e.g., "CorrectHorseBatteryStaple!42")
+- Long passwords: 16+ characters with variety
+- Personal but obscure references only you know
+
+**Avoid:**
+- Dictionary words alone
+- Common patterns (keyboard sequences, dates, etc.)
+- Personal information (name, birthday, etc.)
+- Short passwords (< 12 characters)
+
+### User Experience
+
+The frontend registration form displays these requirements clearly, with:
+- Real-time feedback on password length
+- Helpful suggestions for strong passwords
+- Pro tips for creating memorable passphrases
+- Clear error messages if validation fails
 
 ## 🏗️ Architecture
 

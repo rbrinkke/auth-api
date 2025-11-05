@@ -30,8 +30,33 @@ export default function Register() {
   return (
     <div className="container">
       <h1>Register</h1>
-      
+
       <div className="card">
+        <div className="password-policy">
+          <h3>Password Requirements</h3>
+          <ul>
+            <li className={password.length >= 8 ? 'met' : ''}>
+              ✓ Minimum 8 characters
+            </li>
+            <li>
+              ✓ Strong password (zxcvbn score 3-4)
+            </li>
+            <li>
+              ✓ Not found in known data breaches
+            </li>
+            <li>
+              ✓ Use a mix of letters, numbers, and symbols
+            </li>
+            <li>
+              ✓ Consider using a passphrase (e.g., 3-4 random words)
+            </li>
+          </ul>
+          <div className="policy-note">
+            <strong>Pro tip:</strong> A password like "CorrectHorseBatteryStaple!42" is
+            both easy to remember and extremely secure.
+          </div>
+        </div>
+
         <form onSubmit={handleSubmit}>
           <div>
             <label>Email:</label>
@@ -51,11 +76,24 @@ export default function Register() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={8}
+              placeholder="Enter a strong password"
             />
-            <small>Minimum 8 characters</small>
+            {password && (
+              <div className="password-feedback">
+                {password.length < 8 ? (
+                  <span className="weak">⚠️ Password too short (minimum 8 characters)</span>
+                ) : (
+                  <span className="strong">
+                    ✓ Password meets minimum requirements. Server will validate strength.
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
-          <button type="submit">Register</button>
+          <button type="submit" disabled={password.length < 8}>
+            Register
+          </button>
         </form>
 
         {error && <p className="error">{error}</p>}
