@@ -1,218 +1,181 @@
-import { motion } from 'framer-motion';
-import { useNavigate, Link } from 'react-router-dom';
-import { EnvelopeIcon, LockClosedIcon } from '@heroicons/react/24/outline';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+// Minimalist Professional Auth Page
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
+type AuthMode = 'login' | 'register' | 'reset' | 'verify';
+
 export function LoginPage() {
-  const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, register } = useAuth();
+  const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setIsLoading(true);
 
     try {
-      await login(email, password);
-      toast.success('Welcome back!');
-      navigate('/dashboard');
-    } catch (err: any) {
-      if (err.message === '2FA_REQUIRED') {
-        toast.info('Two-factor authentication required');
-        navigate('/2fa-verify', { state: { email } });
-      } else {
-        setError(err.response?.data?.detail || 'Login failed. Please check your credentials.');
-        toast.error('Login failed');
+      if (mode === 'login') {
+        await login(email, password);
+        toast.success('Welcome back!');
+      } else if (mode === 'register') {
+        if (password !== confirmPassword) {
+          toast.error('Passwords do not match');
+          return;
+        }
+        await register(email, password);
+        toast.success('Account created!');
+        setMode('verify');
+      } else if (mode === 'reset') {
+        toast.success('Reset link sent to your email');
+        setMode('verify');
+      } else if (mode === 'verify') {
+        toast.success('Email verified!');
       }
+    } catch (err: any) {
+      toast.error(err.message || 'Something went wrong');
     } finally {
       setIsLoading(false);
     }
   };
 
+  const getTitle = () => {
+    switch (mode) {
+      case 'login': return 'Welcome back';
+      case 'register': return 'Create account';
+      case 'reset': return 'Reset password';
+      case 'verify': return 'Enter verification code';
+    }
+  };
+
+  const getButtonText = () => {
+    switch (mode) {
+      case 'login': return 'Sign in';
+      case 'register': return 'Create account';
+      case 'reset': return 'Send reset link';
+      case 'verify': return 'Verify';
+    }
+  };
+
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-indigo-950 via-purple-900 to-slate-900">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <motion.div
-          className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-purple-500 opacity-20 blur-3xl"
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.2, 0.3, 0.2],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-        />
-        <motion.div
-          className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-indigo-500 opacity-20 blur-3xl"
-          animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.3, 0.2, 0.3],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: 'easeInOut',
-            delay: 2,
-          }}
-        />
-        <motion.div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-pink-500 opacity-10 blur-3xl"
-          animate={{
-            scale: [1, 1.3, 1],
-            rotate: [0, 180, 360],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: 'linear',
-          }}
-        />
-      </div>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+          <h1 className="text-2xl font-semibold text-gray-900 mb-6">{getTitle()}</h1>
 
-      <div className="relative z-10 flex min-h-screen">
-        {/* Left side - Branding */}
-        <motion.div
-          className="hidden lg:flex lg:flex-1 flex-col justify-center px-12 xl:px-24"
-          initial={{ opacity: 0, x: -50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.6 }}
-          >
-            <h1 className="text-5xl xl:text-6xl font-bold text-white mb-6">
-              Welcome Back
-            </h1>
-            <p className="text-xl text-indigo-200 mb-8 leading-relaxed">
-              Sign in to your account and continue your journey with us.
-              Secure, fast, and effortless authentication.
-            </p>
-            <div className="space-y-4">
-              {[
-                { icon: '🔐', text: 'Enterprise-grade security' },
-                { icon: '⚡', text: 'Lightning-fast authentication' },
-                { icon: '🛡️', text: '2FA protection' },
-              ].map((feature, index) => (
-                <motion.div
-                  key={index}
-                  className="flex items-center gap-3 text-indigo-100"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.5 + index * 0.1 }}
-                >
-                  <span className="text-2xl">{feature.icon}</span>
-                  <span className="text-lg">{feature.text}</span>
-                </motion.div>
-              ))}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="you@example.com"
+                required
+              />
             </div>
-          </motion.div>
-        </motion.div>
 
-        {/* Right side - Login Form */}
-        <div className="flex-1 flex items-center justify-center px-6 py-12 lg:px-8">
-          <motion.div
-            className="w-full max-w-md"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="glass-card rounded-3xl p-10 shadow-2xl">
-              <motion.div
-                className="text-center mb-8"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <h2 className="text-3xl font-bold text-white mb-2">
-                  Sign In
-                </h2>
-                <p className="text-indigo-200">
-                  Don't have an account?{' '}
-                  <Link
-                    to="/register"
-                    className="font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
-                  >
-                    Create one →
-                  </Link>
-                </p>
-              </motion.div>
-
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <Input
-                  label="Email Address"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  leftIcon={<EnvelopeIcon className="w-5 h-5" />}
-                  placeholder="you@company.com"
-                  required
-                  autoComplete="email"
-                  className="bg-white/5 border-white/10"
-                />
-
-                <Input
-                  label="Password"
+            {mode !== 'verify' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
+                </label>
+                <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  leftIcon={<LockClosedIcon className="w-5 h-5" />}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="••••••••"
                   required
-                  autoComplete="current-password"
-                  className="bg-white/5 border-white/10"
                 />
+              </div>
+            )}
 
-                <div className="flex items-center justify-between">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="w-4 h-4 rounded border-white/20 bg-white/5 text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <span className="text-sm text-indigo-200">Remember me</span>
-                  </label>
-                  <Link
-                    to="/forgot-password"
-                    className="text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
+            {mode === 'register' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Confirm password
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+            )}
 
-                {error && (
-                  <motion.div
-                    className="p-4 rounded-lg bg-red-500/10 border border-red-500/20"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                  >
-                    <p className="text-sm text-red-400">{error}</p>
-                  </motion.div>
-                )}
+            {mode === 'verify' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Verification code
+                </label>
+                <input
+                  type="text"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-2xl font-mono tracking-widest"
+                  placeholder="000000"
+                  maxLength={6}
+                  required
+                />
+              </div>
+            )}
 
-                <Button
-                  type="submit"
-                  fullWidth
-                  size="lg"
-                  isLoading={isLoading}
-                  className="mt-6"
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-blue-600 text-white py-2.5 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            >
+              {isLoading ? 'Please wait...' : getButtonText()}
+            </button>
+          </form>
+
+          <div className="mt-6 space-y-2">
+            {mode === 'login' && (
+              <>
+                <button
+                  onClick={() => setMode('register')}
+                  className="w-full text-sm text-blue-600 hover:text-blue-700 font-medium"
                 >
-                  Sign In
-                </Button>
-              </form>
-            </div>
-          </motion.div>
+                  Create account
+                </button>
+                <button
+                  onClick={() => setMode('reset')}
+                  className="w-full text-sm text-gray-600 hover:text-gray-700"
+                >
+                  Forgot password?
+                </button>
+              </>
+            )}
+
+            {mode === 'register' && (
+              <button
+                onClick={() => setMode('login')}
+                className="w-full text-sm text-gray-600 hover:text-gray-700"
+              >
+                Already have an account? Sign in
+              </button>
+            )}
+
+            {(mode === 'reset' || mode === 'verify') && (
+              <button
+                onClick={() => setMode('login')}
+                className="w-full text-sm text-gray-600 hover:text-gray-700"
+              >
+                Back to sign in
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
