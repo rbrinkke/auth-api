@@ -13,31 +13,53 @@ export function LoginPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [logs, setLogs] = useState<Array<{time: string, message: string, type: 'info' | 'error' | 'success'}>>([]);
+
+  const addLog = (message: string, type: 'info' | 'error' | 'success' = 'info') => {
+    const timestamp = new Date().toLocaleTimeString();
+    const newLog = { time: timestamp, message, type };
+    setLogs(prev => [newLog, ...prev].slice(0, 10)); // Keep last 10 logs
+    console.log(`[${timestamp}] ${type.toUpperCase()}: ${message}`);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    addLog(`🔄 Submit ${mode} request for: ${email}`, 'info');
 
     try {
       if (mode === 'login') {
+        addLog('📤 Sending login request...', 'info');
         await login(email, password);
+        addLog('✅ Login successful!', 'success');
         toast.success('Welcome back!');
       } else if (mode === 'register') {
         if (password !== confirmPassword) {
+          addLog('❌ Passwords do not match', 'error');
           toast.error('Passwords do not match');
           return;
         }
+        addLog('📤 Sending registration request...', 'info');
         await register(email, password);
+        addLog('✅ Account created! Verifying email...', 'success');
         toast.success('Account created!');
+        addLog('⏳ Switching to verification mode', 'info');
         setMode('verify');
       } else if (mode === 'reset') {
+        addLog('📤 Sending password reset request...', 'info');
         toast.success('Reset link sent to your email');
+        addLog('⏳ Switching to verification mode', 'info');
         setMode('verify');
       } else if (mode === 'verify') {
+        addLog(`📤 Verifying code: ${code}...`, 'info');
         toast.success('Email verified!');
+        addLog('✅ Email verified successfully!', 'success');
       }
     } catch (err: any) {
-      toast.error(err.message || 'Something went wrong');
+      const errorMsg = err.message || 'Something went wrong';
+      addLog(`❌ Error: ${errorMsg}`, 'error');
+      toast.error(errorMsg);
+      console.error('Auth error:', err);
     } finally {
       setIsLoading(false);
     }
@@ -65,7 +87,12 @@ export function LoginPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-          <h1 className="text-2xl font-semibold text-gray-900 mb-6">{getTitle()}</h1>
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-semibold text-gray-900">{getTitle()}</h1>
+            <span className="text-xs text-gray-400 px-2 py-1 bg-gray-100 rounded">
+              {mode.toUpperCase()}
+            </span>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -177,6 +204,32 @@ export function LoginPage() {
             )}
           </div>
         </div>
+
+        {/* Debug Console */}
+        {logs.length > 0 && (
+          <div className="mt-4 bg-black rounded-lg p-4 text-green-400 font-mono text-xs max-h-48 overflow-y-auto">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-gray-400">🔧 Debug Console</span>
+              <button
+                onClick={() => setLogs([])}
+                className="text-gray-500 hover:text-gray-300"
+              >
+                Clear
+              </button>
+            </div>
+            <div className="space-y-1">
+              {logs.map((log, i) => (
+                <div key={i} className="flex items-start gap-2">
+                  <span className="text-gray-500">[{log.time}]</span>
+                  {log.type === 'error' && <span className="text-red-400">❌</span>}
+                  {log.type === 'success' && <span className="text-green-400">✅</span>}
+                  {log.type === 'info' && <span className="text-blue-400">ℹ️</span>}
+                  <span className="flex-1">{log.message}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
