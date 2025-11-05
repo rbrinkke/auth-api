@@ -20,7 +20,7 @@ from app.schemas.auth import (
     ResendVerificationResponse,
     VerifyEmailResponse
 )
-from app.services.email_service import email_service
+from app.services.email_service import get_email_service, EmailService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -111,7 +111,8 @@ async def resend_verification(
     data: ResendVerificationRequest,
     background_tasks: BackgroundTasks,
     conn: asyncpg.Connection = Depends(get_db_connection),
-    redis: RedisClient = Depends(get_redis)
+    redis: RedisClient = Depends(get_redis),
+    email_svc: EmailService = Depends(get_email_service)
 ):
     """
     Resend verification email to user.
@@ -148,10 +149,10 @@ async def resend_verification(
         
         # 4. Store in Redis (replaces old token via reverse lookup)
         await redis.set_verification_token(verification_token, user.id)
-        
+
         # 5. Send verification email (async)
         background_tasks.add_task(
-            email_service.send_verification_email,
+            email_svc.send_verification_email,
             user.email,
             verification_token
         )

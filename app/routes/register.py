@@ -17,7 +17,7 @@ from app.core.tokens import generate_verification_token
 from app.db.connection import get_db_connection
 from app.db.procedures import sp_create_user
 from app.schemas.auth import RegisterRequest, RegisterResponse
-from app.services.email_service import email_service
+from app.services.email_service import get_email_service, EmailService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -46,7 +46,8 @@ async def register(
     data: RegisterRequest,
     background_tasks: BackgroundTasks,
     conn: asyncpg.Connection = Depends(get_db_connection),
-    redis: RedisClient = Depends(get_redis)
+    redis: RedisClient = Depends(get_redis),
+    email_svc: EmailService = Depends(get_email_service)
 ):
     """
     Register a new user with email verification.
@@ -79,7 +80,7 @@ async def register(
         
         # 5. Send verification email (async, don't block)
         background_tasks.add_task(
-            email_service.send_verification_email,
+            email_svc.send_verification_email,
             user.email,
             verification_token
         )

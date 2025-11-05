@@ -22,7 +22,7 @@ from app.schemas.auth import (
     ResetPasswordRequest,
     ResetPasswordResponse
 )
-from app.services.email_service import email_service
+from app.services.email_service import get_email_service, EmailService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -52,7 +52,8 @@ async def request_password_reset(
     data: RequestPasswordResetRequest,
     background_tasks: BackgroundTasks,
     conn: asyncpg.Connection = Depends(get_db_connection),
-    redis: RedisClient = Depends(get_redis)
+    redis: RedisClient = Depends(get_redis),
+    email_svc: EmailService = Depends(get_email_service)
 ):
     """
     Send password reset email.
@@ -81,10 +82,10 @@ async def request_password_reset(
         
         # 3. Store in Redis (replaces old token via reverse lookup)
         await redis.set_reset_token(reset_token, user.id)
-        
+
         # 4. Send reset email (async)
         background_tasks.add_task(
-            email_service.send_password_reset_email,
+            email_svc.send_password_reset_email,
             user.email,
             reset_token
         )

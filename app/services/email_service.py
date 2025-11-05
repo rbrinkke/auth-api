@@ -140,3 +140,17 @@ class EmailService:
 
 # Global email service instance
 email_service = EmailService()
+
+
+def get_email_service() -> EmailService:
+    """
+    Dependency injection function for EmailService.
+
+    Returns:
+        EmailService: Configured email service instance
+
+    This enables easy mocking during testing:
+        app.dependency_overrides[get_email_service] = get_mock_email_service
+    """
+    return email_service
+
