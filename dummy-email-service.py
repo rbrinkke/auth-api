@@ -65,6 +65,29 @@ Click the link below to reset your password:
 
 This link expires in {expires_hours} hours.
 """
+        elif request.template == "2fa_code":
+            # Handle 2FA/verification code templates
+            code = request.data.get("code", "")
+            purpose = request.data.get("purpose", "verification")
+            expires_minutes = request.data.get("expires_minutes", 5)
+
+            purpose_messages = {
+                "login": "Your login verification code",
+                "reset": "Password reset verification code",
+                "verify": "Email verification code",
+                "email verification": "Email verification code"
+            }
+
+            purpose_text = purpose_messages.get(purpose, purpose.capitalize())
+
+            body = f"""{purpose_text}
+
+Your 6-digit verification code is: {code}
+
+This code expires in {expires_minutes} minutes.
+
+If you didn't request this, please ignore this email.
+"""
         else:
             # Generic template
             body = f"""

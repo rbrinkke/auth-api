@@ -124,7 +124,7 @@ async def login(
                 detail={
                     "message": "Two-factor authentication required. Check your email for a 6-digit code.",
                     "two_factor_required": True,
-                    "user_id": user.id
+                    "user_id": str(user.id)
                 }
             )
 

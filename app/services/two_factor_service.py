@@ -13,7 +13,7 @@ from typing import List, Optional, Tuple
 from datetime import datetime, timedelta
 from cryptography.fernet import Fernet
 
-from app.core.config import settings
+from app.config import settings
 from app.core.redis_client import RedisClient
 from app.services.email_service import EmailService
 
@@ -157,7 +157,11 @@ class TwoFactorService:
         if not stored_code:
             return False
 
-        if stored_code.decode() != code:
+        # Handle both bytes and string types from Redis
+        if isinstance(stored_code, bytes):
+            stored_code = stored_code.decode()
+
+        if stored_code != code:
             return False
 
         # If consuming, delete the code

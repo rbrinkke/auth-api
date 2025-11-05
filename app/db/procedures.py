@@ -12,7 +12,7 @@ import asyncpg
 
 class UserRecord:
     """Represents a user record returned from stored procedures."""
-    
+
     def __init__(self, record: asyncpg.Record):
         self.id: UUID = record["id"]
         self.email: str = record["email"]
@@ -23,6 +23,10 @@ class UserRecord:
         self.created_at = record["created_at"]
         self.verified_at = record.get("verified_at")
         self.last_login_at = record.get("last_login_at")
+        # 2FA fields
+        self.two_factor_enabled: bool = record.get("two_factor_enabled", False)
+        self.two_factor_secret: Optional[str] = record.get("two_factor_secret")
+        self.two_factor_backup_codes: Optional[list] = record.get("two_factor_backup_codes", [])
 
 
 # ========== User Management Procedures ==========

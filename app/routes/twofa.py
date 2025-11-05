@@ -241,7 +241,7 @@ async def verify_2fa_code(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="User not found"
                 )
-            user_id = row["id"]
+            user_id = str(row["id"])
 
         # Verify the code
         if not await twofa_svc.verify_temp_code(user_id, request.code, request.purpose):

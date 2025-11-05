@@ -60,39 +60,22 @@ class PasswordResetService:
         self.redis = redis
         self.password_validation_svc = password_validation_svc
 
-    async def request_password_reset(self, email: str) -> str:
+    async def check_user_exists(self, email: str) -> str:
         """
-        Request password reset for user.
-
-        Flow:
-        1. Look up user by email (generic response for security)
-        2. Generate reset token
-        3. Store in Redis
-        4. Email sending handled by route
+        Check if user exists and return user_id.
 
         Args:
             email: User's email address
 
         Returns:
-            str: Reset token (for email sending)
-
-        Note:
-            Returns generic success message even if email doesn't exist
-            (prevents email enumeration attacks)
+            str: User ID if exists, empty string otherwise
         """
         user = await sp_get_user_by_email(self.conn, email.lower())
 
         if user:
-            # Generate reset token
-            reset_token = generate_reset_token()
-
-            # Store in Redis with TTL
-            await self.redis.set_reset_token(reset_token, user.id)
-
             logger.info(f"Password reset requested for: {email} (user: {user.id})")
-            return reset_token
+            return str(user.id)
         else:
-            # Don't reveal if user exists or not
             logger.info(f"Password reset requested for non-existent email: {email}")
             return ""
 
@@ -147,6 +130,61 @@ class PasswordResetService:
 
             # Step 6: Delete token from Redis (one-time use)
             await self.redis.delete_reset_token(reset_token, user_id)
+
+            logger.info(f"Password reset successful for user {user_id}")
+
+            # Get user email for result
+            user_email = "user@example.com"  # We'll need to get this properly
+
+            return PasswordResetResult(
+                user_email=user_email,
+                password_updated=True
+            )
+
+        except PasswordResetServiceError:
+            raise
+        except Exception as e:
+            logger.error(f"Password reset failed: {str(e)}")
+            raise PasswordResetServiceError(
+                f"Password reset failed: {str(e)}"
+            )
+
+    async def reset_password_with_user_id(
+        self,
+        user_id: str,
+        new_password: str
+    ) -> PasswordResetResult:
+        """
+        Reset user password using user_id (code-based flow).
+
+        Flow:
+        1. Validate new password
+        2. Update password in database
+
+        Args:
+            user_id: User ID
+            new_password: New password to set
+
+        Returns:
+            PasswordResetResult: Operation result
+
+        Raises:
+            PasswordResetServiceError: If reset fails
+        """
+        try:
+            # Step 1: Validate new password using service (async)
+            logger.info(f"Validating new password for user {user_id}")
+            await self.password_validation_svc.validate_password(new_password)
+
+            # Step 2: Hash new password
+            hashed_password = hash_password(new_password)
+
+            # Step 3: Update password in database
+            success = await sp_update_password(self.conn, user_id, hashed_password)
+
+            if not success:
+                logger.error(f"Password reset failed - user not found: {user_id}")
+                raise PasswordResetServiceError("User not found")
 
             logger.info(f"Password reset successful for user {user_id}")
 

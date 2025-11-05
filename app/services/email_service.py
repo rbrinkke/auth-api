@@ -74,28 +74,19 @@ class EmailService:
             logger.error(f"Error sending email to {to}: {str(e)}")
             return False
     
-    async def send_verification_email(self, email: str, token: str) -> bool:
+    async def send_verification_email(self, email: str, code: str) -> bool:
         """
-        Send email verification link.
-        
+        Send email verification code (6-digit).
+
         Args:
             email: Recipient email
-            token: Verification token
-            
+            code: 6-digit verification code
+
         Returns:
             True if sent successfully
         """
-        verification_url = f"{settings.frontend_url}/verify?token={token}"
-        
-        return await self.send_email(
-            to=email,
-            template="email_verification",
-            subject="Verify your email address",
-            data={
-                "verification_link": verification_url,
-                "expires_hours": settings.verification_token_ttl // 3600
-            }
-        )
+        # Use the same 2FA email template for consistency
+        return await self.send_2fa_code_email(email, code, "verify")
     
     async def send_2fa_code_email(self, email: str, code: str, purpose: str) -> bool:
         """
@@ -136,28 +127,19 @@ class EmailService:
             }
         )
 
-    async def send_password_reset_email(self, email: str, token: str) -> bool:
+    async def send_password_reset_email(self, email: str, code: str) -> bool:
         """
-        Send password reset link.
-        
+        Send password reset code (6-digit).
+
         Args:
             email: Recipient email
-            token: Reset token
-            
+            code: 6-digit reset code
+
         Returns:
             True if sent successfully
         """
-        reset_url = f"{settings.frontend_url}/reset-password?token={token}"
-        
-        return await self.send_email(
-            to=email,
-            template="password_reset",
-            subject="Reset your password",
-            data={
-                "reset_link": reset_url,
-                "expires_hours": settings.reset_token_ttl // 3600
-            }
-        )
+        # Use the same 2FA email template for consistency
+        return await self.send_2fa_code_email(email, code, "reset")
     
     async def send_welcome_email(self, email: str) -> bool:
         """

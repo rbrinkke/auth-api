@@ -92,19 +92,25 @@ CREATE OR REPLACE FUNCTION activity.sp_get_user_by_email(
     is_active BOOLEAN,
     created_at TIMESTAMP,
     verified_at TIMESTAMP,
-    last_login_at TIMESTAMP
+    last_login_at TIMESTAMP,
+    two_factor_enabled BOOLEAN,
+    two_factor_secret TEXT,
+    two_factor_backup_codes JSONB
 ) AS $$
 BEGIN
     RETURN QUERY
-    SELECT 
-        u.id, 
-        u.email, 
-        u.hashed_password, 
-        u.is_verified, 
+    SELECT
+        u.id,
+        u.email,
+        u.hashed_password,
+        u.is_verified,
         u.is_active,
-        u.created_at, 
-        u.verified_at, 
-        u.last_login_at
+        u.created_at,
+        u.verified_at,
+        u.last_login_at,
+        u.two_factor_enabled,
+        u.two_factor_secret,
+        u.two_factor_backup_codes
     FROM activity.users u
     WHERE u.email = LOWER(p_email);
 END;

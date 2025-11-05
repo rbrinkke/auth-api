@@ -92,6 +92,17 @@ class ResendVerificationResponse(BaseModel):
     message: str
 
 
+class VerifyCodeRequest(BaseModel):
+    """Request body for verifying a 6-digit code."""
+    user_id: str = Field(..., min_length=1, description="User ID")
+    code: str = Field(..., min_length=6, max_length=6, description="6-digit verification code")
+
+
+class VerifyCodeResponse(BaseModel):
+    """Response for successful code verification."""
+    message: str
+
+
 class RefreshTokenRequest(BaseModel):
     """Request body for refreshing tokens."""
     refresh_token: str
@@ -126,12 +137,14 @@ class ResetPasswordRequest(BaseModel):
     """Request body for resetting password.
 
     Schema-only validation (no business logic):
-    - Token must be non-empty string
+    - User ID must be non-empty string
+    - Code must be 6-digit
     - Password minimum length (basic validation only)
 
     Business logic (strength, breach check) is handled in PasswordResetService.
     """
-    token: str = Field(..., min_length=1, description="Password reset token from email")
+    user_id: str = Field(..., min_length=1, description="User ID")
+    code: str = Field(..., min_length=6, max_length=6, description="6-digit password reset code")
     new_password: str = Field(
         ...,
         min_length=8,

@@ -227,13 +227,13 @@ async def global_exception_handler(request: Request, exc: Exception):
 # ========== Routes ==========
 
 # Include all route modules
-app.include_router(register.router)
-app.include_router(verify.router)
-app.include_router(login.router)
-app.include_router(refresh.router)
-app.include_router(logout.router)
-app.include_router(password_reset.router)
-app.include_router(twofa_router.router)
+app.include_router(register)
+app.include_router(verify)
+app.include_router(login)
+app.include_router(refresh)
+app.include_router(logout)
+app.include_router(password_reset)
+app.include_router(twofa_router)
 
 
 # Health check endpoint

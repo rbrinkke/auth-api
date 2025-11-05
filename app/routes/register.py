@@ -26,6 +26,7 @@ from app.services.registration_service import (
     UserAlreadyExistsError,
     RegistrationServiceError
 )
+from app.services.two_factor_service import TwoFactorService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -68,9 +69,10 @@ async def register(
 
     Flow:
     1. Initialize RegistrationService with dependencies
-    2. Call service to handle business logic (user creation, token generation)
-    3. Send email via background task (non-blocking)
-    4. Return immediate response
+    2. Call service to handle business logic (user creation)
+    3. Generate 6-digit verification code
+    4. Send code via email (non-blocking)
+    5. Return immediate response
     """
     try:
         # Initialize service with dependencies (Service Layer pattern)
@@ -86,16 +88,18 @@ async def register(
             password=data.password
         )
 
-        # Send verification email in background (non-blocking)
-        background_tasks.add_task(
-            email_svc.send_verification_email,
-            result.user.email,
-            result.verification_token
+        # Generate 6-digit verification code using TwoFactorService
+        twofa_svc = TwoFactorService(redis, email_svc)
+        verification_code = await twofa_svc.create_temp_code(
+            user_id=result.user.id,
+            purpose="verify",
+            email=result.user.email
         )
-        logger.info(f"Verification email queued for background sending: {result.user.email}")
+
+        logger.info(f"Verification code generated for user: {result.user.email}")
 
         return RegisterResponse(
-            message=f"User registered successfully. Verification email will be sent to {result.user.email}.",
+            message=f"User registered successfully. A 6-digit verification code has been sent to {result.user.email}.",
             email=result.user.email
         )
 
