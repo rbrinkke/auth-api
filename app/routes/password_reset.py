@@ -1,7 +1,12 @@
 """
 Password reset endpoints.
 
-Implements secure password reset flow with time-limited tokens.
+Uses Service Layer pattern for business logic.
+- Route handles HTTP
+- PasswordResetService handles business logic
+- PasswordValidationService handles password validation
+
+This separation makes code testable and maintainable.
 """
 import logging
 
@@ -12,10 +17,7 @@ from slowapi.util import get_remote_address
 
 from app.config import settings
 from app.core.redis_client import RedisClient, get_redis
-from app.core.security import hash_password
-from app.core.tokens import generate_reset_token
 from app.db.connection import get_db_connection
-from app.db.procedures import sp_get_user_by_email, sp_update_password
 from app.schemas.auth import (
     RequestPasswordResetRequest,
     RequestPasswordResetResponse,
@@ -23,6 +25,8 @@ from app.schemas.auth import (
     ResetPasswordResponse
 )
 from app.services.email_service import get_email_service, EmailService
+from app.services.password_validation_service import get_password_validation_service, PasswordValidationService
+from app.services.password_reset_service import PasswordResetService, PasswordResetServiceError
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -53,47 +57,47 @@ async def request_password_reset(
     background_tasks: BackgroundTasks,
     conn: asyncpg.Connection = Depends(get_db_connection),
     redis: RedisClient = Depends(get_redis),
-    email_svc: EmailService = Depends(get_email_service)
+    email_svc: EmailService = Depends(get_email_service),
+    password_validation_svc: PasswordValidationService = Depends(get_password_validation_service)
 ):
     """
-    Send password reset email.
-    
+    Request password reset email.
+
+    Uses Service Layer pattern:
+    - PasswordResetService handles business logic
+
     Flow:
-    1. Look up user by email
-    2. Generate reset token
-    3. Store in Redis (with reverse lookup)
-    4. Send reset email in background
-    5. Return generic success message
+    1. Initialize PasswordResetService
+    2. Call service to request reset
+    3. Send email if token generated
+    4. Return generic message
     """
     try:
-        # Generic response (for security)
+        # Generic response (for security - don't reveal if email exists)
         generic_message = "If an account exists for this email, a password reset link has been sent."
-        
-        # 1. Find user
-        user = await sp_get_user_by_email(conn, data.email)
-        
-        # Return generic message even if user doesn't exist
-        if not user:
-            logger.info(f"Password reset requested for non-existent email: {data.email}")
-            return RequestPasswordResetResponse(message=generic_message)
-        
-        # 2. Generate reset token
-        reset_token = generate_reset_token()
-        
-        # 3. Store in Redis (replaces old token via reverse lookup)
-        await redis.set_reset_token(reset_token, user.id)
 
-        # 4. Send reset email (async)
-        background_tasks.add_task(
-            email_svc.send_password_reset_email,
-            user.email,
-            reset_token
+        # Initialize service
+        reset_service = PasswordResetService(
+            conn=conn,
+            redis=redis,
+            password_validation_svc=password_validation_svc
         )
-        
-        logger.info(f"Password reset email sent to: {user.email}")
-        
+
+        # Request reset (returns token only if user exists)
+        reset_token = await reset_service.request_password_reset(data.email)
+
+        # If token returned, send email
+        if reset_token:
+            # Send reset email in background
+            background_tasks.add_task(
+                email_svc.send_password_reset_email,
+                data.email,
+                reset_token
+            )
+            logger.info(f"Password reset email sent to: {data.email}")
+
         return RequestPasswordResetResponse(message=generic_message)
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -110,57 +114,55 @@ async def request_password_reset(
     summary="Reset password",
     description="""
     Reset password using the token from the reset email.
-    
+
     The token is single-use and expires after 1 hour.
+
+    Uses Service Layer pattern for business logic.
     """
 )
 async def reset_password(
     request: ResetPasswordRequest,
     conn: asyncpg.Connection = Depends(get_db_connection),
-    redis: RedisClient = Depends(get_redis)
+    redis: RedisClient = Depends(get_redis),
+    password_validation_svc: PasswordValidationService = Depends(get_password_validation_service)
 ):
     """
     Reset user password with token.
-    
+
+    Uses Service Layer pattern:
+    - PasswordResetService handles business logic
+    - PasswordValidationService validates new password
+
     Flow:
-    1. Look up token in Redis
-    2. Hash new password
-    3. Update password in database
-    4. Delete token from Redis
-    5. Return success message
+    1. Initialize PasswordResetService
+    2. Call service to reset password
+    3. Return success message
     """
     try:
-        # 1. Get user_id from token
-        user_id = await redis.get_user_id_from_reset_token(request.token)
-        
-        if not user_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid or expired reset token"
-            )
-        
-        # 2. Hash new password
-        new_hashed_password = hash_password(request.new_password)
-        
-        # 3. Update password in database
-        success = await sp_update_password(conn, user_id, new_hashed_password)
-        
-        if not success:
-            logger.error(f"Failed to reset password for user {user_id} - user not found")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid reset token"
-            )
-        
-        # 4. Delete token from Redis (one-time use)
-        await redis.delete_reset_token(request.token, user_id)
-        
-        logger.info(f"Password reset successfully for user {user_id}")
-        
+        # Initialize service
+        reset_service = PasswordResetService(
+            conn=conn,
+            redis=redis,
+            password_validation_svc=password_validation_svc
+        )
+
+        # Execute password reset via service
+        result = await reset_service.reset_password(
+            reset_token=request.token,
+            new_password=request.new_password
+        )
+
+        logger.info(f"Password reset successfully for user")
+
         return ResetPasswordResponse(
             message="Password updated successfully. You can now login with your new password."
         )
-        
+
+    except PasswordResetServiceError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
     except HTTPException:
         raise
     except Exception as e:

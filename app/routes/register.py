@@ -1,7 +1,12 @@
 """
 User registration endpoint.
 
-Implements hard verification: user cannot login until email is verified.
+Uses Service Layer pattern for business logic.
+- Route handles HTTP
+- RegistrationService handles business logic
+- Email service for sending emails
+
+This separation makes code testable and maintainable.
 """
 import logging
 
@@ -12,12 +17,15 @@ from slowapi.util import get_remote_address
 
 from app.config import settings
 from app.core.redis_client import RedisClient, get_redis
-from app.core.security import hash_password
-from app.core.tokens import generate_verification_token
 from app.db.connection import get_db_connection
-from app.db.procedures import sp_create_user
 from app.schemas.auth import RegisterRequest, RegisterResponse
 from app.services.email_service import get_email_service, EmailService
+from app.services.password_validation_service import get_password_validation_service, PasswordValidationService
+from app.services.registration_service import (
+    RegistrationService,
+    UserAlreadyExistsError,
+    RegistrationServiceError
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -47,51 +55,58 @@ async def register(
     background_tasks: BackgroundTasks,
     conn: asyncpg.Connection = Depends(get_db_connection),
     redis: RedisClient = Depends(get_redis),
-    email_svc: EmailService = Depends(get_email_service)
+    email_svc: EmailService = Depends(get_email_service),
+    password_validation_svc: PasswordValidationService = Depends(get_password_validation_service)
 ):
     """
     Register a new user with email verification.
-    
+
+    Uses Service Layer pattern:
+    - Pydantic (data/schema validation only)
+    - RegistrationService (business logic)
+    - EmailService (sending emails)
+
     Flow:
-    1. Hash password with Argon2id
-    2. Create user in database (is_verified=FALSE)
-    3. Generate verification token in Redis
-    4. Send verification email in background
-    5. Return success message (NO tokens)
+    1. Initialize RegistrationService with dependencies
+    2. Call service to handle business logic
+    3. Send email via background task
+    4. Return response
     """
     try:
-        # 1. Hash the password
-        hashed_password = hash_password(data.password)
-        
-        # 2. Create user via stored procedure
-        try:
-            user = await sp_create_user(conn, data.email, hashed_password)
-        except asyncpg.UniqueViolationError:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email already registered"
-            )
-        
-        # 3. Generate verification token
-        verification_token = generate_verification_token()
-        
-        # 4. Store token in Redis (with reverse lookup)
-        await redis.set_verification_token(verification_token, user.id)
-        
-        # 5. Send verification email (async, don't block)
-        background_tasks.add_task(
-            email_svc.send_verification_email,
-            user.email,
-            verification_token
+        # Initialize service with dependencies (Service Layer pattern)
+        registration_service = RegistrationService(
+            conn=conn,
+            redis=redis,
+            email_svc=email_svc,
+            password_validation_svc=password_validation_svc
         )
-        
-        logger.info(f"User registered successfully: {user.email} (id: {user.id})")
-        
+
+        # Execute business logic via service
+        result = await registration_service.register_user(
+            email=data.email,
+            password=data.password
+        )
+
+        # Send verification email in background
+        # (already sent by service, but kept here for example)
+        if result.email_sent:
+            logger.info(f"Verification email queued for {result.user.email}")
+
         return RegisterResponse(
-            message=f"Verification email sent to {user.email}. Please check your inbox.",
-            email=user.email
+            message=f"Verification email sent to {result.user.email}. Please check your inbox.",
+            email=result.user.email
         )
-        
+
+    except UserAlreadyExistsError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except RegistrationServiceError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
     except HTTPException:
         raise
     except Exception as e:
