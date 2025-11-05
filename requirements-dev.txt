@@ -1,5 +1,5 @@
 # Testing Framework
-pytest==7.4.4
+pytest==8.4.2
 pytest-asyncio==0.21.1
 pytest-mock==3.12.0
 pytest-cov==4.1.0
@@ -8,7 +8,7 @@ pytest-html==4.1.1  # HTML test reports
 pytest-timeout==2.3.1  # Test timeout handling
 
 # HTTP Testing
-httpx==0.27.2
+httpx==0.28.1
 
 # Test Data Generation
 faker==24.8.0  # Generate realistic test data
