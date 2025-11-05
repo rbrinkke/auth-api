@@ -57,10 +57,17 @@ async def verify_code(
     3. Delete code from Redis
     4. Return success message
     """
+    print(f"[VERIFY-ROUTE] ====================")
+    print(f"[VERIFY-ROUTE] Received verify-code request:")
+    print(f"[VERIFY-ROUTE]   user_id: {data.user_id}")
+    print(f"[VERIFY-ROUTE]   code: {data.code}")
+    print(f"[VERIFY-ROUTE] ====================")
+
     try:
         # Initialize TwoFactorService
         twofa_svc = TwoFactorService(redis_client, email_svc)
 
+        print(f"[VERIFY-ROUTE] Calling verify_temp_code...")
         # 1. Verify the code
         is_valid = await twofa_svc.verify_temp_code(
             user_id=data.user_id,
@@ -69,35 +76,46 @@ async def verify_code(
             consume=True
         )
 
+        print(f"[VERIFY-ROUTE] verify_temp_code returned: {is_valid}")
+
         if not is_valid:
+            print(f"[VERIFY-ROUTE] Code INVALID - incrementing failed attempts")
             # Increment failed attempts
             await twofa_svc.increment_failed_attempt(data.user_id, "verify")
 
             # Check if locked out
             if await twofa_svc.is_locked_out(data.user_id, "verify"):
+                print(f"[VERIFY-ROUTE] User locked out - raising 429")
                 raise HTTPException(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                     detail="Too many failed attempts. Please try again later."
                 )
 
+            print(f"[VERIFY-ROUTE] Invalid code - raising 400")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid or expired verification code"
             )
 
         # 2. Reset failed attempts on success
+        print(f"[VERIFY-ROUTE] Code VALID - resetting failed attempts")
         await twofa_svc.reset_failed_attempts(data.user_id, "verify")
 
         # 3. Mark user as verified in database
+        print(f"[VERIFY-ROUTE] Updating database - calling sp_verify_user_email")
         success = await sp_verify_user_email(conn, data.user_id)
 
+        print(f"[VERIFY-ROUTE] Database update result: {success}")
+
         if not success:
+            print(f"[VERIFY-ROUTE] Database update failed - user not found")
             logger.error(f"Failed to verify user {data.user_id} - user not found")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid verification code"
             )
 
+        print(f"[VERIFY-ROUTE] SUCCESS! Returning success response")
         logger.info(f"Email verified successfully for user {data.user_id}")
 
         return VerifyCodeResponse(

@@ -80,17 +80,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const verifyEmail = async (code: string) => {
+    console.log('[VERIFY-FRONTEND] verifyEmail called with code:', code);
+    console.log('[VERIFY-FRONTEND] user?.pendingVerificationId:', user?.pendingVerificationId);
+
     try {
       if (!user?.pendingVerificationId) {
+        console.log('[VERIFY-FRONTEND] ERROR: No pending verification ID');
         throw new Error('No pending verification');
       }
-      await apiService.verifyCode(user.pendingVerificationId, code);
+
+      const userId = user.pendingVerificationId;
+      console.log('[VERIFY-FRONTEND] About to call API with:', { userId, code });
+
+      const response = await apiService.verifyCode(userId, code);
+      console.log('[VERIFY-FRONTEND] API Response:', response);
+
+      console.log('[VERIFY-FRONTEND] Success! Clearing pendingVerificationId');
       // Email verified successfully - clear pendingVerificationId
       setUser({
         ...user,
         pendingVerificationId: undefined,
       });
-    } catch (error) {
+
+      return response;
+    } catch (error: any) {
+      console.log('[VERIFY-FRONTEND] ERROR:', error.message);
+      console.log('[VERIFY-FRONTEND] Error response:', error.response?.data);
+      console.log('[VERIFY-FRONTEND] Error status:', error.response?.status);
       throw error;
     }
   };

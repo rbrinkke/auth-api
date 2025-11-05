@@ -61,10 +61,21 @@ export function LoginPage() {
         addLog('info', '🔄 Switching to VERIFY mode');
         setMode('verify');
       } else if (mode === 'verify') {
+        console.log('[VERIFY-PAGE] Mode is VERIFY');
+        console.log('[VERIFY-PAGE] Code entered:', code);
         addLog('info', '📤 Sending verification code...', `Code: ${code}`);
-        await verifyEmail(code);
-        addLog('success', '✅ Email verified successfully', 'DB updated - you can now login');
-        toast.success('Email verified!');
+
+        try {
+          console.log('[VERIFY-PAGE] About to call verifyEmail()');
+          const result = await verifyEmail(code);
+          console.log('[VERIFY-PAGE] verifyEmail() returned:', result);
+          addLog('success', '✅ Email verified successfully', 'DB updated - you can now login');
+          toast.success('Email verified!');
+          console.log('[VERIFY-PAGE] Success toast shown');
+        } catch (verifyError) {
+          console.log('[VERIFY-PAGE] verifyEmail() threw error:', verifyError);
+          throw verifyError; // Re-throw to be caught by outer catch
+        }
       }
     } catch (err: any) {
       const statusCode = err.response?.status;
