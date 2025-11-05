@@ -160,6 +160,19 @@ class ResetPasswordResponse(BaseModel):
     message: str
 
 
+class VerifyTempCodeRequest(BaseModel):
+    """Request body for verifying temporary code."""
+    user_id: str = Field(..., min_length=1, description="User ID")
+    code: str = Field(..., min_length=6, max_length=6, description="6-digit code")
+    purpose: str = Field(..., description="Purpose: 'verify', 'reset', etc.")
+
+
+class VerifyTempCodeResponse(BaseModel):
+    """Response for successful code verification."""
+    message: str
+    verified: bool = True
+
+
 class MessageResponse(BaseModel):
     """Generic message response."""
     message: str

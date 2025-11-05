@@ -92,9 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userId = user.pendingVerificationId;
       console.log('[VERIFY-FRONTEND] About to call API with:', { userId, code });
 
-      const response = await apiService.verifyCode(userId, code);
-      console.log('[VERIFY-FRONTEND] API Response:', response);
-
+      await apiService.verifyCode(userId, code);
       console.log('[VERIFY-FRONTEND] Success! Clearing pendingVerificationId');
       // Email verified successfully - clear pendingVerificationId
       setUser({

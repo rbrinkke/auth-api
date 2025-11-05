@@ -95,6 +95,10 @@ class ApiService {
     });
   }
 
+  async verifyTempCode(userId: string, code: string, purpose: string) {
+    return this.api.post('/auth/verify-temp-code', { user_id: userId, code, purpose });
+  }
+
   async resendVerification(email: string) {
     return this.api.post('/auth/resend-verification', { email });
   }

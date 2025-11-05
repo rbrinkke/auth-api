@@ -52,9 +52,9 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 }
 
 export function LoginPage() {
-  console.log('[LOGIN-PAGE] Component rendering, mode:', mode);
   const { login, register, verifyEmail, user } = useAuth();
   const [mode, setMode] = useState<AuthMode>('login');
+  console.log('[LOGIN-PAGE] Component rendering, mode:', mode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
@@ -62,6 +62,21 @@ export function LoginPage() {
   const [logs, setLogs] = useState<DebugLog[]>([]);
   const [error, setError] = useState<string>('');
   const [resetUserId, setResetUserId] = useState<string | null>(null);
+
+  // Progressive password reset flow states
+  const [codeSent, setCodeSent] = useState(false);
+  const [codeVerified, setCodeVerified] = useState(false);
+
+  // Reset fields when mode changes
+  const handleModeChange = (newMode: AuthMode) => {
+    setMode(newMode);
+    setPassword('');
+    setCode('');
+    setError('');
+    setCodeSent(false);
+    setCodeVerified(false);
+    setResetUserId(null);
+  };
 
   const addLog = (type: LogType, message: string, details?: string) => {
     const log: DebugLog = {
@@ -72,6 +87,64 @@ export function LoginPage() {
     };
     setLogs((prev) => [...prev, log]);
     console.log(`[${log.time}] ${type.toUpperCase()}: ${message}`, details || '');
+  };
+
+  // Auto-send reset code when email is validated
+  const handleEmailChange = async (value: string) => {
+    setEmail(value);
+    if (mode === 'reset' && value && value.includes('@')) {
+      // If we're in reset mode and email is entered (and looks valid)
+      if (!codeSent && !isLoading) {
+        addLog('info', '📧 Email entered, sending reset code...', `Email: ${value}`);
+        setIsLoading(true);
+        try {
+          // Request password reset - backend returns user_id in response
+          const response = await apiService.requestPasswordReset({ email: value });
+          const userId = response.data.user_id;
+
+          if (userId) {
+            setResetUserId(userId);
+            addLog('success', '✅ Reset code sent', 'Check your email for the reset code');
+            toast.success('Reset code sent to your email');
+          } else {
+            // Generic message for security (don't reveal if email exists)
+            addLog('info', '📧 Reset code sent (if account exists)', 'Check your email');
+          }
+
+          setCodeSent(true);
+        } catch (err: any) {
+          addLog('error', '❌ Failed to send reset code', err.message);
+          setError('Failed to send reset code. Please try again.');
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    }
+    if (error) setError('');
+  };
+
+  // Auto-verify code when entered
+  const handleCodeChange = async (value: string) => {
+    setCode(value);
+    if (mode === 'reset' && codeSent && value.length === 6 && !codeVerified && !isLoading && resetUserId) {
+      // If code is complete and we're waiting for verification
+      addLog('info', '🔐 Code entered, verifying...', `Code: ${value}`);
+      setIsLoading(true);
+      try {
+        // Verify the reset code using generic temp code verification
+        await apiService.verifyTempCode(resetUserId, value, 'reset');
+
+        setCodeVerified(true);
+        addLog('success', '✅ Code verified', 'Password field unlocked - enter your new password');
+        toast.success('Code verified! Enter your new password to reset');
+      } catch (err: any) {
+        addLog('error', '❌ Invalid code', err.message);
+        setError('Invalid or expired code. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    if (error) setError('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -95,61 +168,37 @@ export function LoginPage() {
         addLog('info', '🔄 Switching to VERIFY mode for email verification');
         setMode('verify');
       } else if (mode === 'reset') {
-        if (!password && !code) {
-          // Step 1: Request reset code
-          addLog('info', '📤 Requesting password reset code...', `Email: ${email}`);
-          const response = await apiService.requestPasswordReset({ email });
-          addLog('success', '✅ Reset code sent', 'Check your email for the reset code');
-          toast.success('Reset code sent to your email');
-          // Stay in reset mode, now show fields for code + new password
-        } else if (password && !code) {
-          // Step 2: Need code
-          addLog('info', '⚠️ Please enter the reset code from your email');
-          setError('Please enter the reset code from your email');
+        // Reset mode now handled by progressive flow (auto-send, auto-verify)
+        // Only submit here if code is verified and password is entered
+        if (!codeVerified) {
+          addLog('info', '⚠️ Please verify your code first');
+          setError('Please verify your code first');
           setIsLoading(false);
           return;
-        } else if (code && !password) {
-          // Step 3: Need new password
+        }
+        if (!password) {
           addLog('info', '⚠️ Please enter your new password');
           setError('Please enter your new password');
           setIsLoading(false);
           return;
-        } else {
-          // Step 4: Both code and password entered - get user_id from backend
-          addLog('info', '📤 Getting user ID for password reset...');
-          // First get user by email to get user_id
-          const getUserResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/auth/user-by-email`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
-          });
-
-          if (!getUserResponse.ok) {
-            throw new Error('Failed to get user ID');
-          }
-
-          const userData = await getUserResponse.json();
-          const userId = userData.user_id;
-
-          if (!userId) {
-            throw new Error('User not found');
-          }
-
-          // Now reset password with user_id
-          addLog('info', '📤 Resetting password with code...');
-          await apiService.resetPassword({
-            user_id: userId,
-            code,
-            new_password: password
-          });
-
-          addLog('success', '✅ Password reset successful', 'You can now login with your new password');
-          toast.success('Password reset successful!');
-          addLog('info', '🔄 Switching to LOGIN mode');
-          setMode('login');
-          setPassword('');
-          setCode('');
         }
+
+        // Code verified and password entered - reset password (consumes the verified code)
+        addLog('info', '🔐 Consuming verified code and resetting password...');
+        await apiService.resetPassword({
+          user_id: resetUserId,
+          code,
+          new_password: password
+        });
+
+        addLog('success', '✅ Password reset successful', 'You can now login with your new password');
+        toast.success('Password reset successful!');
+        addLog('info', '🔄 Switching to LOGIN mode');
+        setMode('login');
+        setPassword('');
+        setCode('');
+        setCodeSent(false);
+        setCodeVerified(false);
       } else if (mode === 'verify') {
         console.log('[VERIFY-PAGE] Mode is VERIFY');
         console.log('[VERIFY-PAGE] Code entered:', code);
@@ -249,12 +298,9 @@ export function LoginPage() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (error) setError('');
-                }}
+                onChange={(e) => handleEmailChange(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="you@example.com"
+                placeholder={mode === 'reset' && !codeSent ? 'Enter email to receive reset code' : 'you@example.com'}
                 required
               />
             </div>
@@ -279,8 +325,8 @@ export function LoginPage() {
               </div>
             )}
 
-            {/* In reset mode, show password field ONLY if code is entered */}
-            {mode === 'reset' && code && (
+            {/* In reset mode, show password field ONLY if code is verified */}
+            {mode === 'reset' && codeVerified && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   New password
@@ -300,22 +346,23 @@ export function LoginPage() {
               </div>
             )}
 
-            {(mode === 'verify' || mode === 'reset') && (
+            {(mode === 'verify' || (mode === 'reset' && codeSent)) && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   {mode === 'reset' ? 'Reset code' : 'Verification code'}
+                  {mode === 'reset' && codeSent && !codeVerified && (
+                    <span className="text-sm text-gray-500 ml-2">(sent to your email)</span>
+                  )}
                 </label>
                 <input
                   type="text"
                   value={code}
-                  onChange={(e) => {
-                    setCode(e.target.value.replace(/\D/g, '').slice(0, 6));
-                    if (error) setError('');
-                  }}
+                  onChange={(e) => handleCodeChange(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-2xl font-mono tracking-widest"
                   placeholder="000000"
                   maxLength={6}
                   required
+                  disabled={mode === 'reset' && codeVerified}
                 />
               </div>
             )}
@@ -347,13 +394,30 @@ export function LoginPage() {
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-blue-600 text-white py-2.5 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-            >
-              {isLoading ? 'Please wait...' : getButtonText()}
-            </button>
+            {/* Show button in all modes except reset, or in reset mode only if codeVerified and password */}
+            {(mode !== 'reset' || (mode === 'reset' && codeVerified && password)) && (
+              <button
+                type="submit"
+                disabled={isLoading || (mode === 'reset' && !password)}
+                className="w-full bg-blue-600 text-white py-2.5 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              >
+                {isLoading ? 'Please wait...' : getButtonText()}
+              </button>
+            )}
+
+            {/* In reset mode, show instruction when waiting for code */}
+            {mode === 'reset' && !codeSent && (
+              <div className="text-center text-sm text-gray-500 py-2">
+                Enter your email to receive a reset code
+              </div>
+            )}
+
+            {/* In reset mode, show instruction when waiting for password */}
+            {mode === 'reset' && codeVerified && !password && (
+              <div className="text-center text-sm text-gray-500 py-2">
+                Enter your new password below
+              </div>
+            )}
           </form>
 
           <div className="mt-6 space-y-2">
@@ -361,9 +425,8 @@ export function LoginPage() {
               <>
                 <button
                   onClick={() => {
-                    setError('');
                     addLog('info', '🔄 Switching to REGISTER mode');
-                    setMode('register');
+                    handleModeChange('register');
                   }}
                   className="w-full text-sm text-blue-600 hover:text-blue-700 font-medium"
                 >
@@ -371,9 +434,8 @@ export function LoginPage() {
                 </button>
                 <button
                   onClick={() => {
-                    setError('');
                     addLog('info', '🔄 Switching to RESET mode');
-                    setMode('reset');
+                    handleModeChange('reset');
                   }}
                   className="w-full text-sm text-gray-600 hover:text-gray-700"
                 >
@@ -385,9 +447,8 @@ export function LoginPage() {
             {mode === 'register' && (
               <button
                 onClick={() => {
-                  setError('');
                   addLog('info', '🔄 Switching to LOGIN mode');
-                  setMode('login');
+                  handleModeChange('login');
                 }}
                 className="w-full text-sm text-gray-600 hover:text-gray-700"
               >
@@ -398,9 +459,8 @@ export function LoginPage() {
             {(mode === 'reset' || mode === 'verify') && (
               <button
                 onClick={() => {
-                  setError('');
                   addLog('info', '🔄 Switching to LOGIN mode');
-                  setMode('login');
+                  handleModeChange('login');
                 }}
                 className="w-full text-sm text-gray-600 hover:text-gray-700"
               >

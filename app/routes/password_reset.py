@@ -22,7 +22,9 @@ from app.schemas.auth import (
     RequestPasswordResetRequest,
     RequestPasswordResetResponse,
     ResetPasswordRequest,
-    ResetPasswordResponse
+    ResetPasswordResponse,
+    VerifyTempCodeRequest,
+    VerifyTempCodeResponse
 )
 from app.services.email_service import get_email_service, EmailService
 from app.services.password_validation_service import get_password_validation_service, PasswordValidationService
@@ -207,4 +209,79 @@ async def reset_password(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Password reset failed. Please try again later."
+        )
+
+
+@router.post(
+    "/verify-temp-code",
+    response_model=VerifyTempCodeResponse,
+    summary="Verify temporary code",
+    description="""
+    Verify a temporary code (email verification, password reset, etc.).
+
+    This is a generic endpoint that verifies codes without modifying the database.
+    It can be used for both email verification and password reset flows.
+
+    The purpose parameter determines which code to verify ('verify', 'reset', etc.).
+    """
+)
+async def verify_temp_code(
+    data: VerifyTempCodeRequest,
+    redis_client: RedisClient = Depends(get_redis),
+    email_svc: EmailService = Depends(get_email_service)
+):
+    """
+    Verify temporary code without database modification.
+
+    This is a pure verification function that:
+    1. Verifies the code using TwoFactorService
+    2. Tracks failed attempts
+    3. Returns verification status
+    4. Does NOT modify the database
+
+    Can be used for email verification, password reset, etc.
+    """
+    try:
+        # Initialize TwoFactorService
+        twofa_svc = TwoFactorService(redis_client, email_svc)
+
+        # Verify the code (consume=False means don't consume yet)
+        is_valid = await twofa_svc.verify_temp_code(
+            user_id=data.user_id,
+            code=data.code,
+            purpose=data.purpose,
+            consume=False
+        )
+
+        if not is_valid:
+            # Increment failed attempts
+            await twofa_svc.increment_failed_attempt(data.user_id, data.purpose)
+
+            # Check if locked out
+            if await twofa_svc.is_locked_out(data.user_id, data.purpose):
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail="Too many failed attempts. Please try again later."
+                )
+
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or expired code"
+            )
+
+        # Reset failed attempts on success
+        await twofa_svc.reset_failed_attempts(data.user_id, data.purpose)
+
+        return VerifyTempCodeResponse(
+            message="Code verified successfully",
+            verified=True
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error verifying temp code: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to verify code. Please try again later."
         )
