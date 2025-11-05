@@ -99,13 +99,33 @@ class TestRegistrationService:
 
     @pytest.mark.unit
     @pytest.mark.async
-    async def test_registration_duplicate_email_fails(
+    @pytest.mark.parametrize("error,expected_exception,error_match", [
+        (
+            asyncpg.UniqueViolationError("duplicate key"),
+            UserAlreadyExistsError,
+            "Email already registered"
+        ),
+        (
+            asyncpg.PostgreSQLError("connection lost"),
+            RegistrationServiceError,
+            None  # Any RegistrationServiceError is fine
+        ),
+        (
+            asyncpg.ConnectionFailureError("timeout"),
+            RegistrationServiceError,
+            None  # Any RegistrationServiceError is fine
+        ),
+    ])
+    async def test_registration_error_scenarios(
         self,
+        error,
+        expected_exception,
+        error_match,
         mock_db_connection,
         mock_redis_client,
         mock_password_validation_service
     ):
-        """Test that duplicate email is rejected."""
+        """Test various error scenarios using parametrization."""
         # Arrange
         service = RegistrationService(
             conn=mock_db_connection,
@@ -113,15 +133,13 @@ class TestRegistrationService:
             password_validation_svc=mock_password_validation_service
         )
 
-        # Mock unique violation error
-        mock_db_connection.fetchrow = AsyncMock(
-            side_effect=asyncpg.UniqueViolationError("duplicate key")
-        )
+        # Mock database error
+        mock_db_connection.fetchrow = AsyncMock(side_effect=error)
 
         # Act & Assert
-        with pytest.raises(UserAlreadyExistsError, match="Email already registered"):
+        with pytest.raises(expected_exception, match=error_match or ".*"):
             await service.register_user(
-                email="existing@example.com",
+                email="test@example.com",
                 password="StrongPassword123!"
             )
 
@@ -214,13 +232,21 @@ class TestRegistrationService:
 
     @pytest.mark.unit
     @pytest.mark.async
+    @pytest.mark.parametrize("input_email,expected_stored_email", [
+        ("TEST@EXAMPLE.COM", "test@example.com"),  # Uppercase
+        ("Test@Example.Com", "test@example.com"),  # Mixed case
+        ("user@DOMAIN.COM", "user@domain.com"),  # Domain uppercase
+        ("USER@DOMAIN.COM", "user@domain.com"),  # All uppercase
+    ])
     async def test_email_normalized_to_lowercase(
         self,
+        input_email,
+        expected_stored_email,
         mock_db_connection,
         mock_redis_client,
         mock_password_validation_service
     ):
-        """Test that email is normalized to lowercase."""
+        """Test that email is normalized to lowercase using parametrization."""
         # Arrange
         service = RegistrationService(
             conn=mock_db_connection,
@@ -230,7 +256,7 @@ class TestRegistrationService:
 
         mock_user = UserRecord(
             id="123e4567-e89b-12d3-a456-426614174000",
-            email="TEST@EXAMPLE.COM",
+            email=expected_stored_email,
             is_verified=False,
             is_active=True,
             created_at="2024-01-01T00:00:00"
@@ -240,7 +266,7 @@ class TestRegistrationService:
 
         # Act
         result = await service.register_user(
-            email="TEST@EXAMPLE.COM",
+            email=input_email,
             password="StrongPassword123!"
         )
 
@@ -248,7 +274,7 @@ class TestRegistrationService:
         mock_db_connection.fetchrow.assert_called_once()
         call_args = mock_db_connection.fetchrow.call_args
         # The email should be lowercased before database call
-        assert call_args[0][0].lower() == "test@example.com"
+        assert call_args[0][0] == expected_stored_email
 
     @pytest.mark.unit
     @pytest.mark.async

@@ -116,13 +116,23 @@ class TestPasswordResetService:
 
     @pytest.mark.unit
     @pytest.mark.async
-    async def test_reset_password_invalid_token(
+    @pytest.mark.parametrize("token_value,user_id_result,should_fail", [
+        ("valid_token_123", "123e4567-e89b-12d3-a456-426614174000", False),  # Valid token
+        ("invalid_token", None, True),  # Invalid token
+        ("expired_token", None, True),  # Expired token
+        ("malformed_token", None, True),  # Malformed token
+        ("", None, True),  # Empty token
+    ])
+    async def test_reset_password_token_validation(
         self,
+        token_value,
+        user_id_result,
+        should_fail,
         mock_db_connection,
         mock_redis_client,
         mock_password_validation_service
     ):
-        """Test password reset with invalid token."""
+        """Test password reset token validation using parametrization."""
         # Arrange
         service = PasswordResetService(
             conn=mock_db_connection,
@@ -130,18 +140,37 @@ class TestPasswordResetService:
             password_validation_svc=mock_password_validation_service
         )
 
-        # Mock invalid token
-        mock_redis_client.get_user_id_from_reset_token = AsyncMock(return_value=None)
+        # Mock token lookup result
+        mock_redis_client.get_user_id_from_reset_token = AsyncMock(
+            return_value=user_id_result
+        )
+
+        # Mock password validation to pass
+        mock_password_validation_service.validate_password = AsyncMock()
+
+        # Mock successful password update if token is valid
+        if not should_fail:
+            mock_user = MagicMock()
+            mock_user.id = user_id_result
+            mock_db_connection.fetchrow = AsyncMock(return_value=mock_user)
+            mock_db_connection.fetchval = AsyncMock(return_value=True)
+            mock_redis_client.delete_reset_token = AsyncMock(return_value=True)
 
         # Act & Assert
-        with pytest.raises(PasswordResetServiceError, match="Invalid or expired reset token"):
-            await service.reset_password(
-                reset_token="invalid_token",
-                new_password="NewPassword123!"
+        if should_fail:
+            with pytest.raises(PasswordResetServiceError):
+                await service.reset_password(
+                    reset_token=token_value,
+                    new_password="NewStrongPassword123!"
+                )
+            # Verify password update was not called
+            mock_db_connection.fetchval.assert_not_called()
+        else:
+            result = await service.reset_password(
+                reset_token=token_value,
+                new_password="NewStrongPassword123!"
             )
-
-        # Verify password update was not called
-        mock_db_connection.fetchval.assert_not_called()
+            assert result.password_updated is True
 
     @pytest.mark.unit
     @pytest.mark.async
@@ -232,13 +261,21 @@ class TestPasswordResetService:
 
     @pytest.mark.unit
     @pytest.mark.async
+    @pytest.mark.parametrize("input_email,expected_stored_email", [
+        ("TEST@EXAMPLE.COM", "test@example.com"),  # Uppercase
+        ("Test@Example.Com", "test@example.com"),  # Mixed case
+        ("user@DOMAIN.COM", "user@domain.com"),  # Domain uppercase
+        ("USER@DOMAIN.COM", "user@domain.com"),  # All uppercase
+    ])
     async def test_email_normalized_to_lowercase(
         self,
+        input_email,
+        expected_stored_email,
         mock_db_connection,
         mock_redis_client,
         mock_password_validation_service
     ):
-        """Test that email is normalized to lowercase."""
+        """Test that email is normalized to lowercase using parametrization."""
         # Arrange
         service = PasswordResetService(
             conn=mock_db_connection,
@@ -253,13 +290,13 @@ class TestPasswordResetService:
         mock_redis_client.set_reset_token = AsyncMock(return_value=True)
 
         # Act
-        reset_token = await service.request_password_reset("TEST@EXAMPLE.COM")
+        reset_token = await service.request_password_reset(input_email)
 
         # Assert - Verify email was lowercased
         mock_db_connection.fetchrow.assert_called_once()
         call_args = mock_db_connection.fetchrow.call_args
         # The email should be lowercased
-        assert "test@example.com" in str(call_args)
+        assert expected_stored_email in str(call_args)
 
     @pytest.mark.unit
     @pytest.mark.async

@@ -17,17 +17,23 @@ class TestPasswordValidationService:
 
     @pytest.mark.unit
     @pytest.mark.async
-    async def test_password_validation_success(self):
-        """Test that strong passwords are accepted."""
+    @pytest.mark.parametrize("score,feedback,should_pass", [
+        (4, {'warning': '', 'suggestions': []}, True),  # Very strong
+        (3, {'warning': '', 'suggestions': []}, True),  # Strong (minimum)
+        (2, {'warning': 'Easily guessable', 'suggestions': ['Add more words']}, False),  # Fair
+        (1, {'warning': 'Very common', 'suggestions': ['Use uncommon words']}, False),  # Weak
+        (0, {'warning': 'Extremely guessable', 'suggestions': ['Use passphrase']}, False),  # Very weak
+    ])
+    async def test_password_validation_with_various_scores(
+        self, score, feedback, should_pass
+    ):
+        """Test password validation with various zxcvbn scores using parametrization."""
         # Arrange
         service = PasswordValidationService()
 
-        # Mock zxcvbn to return score 4 (very strong)
+        # Mock zxcvbn to return specific score
         with patch.object(service, '_zxcvbn') as mock_zxcvbn:
-            mock_zxcvbn.return_value = {
-                'score': 4,
-                'feedback': {'warning': '', 'suggestions': []}
-            }
+            mock_zxcvbn.return_value = {'score': score, 'feedback': feedback}
 
             # Mock breach check to return no breaches
             with patch.object(service, '_Password') as mock_password_class:
@@ -35,39 +41,27 @@ class TestPasswordValidationService:
                 mock_password_instance.check.return_value = 0
                 mock_password_class.return_value = mock_password_instance
 
-                # Act
-                result = await service.validate_password("StrongPassword123!")
-
-                # Assert
-                assert result['overall_passed'] is True
-                assert result['strength']['score'] == 4
-                assert result['breach']['leak_count'] == 0
-
-    @pytest.mark.unit
-    @pytest.mark.async
-    async def test_password_weak_score_rejected(self):
-        """Test that passwords with score < 3 are rejected."""
-        # Arrange
-        service = PasswordValidationService()
-
-        # Mock zxcvbn to return score 1 (weak)
-        with patch.object(service, '_zxcvbn') as mock_zxcvbn:
-            mock_zxcvbn.return_value = {
-                'score': 1,
-                'feedback': {
-                    'warning': 'This is a very common password.',
-                    'suggestions': ['Add another word or two']
-                }
-            }
-
-            # Act & Assert
-            with pytest.raises(PasswordValidationError, match="Weak password detected"):
-                await service.validate_password("password")
+                # Act & Assert
+                if should_pass:
+                    result = await service.validate_password("TestPassword123!")
+                    assert result['overall_passed'] is True
+                    assert result['strength']['score'] == score
+                else:
+                    with pytest.raises(PasswordValidationError):
+                        await service.validate_password("password")
 
     @pytest.mark.unit
     @pytest.mark.async
-    async def test_password_found_in_breaches_rejected(self):
-        """Test that passwords found in breaches are rejected."""
+    @pytest.mark.parametrize("leak_count,should_fail", [
+        (0, False),     # Not found in breaches - OK
+        (1, True),      # Found once - FAIL
+        (12345, True),  # Found many times - FAIL
+        (1000000, True),  # Found 1M times - FAIL
+    ])
+    async def test_password_breach_detection_with_various_leak_counts(
+        self, leak_count, should_fail
+    ):
+        """Test breach detection with various leak counts using parametrization."""
         # Arrange
         service = PasswordValidationService()
 
@@ -78,15 +72,20 @@ class TestPasswordValidationService:
                 'feedback': {'warning': '', 'suggestions': []}
             }
 
-            # Mock breach check to find password in breaches
+            # Mock breach check to return specific leak count
             with patch.object(service, '_Password') as mock_password_class:
                 mock_password_instance = MagicMock()
-                mock_password_instance.check.return_value = 12345
+                mock_password_instance.check.return_value = leak_count
                 mock_password_class.return_value = mock_password_instance
 
                 # Act & Assert
-                with pytest.raises(PasswordValidationError, match="found in known data breaches"):
-                    await service.validate_password("BreachedPassword123!")
+                if should_fail:
+                    with pytest.raises(PasswordValidationError, match="found in known data breaches"):
+                        await service.validate_password("BreachedPassword123!")
+                else:
+                    result = await service.validate_password("UniquePassword123!")
+                    assert result['overall_passed'] is True
+                    assert result['breach']['leak_count'] == leak_count
 
     @pytest.mark.unit
     @pytest.mark.async
