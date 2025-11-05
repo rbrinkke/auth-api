@@ -41,10 +41,10 @@ limiter = Limiter(key_func=get_remote_address)
     summary="Register a new user",
     description="""
     Register a new user account.
-    
+
     **Important:** Users must verify their email before they can login.
     A verification email will be sent to the provided address.
-    
+
     **Rate limit:** 3 requests per hour per IP
     """
 )
@@ -64,20 +64,19 @@ async def register(
     Uses Service Layer pattern:
     - Pydantic (data/schema validation only)
     - RegistrationService (business logic)
-    - EmailService (sending emails)
+    - BackgroundTasks (sending emails asynchronously)
 
     Flow:
     1. Initialize RegistrationService with dependencies
-    2. Call service to handle business logic
-    3. Send email via background task
-    4. Return response
+    2. Call service to handle business logic (user creation, token generation)
+    3. Send email via background task (non-blocking)
+    4. Return immediate response
     """
     try:
         # Initialize service with dependencies (Service Layer pattern)
         registration_service = RegistrationService(
             conn=conn,
             redis=redis,
-            email_svc=email_svc,
             password_validation_svc=password_validation_svc
         )
 
@@ -87,13 +86,16 @@ async def register(
             password=data.password
         )
 
-        # Send verification email in background
-        # (already sent by service, but kept here for example)
-        if result.email_sent:
-            logger.info(f"Verification email queued for {result.user.email}")
+        # Send verification email in background (non-blocking)
+        background_tasks.add_task(
+            email_svc.send_verification_email,
+            result.user.email,
+            result.verification_token
+        )
+        logger.info(f"Verification email queued for background sending: {result.user.email}")
 
         return RegisterResponse(
-            message=f"Verification email sent to {result.user.email}. Please check your inbox.",
+            message=f"User registered successfully. Verification email will be sent to {result.user.email}.",
             email=result.user.email
         )
 

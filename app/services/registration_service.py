@@ -5,7 +5,8 @@ This service encapsulates all business logic for user registration:
 - Password validation
 - User creation
 - Token generation
-- Email sending
+
+Email sending is handled by the route via BackgroundTasks for better performance.
 
 Separates business logic from HTTP handling for better architecture and testability.
 """
@@ -18,7 +19,6 @@ from app.core.redis_client import RedisClient
 from app.core.security import hash_password
 from app.core.tokens import generate_verification_token
 from app.db.procedures import sp_create_user
-from app.services.email_service import EmailService
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,6 @@ class RegistrationResult(NamedTuple):
     """Result of registration operation."""
     user: UserRecord
     verification_token: str
-    email_sent: bool
 
 
 class RegistrationServiceError(Exception):
@@ -67,7 +66,6 @@ class RegistrationService:
         self,
         conn: asyncpg.Connection,
         redis: RedisClient,
-        email_svc: EmailService,
         password_validation_svc
     ):
         """
@@ -76,12 +74,10 @@ class RegistrationService:
         Args:
             conn: Database connection
             redis: Redis client for token storage
-            email_svc: Email service for sending verification emails
             password_validation_svc: Service for password validation
         """
         self.conn = conn
         self.redis = redis
-        self.email_svc = email_svc
         self.password_validation_svc = password_validation_svc
 
     async def register_user(
@@ -98,7 +94,7 @@ class RegistrationService:
         3. Create user in database
         4. Generate verification token
         5. Store token in Redis
-        6. Send verification email
+        6. Email sending is handled by the route via BackgroundTasks
 
         Args:
             email: User's email address
@@ -135,13 +131,6 @@ class RegistrationService:
             logger.info(f"Storing verification token for user {user.id}")
             await self.redis.set_verification_token(verification_token, user.id)
 
-            # Step 6: Send verification email (async, don't block)
-            logger.info(f"Sending verification email to {email}")
-            email_sent = await self.email_svc.send_verification_email(
-                user.email,
-                verification_token
-            )
-
             # Convert to namedtuple for consistency
             user_record = UserRecord(
                 id=str(user.id),
@@ -153,8 +142,7 @@ class RegistrationService:
 
             result = RegistrationResult(
                 user=user_record,
-                verification_token=verification_token,
-                email_sent=email_sent
+                verification_token=verification_token
             )
 
             logger.info(f"Registration successful: {email} (id: {user.id})")
@@ -180,7 +168,6 @@ class MockRegistrationService(RegistrationService):
         """Initialize mock service."""
         self.users = []  # In-memory storage
         self.verification_tokens = {}  # In-memory token storage
-        self.email_svc = None
 
     async def register_user(self, email: str, password: str) -> RegistrationResult:
         """Mock registration - no database or email operations."""
@@ -205,6 +192,5 @@ class MockRegistrationService(RegistrationService):
         logger.info(f"Mock registration successful: {email}")
         return RegistrationResult(
             user=user,
-            verification_token=token,
-            email_sent=True  # Mock says email sent
+            verification_token=token
         )
