@@ -65,19 +65,15 @@ export function LoginPage() {
         console.log('[VERIFY-PAGE] Code entered:', code);
         addLog('info', '📤 Sending verification code...', `Code: ${code}`);
 
-        try {
-          console.log('[VERIFY-PAGE] About to call verifyEmail()');
-          const result = await verifyEmail(code);
-          console.log('[VERIFY-PAGE] verifyEmail() returned:', result);
-          addLog('success', '✅ Email verified successfully', 'DB updated - you can now login');
-          toast.success('Email verified!');
-          console.log('[VERIFY-PAGE] Success toast shown');
-        } catch (verifyError) {
-          console.log('[VERIFY-PAGE] verifyEmail() threw error:', verifyError);
-          throw verifyError; // Re-throw to be caught by outer catch
-        }
+        console.log('[VERIFY-PAGE] About to call verifyEmail()');
+        const result = await verifyEmail(code);
+        console.log('[VERIFY-PAGE] verifyEmail() returned:', result);
+        addLog('success', '✅ Email verified successfully', 'DB updated - you can now login');
+        toast.success('Email verified!');
+        console.log('[VERIFY-PAGE] Success toast shown');
       }
     } catch (err: any) {
+      console.log('[VERIFY-PAGE] Outer catch - handling error:', err);
       const statusCode = err.response?.status;
       let errorMsg = err.message || 'Something went wrong';
 
@@ -86,6 +82,9 @@ export function LoginPage() {
         errorMsg = 'Too many requests! Please wait before trying again.';
       } else if (err.response?.data?.detail) {
         errorMsg = err.response.data.detail;
+      } else if (statusCode === 400 && mode === 'verify') {
+        // Specific handling for wrong verification code
+        errorMsg = 'Invalid or expired verification code. Please try again.';
       }
 
       setError(errorMsg);
