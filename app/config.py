@@ -52,7 +52,7 @@ class Settings(BaseSettings):
         return v
     
     # Email Service
-    email_service_url: str = Field(default="http://email-service:8000")
+    email_service_url: str = Field(default="")
     email_service_timeout: int = Field(default=10)
     
     # Frontend URL (for verification links)

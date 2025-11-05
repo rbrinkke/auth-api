@@ -87,6 +87,10 @@ services:
     container_name: dummy-email-service
     ports:
       - "9000:9000"
+    environment:
+      - SMTP_HOST=mailhog
+      - SMTP_PORT=1025
+      - FROM_ADDRESS=noreply@activity-app.local
     networks:
       - activity-network
     restart: unless-stopped
@@ -107,6 +111,29 @@ services:
     networks:
       - activity-network
     restart: unless-stopped
+
+  # ========== Frontend (React/Next.js) ==========
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: activity-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://auth-api:8000
+    depends_on:
+      auth-api:
+        condition: service_healthy
+    networks:
+      - activity-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 networks:
   activity-network:

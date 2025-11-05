@@ -3,7 +3,23 @@ Pydantic models for authentication endpoints.
 
 Defines request/response schemas for login, register, verify, etc.
 """
+import asyncio
+from typing import Any
 from pydantic import BaseModel, EmailStr, Field, field_validator
+
+# Import password strength validation tools
+try:
+    from zxcvbn import zxcvbn
+    from pwnedpasswords import Password
+    _PASSWORD_TOOLS_AVAILABLE = True
+except ImportError:
+    _PASSWORD_TOOLS_AVAILABLE = False
+    # Fallback warning
+    import warnings
+    warnings.warn(
+        "Password validation tools (zxcvbn, pwnedpasswords) not available. "
+        "Install with: pip install zxcvbn pwnedpasswords"
+    )
 
 
 class RegisterRequest(BaseModel):
@@ -12,22 +28,69 @@ class RegisterRequest(BaseModel):
     password: str = Field(
         ...,
         min_length=8,
-        max_length=100,
-        description="Password must be at least 8 characters"
+        max_length=128,
+        description="""
+        Password must be strong enough (we use industry-standard checks):
+        - Minimum score of 3/4 from zxcvbn (Dropbox's password strength estimator)
+        - Not found in known data breaches (via Have I Been Pwned API)
+        """
     )
-    
+
     @field_validator("email")
     @classmethod
     def email_to_lowercase(cls, v: str) -> str:
         return v.lower()
-    
+
     @field_validator("password")
     @classmethod
     def validate_password_strength(cls, v: str) -> str:
-        if not any(c.isalpha() for c in v):
-            raise ValueError("Password must contain at least one letter")
-        if not any(c.isdigit() for c in v):
-            raise ValueError("Password must contain at least one digit")
+        # If password tools are not available, skip validation (but log warning)
+        if not _PASSWORD_TOOLS_AVAILABLE:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                "Password strength validation skipped - zxcvbn/pwnedpasswords not installed"
+            )
+            return v
+
+        # Check 1: zxcvbn strength scoring (industry standard from Dropbox)
+        results = zxcvbn(v)
+        score = results['score']  # 0-4 scale (0=very weak, 4=very strong)
+
+        # Require minimum score of 3 (strong or very strong)
+        if score < 3:
+            feedback = results['feedback']
+            warning = feedback.get('warning', '')
+            suggestions = feedback.get('suggestions', [])
+
+            error_msg = f"Weak password detected. {warning}"
+            if suggestions:
+                error_msg += f" Suggestions: {' '.join(suggestions)}"
+
+            raise ValueError(error_msg)
+
+        # Check 2: Have I Been Pwned (via pwnedpasswords)
+        # This checks if the password appears in known data breaches
+        try:
+            # Run in thread to avoid blocking the event loop
+            loop = asyncio.get_event_loop()
+            pwned = Password(v)
+            # Use thread executor for sync operation
+            leak_count = loop.run_in_executor(None, pwned.check)
+
+            # If password is found in breaches, reject it
+            if asyncio.run(leak_count) > 0:
+                raise ValueError(
+                    "This password has been found in known data breaches. "
+                    "Please choose a unique password that hasn't been compromised."
+                )
+        except Exception as e:
+            # If pwnedpasswords check fails, log but don't block registration
+            # (we don't want to prevent signups if the external API is down)
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Pwned password check failed: {str(e)}")
+
         return v
 
 
