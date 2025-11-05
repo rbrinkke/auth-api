@@ -21,7 +21,7 @@ class TestRegistrationService:
     """Test cases for RegistrationService."""
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_successful_registration(
         self,
         mock_db_connection,
@@ -67,7 +67,7 @@ class TestRegistrationService:
         mock_redis_client.set_verification_token.assert_called_once()
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_registration_weak_password_fails(
         self,
         mock_db_connection,
@@ -98,7 +98,7 @@ class TestRegistrationService:
         mock_db_connection.fetchrow.assert_not_called()
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     @pytest.mark.parametrize("error,expected_exception,error_match", [
         (
             asyncpg.UniqueViolationError("duplicate key"),
@@ -144,7 +144,7 @@ class TestRegistrationService:
             )
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_registration_database_error_handling(
         self,
         mock_db_connection,
@@ -172,7 +172,7 @@ class TestRegistrationService:
             )
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_registration_redis_error_handling(
         self,
         mock_db_connection,
@@ -210,7 +210,7 @@ class TestRegistrationService:
             )
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_service_initialization(
         self,
         mock_db_connection,
@@ -231,7 +231,7 @@ class TestRegistrationService:
         assert service.password_validation_svc == mock_password_validation_service
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     @pytest.mark.parametrize("input_email,expected_stored_email", [
         ("TEST@EXAMPLE.COM", "test@example.com"),  # Uppercase
         ("Test@Example.Com", "test@example.com"),  # Mixed case
@@ -277,7 +277,7 @@ class TestRegistrationService:
         assert call_args[0][0] == expected_stored_email
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_verification_token_generation(
         self,
         mock_db_connection,
@@ -318,7 +318,7 @@ class TestRegistrationService:
         assert call_args[0][1] == mock_user.id  # user_id is second arg
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_concurrent_registrations_handled(
         self,
         mock_db_connection,

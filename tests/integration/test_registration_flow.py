@@ -12,7 +12,7 @@ from app.services.password_validation_service import PasswordValidationService
 
 
 @pytest.mark.integration
-@pytest.mark.async
+@pytest.mark.asyncio
 class TestRegistrationIntegration:
     """Integration tests for registration flow."""
 

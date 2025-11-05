@@ -18,7 +18,7 @@ class TestPasswordResetService:
     """Test cases for PasswordResetService."""
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_request_password_reset_existing_user(
         self,
         mock_db_connection,
@@ -49,7 +49,7 @@ class TestPasswordResetService:
         mock_redis_client.set_reset_token.assert_called_once()
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_request_password_reset_nonexistent_user(
         self,
         mock_db_connection,
@@ -75,7 +75,7 @@ class TestPasswordResetService:
         mock_redis_client.set_reset_token.assert_not_called()
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_reset_password_success(
         self,
         mock_db_connection,
@@ -115,7 +115,7 @@ class TestPasswordResetService:
         mock_redis_client.delete_reset_token.assert_called_once()
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     @pytest.mark.parametrize("token_value,user_id_result,should_fail", [
         ("valid_token_123", "123e4567-e89b-12d3-a456-426614174000", False),  # Valid token
         ("invalid_token", None, True),  # Invalid token
@@ -173,7 +173,7 @@ class TestPasswordResetService:
             assert result.password_updated is True
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_reset_password_weak_password_rejected(
         self,
         mock_db_connection,
@@ -209,7 +209,7 @@ class TestPasswordResetService:
         mock_db_connection.fetchval.assert_not_called()
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_reset_password_user_not_found(
         self,
         mock_db_connection,
@@ -239,7 +239,7 @@ class TestPasswordResetService:
             )
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_service_initialization(
         self,
         mock_db_connection,
@@ -260,7 +260,7 @@ class TestPasswordResetService:
         assert service.password_validation_svc == mock_password_validation_service
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     @pytest.mark.parametrize("input_email,expected_stored_email", [
         ("TEST@EXAMPLE.COM", "test@example.com"),  # Uppercase
         ("Test@Example.Com", "test@example.com"),  # Mixed case
@@ -299,7 +299,7 @@ class TestPasswordResetService:
         assert expected_stored_email in str(call_args)
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_reset_token_stored_with_ttl(
         self,
         mock_db_connection,
@@ -329,7 +329,7 @@ class TestPasswordResetService:
         assert call_args[0][1] == mock_user.id  # user_id is second arg
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_reset_token_single_use(
         self,
         mock_db_connection,
@@ -364,7 +364,7 @@ class TestPasswordResetService:
         mock_redis_client.delete_reset_token.assert_called_once()
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_database_error_handling(
         self,
         mock_db_connection,
@@ -389,7 +389,7 @@ class TestPasswordResetService:
             await service.request_password_reset("test@example.com")
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_redis_error_handling(
         self,
         mock_db_connection,

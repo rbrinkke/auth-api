@@ -14,7 +14,7 @@ from app.services.password_validation_service import (
 
 
 @pytest.mark.unit
-@pytest.mark.async
+@pytest.mark.asyncio
 class TestSecurityEdgeCases:
     """Security and edge case tests."""
 
@@ -46,7 +46,7 @@ class TestSecurityEdgeCases:
             # Any other exception is a security issue
             pytest.fail(f"Password {description} caused unhandled exception: {type(e).__name__}: {e}")
 
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_hibp_service_unavailable_graceful_degradation(self):
         """Test that HIBP service failure doesn't block registration."""
         # Arrange
@@ -75,7 +75,7 @@ class TestSecurityEdgeCases:
                 assert 'error' in result['breach']
                 assert 'unavailable' in result['breach']['error'].lower()
 
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_hibp_timeout_handling(self):
         """Test that HIBP timeout is handled gracefully."""
         # Arrange
@@ -103,7 +103,7 @@ class TestSecurityEdgeCases:
                 assert result['overall_passed'] is True
                 assert result['breach']['leak_count'] == -1
 
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_zxcvbn_unavailable_fallback(self):
         """Test fallback when zxcvbn is not available."""
         # Arrange
@@ -152,7 +152,7 @@ class TestSecurityEdgeCases:
                     assert result['overall_passed'] is True
                     assert result['breach']['leak_count'] == leak_count
 
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_password_with_special_characters(self):
         """Test passwords with various special characters."""
         # Arrange
@@ -181,7 +181,7 @@ class TestSecurityEdgeCases:
                 # Any other exception is a problem
                 pytest.fail(f"Password with special chars caused exception: {e}")
 
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_empty_and_none_passwords(self):
         """Test that empty or None passwords are handled."""
         # Arrange
@@ -194,7 +194,7 @@ class TestSecurityEdgeCases:
         # Note: None would cause a type error before reaching validation
         # This is acceptable as input validation should catch it
 
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_concurrent_hibp_calls_dont_block(self):
         """Test that concurrent HIBP calls don't block the event loop."""
         # Arrange
@@ -238,7 +238,7 @@ class TestSecurityEdgeCases:
                 # All should succeed
                 assert all(r['overall_passed'] for r in results)
 
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_async_to_thread_blocks_correctly(self):
         """Verify asyncio.to_thread is used for blocking I/O."""
         # Arrange
@@ -310,7 +310,7 @@ class TestSecurityEdgeCases:
                     with pytest.raises(PasswordValidationError):
                         service.validate_strength("Password123!")
 
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_sql_injection_prevention_in_email(self):
         """Test that SQL injection attempts in email are prevented."""
         # Arrange - Testing at service level (not route level)
@@ -337,7 +337,7 @@ class TestSecurityEdgeCases:
                 # Unexpected exception = security issue
                 pytest.fail(f"SQL injection payload caused unhandled exception: {e}")
 
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_memory_usage_no_memory_leaks(self):
         """Test that password validation doesn't cause memory leaks."""
         # Arrange
@@ -362,7 +362,7 @@ class TestSecurityEdgeCases:
                 # If we got here without memory errors, test passes
                 # (This is more of a sanity check than a real memory leak test)
 
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_exception_propagation_secure(self):
         """Test that exceptions don't leak sensitive information."""
         # Arrange

@@ -14,7 +14,7 @@ class TestEmailService:
     """Test cases for EmailService."""
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_send_email_success(self):
         """Test successful email sending."""
         # Arrange
@@ -41,7 +41,7 @@ class TestEmailService:
             mock_client.post.assert_called_once()
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_send_email_failure(self):
         """Test email sending failure."""
         # Arrange
@@ -68,7 +68,7 @@ class TestEmailService:
             assert result is False
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_send_email_timeout(self):
         """Test email sending timeout."""
         # Arrange
@@ -92,7 +92,7 @@ class TestEmailService:
             assert result is False
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_send_verification_email_success(self):
         """Test successful verification email sending."""
         # Arrange
@@ -112,7 +112,7 @@ class TestEmailService:
         service.send_email.assert_called_once()
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_verification_email_content(self):
         """Test that verification email contains correct content."""
         # Arrange
@@ -148,7 +148,7 @@ class TestEmailService:
         assert "expires_hours" in email["data"]
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_send_password_reset_email_success(self):
         """Test successful password reset email sending."""
         # Arrange
@@ -168,7 +168,7 @@ class TestEmailService:
         service.send_email.assert_called_once()
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_password_reset_email_content(self):
         """Test that password reset email contains correct content."""
         # Arrange
@@ -204,7 +204,7 @@ class TestEmailService:
         assert "expires_hours" in email["data"]
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_send_welcome_email_success(self):
         """Test successful welcome email sending."""
         # Arrange
@@ -221,7 +221,7 @@ class TestEmailService:
         service.send_email.assert_called_once()
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_welcome_email_content(self):
         """Test that welcome email contains correct content."""
         # Arrange
@@ -264,7 +264,7 @@ class TestEmailService:
         assert service.timeout > 0
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_http_error_handling(self):
         """Test handling of HTTP errors."""
         # Arrange
@@ -291,7 +291,7 @@ class TestEmailService:
             assert result is False
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_connection_error_handling(self):
         """Test handling of connection errors."""
         # Arrange
@@ -315,7 +315,7 @@ class TestEmailService:
             assert result is False
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_timeout_configuration(self):
         """Test that timeout is configured correctly."""
         # Arrange
@@ -343,7 +343,7 @@ class TestEmailService:
             assert call_args.kwargs['timeout'] == service.timeout
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_multiple_emails_sequentially(self):
         """Test sending multiple emails sequentially."""
         # Arrange
@@ -374,7 +374,7 @@ class TestEmailService:
         assert email_calls[2]["to"] == "user3@example.com"
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_email_template_data_passed_correctly(self):
         """Test that email template data is passed correctly."""
         # Arrange
@@ -403,7 +403,7 @@ class TestEmailService:
         assert isinstance(data["expires_hours"], int)
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_exception_during_send_email(self):
         """Test that exceptions during send are handled gracefully."""
         # Arrange

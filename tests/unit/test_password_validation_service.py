@@ -16,7 +16,7 @@ class TestPasswordValidationService:
     """Test cases for PasswordValidationService."""
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     @pytest.mark.parametrize("score,feedback,should_pass", [
         (4, {'warning': '', 'suggestions': []}, True),  # Very strong
         (3, {'warning': '', 'suggestions': []}, True),  # Strong (minimum)
@@ -51,7 +51,7 @@ class TestPasswordValidationService:
                         await service.validate_password("password")
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     @pytest.mark.parametrize("leak_count,should_fail", [
         (0, False),     # Not found in breaches - OK
         (1, True),      # Found once - FAIL
@@ -88,7 +88,7 @@ class TestPasswordValidationService:
                     assert result['breach']['leak_count'] == leak_count
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_breach_check_async_non_blocking(self):
         """Test that breach check is async and doesn't block."""
         # Arrange
@@ -112,7 +112,7 @@ class TestPasswordValidationService:
             assert 'async' in str(service.check_breach_status)
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_breach_check_success(self):
         """Test successful breach check."""
         # Arrange
@@ -134,7 +134,7 @@ class TestPasswordValidationService:
             assert 'error' not in result
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_breach_check_hibp_down(self):
         """Test handling when HIBP service is down."""
         # Arrange
@@ -157,7 +157,7 @@ class TestPasswordValidationService:
             assert 'unavailable' in result['error']
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_tools_not_available_fallback(self):
         """Test fallback when validation tools are not installed."""
         # Arrange
@@ -198,7 +198,7 @@ class TestPasswordValidationService:
             assert service._Password is None
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_validate_strength_score_3_accepted(self):
         """Test that score 3 (strong) is accepted."""
         # Arrange
@@ -219,7 +219,7 @@ class TestPasswordValidationService:
             assert result['score'] == 3
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_validate_strength_score_2_rejected(self):
         """Test that score 2 (fair) is rejected."""
         # Arrange
@@ -240,7 +240,7 @@ class TestPasswordValidationService:
                 service.validate_strength("weakPassword")
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_feedback_messages_included(self):
         """Test that feedback messages are included in error."""
         # Arrange
@@ -266,7 +266,7 @@ class TestPasswordValidationService:
             assert "Add another word or two" in error_msg
 
     @pytest.mark.unit
-    @pytest.mark.async
+    @pytest.mark.asyncio
     async def test_asyncio_to_thread_used(self):
         """Test that asyncio.to_thread is used for blocking I/O."""
         # Arrange
