@@ -1,12 +1,13 @@
 from fastapi import Depends
 import asyncpg
 import redis
-import uuid
 import random
 from uuid import UUID
-import logging
+
 from app.db.connection import get_db_connection
 from app.core.redis_client import get_redis_client
+from app.core.logging_config import get_logger
+from app.middleware.correlation import correlation_id_var
 from app.config import get_settings
 from app.db import procedures
 from app.core.exceptions import (
@@ -22,9 +23,8 @@ from app.services.token_service import TokenService
 from app.services.two_factor_service import TwoFactorService
 from app.services.email_service import EmailService
 from app.schemas.auth import TokenResponse, TwoFactorLoginRequest
-from app.config import get_settings
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 class AuthService:
     def __init__(
@@ -44,35 +44,29 @@ class AuthService:
         self.two_factor_service = two_factor_service
         self.email_service = email_service
         self.settings = settings
-        self.logger = logging.getLogger(__name__)
 
     def _generate_6_digit_code(self) -> str:
         return str(random.randint(100000, 999999))
 
     async def login_user(self, email: str, password: str, code: str | None = None) -> dict:
-        trace_id = str(uuid.uuid4())
+        correlation_id = correlation_id_var.get()
 
-        logger.debug(f"[{trace_id}] LOGIN_START email={email} has_code={code is not None}")
+        logger.info("login_attempt_start", email=email, has_code=(code is not None))
 
-        logger.debug(f"[{trace_id}] DB_QUERY_START")
         user = await procedures.sp_get_user_by_email(self.db, email)
-        logger.debug(f"[{trace_id}] DB_QUERY_END user_id={str(user.id) if user else 'None'}")
 
         if not user:
-            logger.debug(f"[{trace_id}] USER_NOT_FOUND - raising InvalidCredentialsError")
+            logger.warning("login_failed_user_not_found", email=email)
             raise InvalidCredentialsError()
 
-        logger.debug(f"[{trace_id}] PASSWORD_VERIFY_START")
         password_ok = await self.password_service.verify_password(password, user.hashed_password)
-        logger.debug(f"[{trace_id}] PASSWORD_VERIFY_END result={password_ok}")
 
         if not password_ok:
-            logger.debug(f"[{trace_id}] PASSWORD_INVALID - raising InvalidCredentialsError")
+            logger.warning("login_failed_invalid_password", user_id=str(user.id), email=email)
             raise InvalidCredentialsError()
 
-        logger.debug(f"[{trace_id}] CHECK_VERIFIED_START is_verified={user.is_verified}")
         if not user.is_verified:
-            logger.debug(f"[{trace_id}] NOT_VERIFIED - raising AccountNotVerifiedError")
+            logger.warning("login_failed_account_not_verified", user_id=str(user.id), email=email)
             raise AccountNotVerifiedError()
 
         # Step 1: If no code provided, generate and send login code
@@ -87,7 +81,7 @@ class AuthService:
                 purpose="login verification"
             )
 
-            logger.debug(f"[{trace_id}] LOGIN_CODE_SENT")
+            logger.info("login_code_sent", user_id=str(user.id), email=user.email)
             return {
                 "message": "Login code sent to your email",
                 "email": user.email,
@@ -101,30 +95,28 @@ class AuthService:
         stored_code = self.redis_client.get(redis_key)
 
         if not stored_code:
-            logger.debug(f"[{trace_id}] LOGIN_CODE_EXPIRED")
+            logger.warning("login_failed_code_expired", user_id=str(user.id), email=email)
             raise InvalidTokenError("Login code expired or not found")
 
         stored_code_str = stored_code.decode('utf-8') if isinstance(stored_code, bytes) else stored_code
         if stored_code_str != code:
-            logger.debug(f"[{trace_id}] INVALID_LOGIN_CODE")
+            logger.warning("login_failed_invalid_code", user_id=str(user.id), email=email)
             raise InvalidTokenError("Invalid login code")
 
         # Delete used code
         self.redis_client.delete(redis_key)
-        logger.debug(f"[{trace_id}] LOGIN_CODE_VERIFIED")
+        logger.info("login_code_verified", user_id=str(user.id), email=email)
 
         # Step 3: Check 2FA (existing logic)
-        logger.debug(f"[{trace_id}] CHECK_2FA_START two_factor_enabled={self.settings.TWO_FACTOR_ENABLED}")
         if self.settings.TWO_FACTOR_ENABLED:
             user_totp_enabled = self.redis_client.get(f"2FA:{user.id}:totp_enabled")
             if user_totp_enabled == b"true":
                 pre_auth_token = self.token_service.create_2fa_token(user.id)
-                logger.debug(f"[{trace_id}] 2FA_REQUIRED - raising TwoFactorRequiredError")
+                logger.info("login_requires_2fa", user_id=str(user.id), email=email)
                 raise TwoFactorRequiredError(detail=pre_auth_token)
 
-        logger.debug(f"[{trace_id}] GRANT_TOKENS_START")
         result = await self._grant_full_tokens(user.id)
-        logger.debug(f"[{trace_id}] GRANT_TOKENS_END success=True")
+        logger.info("login_success", user_id=str(user.id), email=email)
 
         return result
 
@@ -144,31 +136,27 @@ class AuthService:
             if payload.get("type") == "refresh":
                 user_id = UUID(payload.get("sub"))
                 await procedures.sp_revoke_refresh_token(self.db, user_id, refresh_token)
-        except Exception:
-            pass
+                logger.info("logout_success", user_id=str(user_id))
+        except Exception as e:
+            logger.warning("logout_token_revocation_failed", error=str(e))
 
         return {"message": "Logged out successfully"}
 
     async def _grant_full_tokens(self, user_id: UUID) -> TokenResponse:
-        trace_id = str(uuid.uuid4())
+        logger.info("token_grant_start", user_id=str(user_id))
 
-        logger.debug(f"[{trace_id}] _GRANT_TOKENS_START user_id={user_id}")
-
-        logger.debug(f"[{trace_id}] CREATE_ACCESS_TOKEN_START")
         access_token = self.token_service.create_access_token(user_id)
-        logger.debug(f"[{trace_id}] CREATE_ACCESS_TOKEN_END length={len(access_token)}")
+        logger.info("access_token_created", user_id=str(user_id), token_length=len(access_token))
 
-        logger.debug(f"[{trace_id}] CREATE_REFRESH_TOKEN_START")
         refresh_token = await self.token_service.create_refresh_token(user_id)
-        logger.debug(f"[{trace_id}] CREATE_REFRESH_TOKEN_END length={len(refresh_token)}")
+        logger.info("refresh_token_created", user_id=str(user_id), token_length=len(refresh_token))
 
-        logger.debug(f"[{trace_id}] BUILDING_RESPONSE")
         response = TokenResponse(
             access_token=access_token,
             refresh_token=refresh_token,
             token_type="bearer"
         )
 
-        logger.debug(f"[{trace_id}] _GRANT_TOKENS_END success=True")
+        logger.info("token_grant_complete", user_id=str(user_id))
         return response
 

@@ -3,6 +3,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.logging_config import setup_logging
+from app.middleware.correlation import correlation_id_middleware
 from app.db import db
 from app.config import get_settings
 from app.core.exceptions import (
@@ -54,6 +55,10 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type", "Authorization"],
 )
+
+@app.middleware("http")
+async def correlation_middleware(request: Request, call_next):
+    return await correlation_id_middleware(request, call_next)
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):

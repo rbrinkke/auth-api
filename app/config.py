@@ -50,6 +50,8 @@ class Settings(BaseSettings):
     VERIFICATION_TOKEN_TTL: int = 86400
     RESET_TOKEN_TTL: int = 3600
 
+    LOG_LEVEL: str = "INFO"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8"
