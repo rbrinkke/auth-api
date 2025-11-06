@@ -1,6 +1,6 @@
 from typing import Optional
 from uuid import UUID
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 
 import asyncpg
 from jose import jwt
@@ -83,7 +83,7 @@ async def sp_save_refresh_token(
     if not jti:
         raise ValueError("Token does not have a jti claim")
 
-    expires_at = datetime.utcnow() + expires_delta
+    expires_at = datetime.now(timezone.utc) + expires_delta
 
     result = await conn.fetchval(
         "SELECT activity.sp_save_refresh_token($1, $2, $3, $4)",
