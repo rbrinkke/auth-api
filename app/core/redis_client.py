@@ -179,15 +179,27 @@ class RedisClient:
     async def is_token_blacklisted(self, jti: str) -> bool:
         """
         Check if a refresh token is blacklisted.
-        
+
         Args:
             jti: The JWT ID to check
-            
+
         Returns:
             True if blacklisted, False otherwise
         """
         result = await self.client.exists(f"blacklist_jti:{jti}")
         return result > 0
+
+    async def ping(self) -> None:
+        """
+        Ping Redis to check connectivity.
+
+        This method tests if the Redis connection is working by executing
+        a PING command. Used for health checks.
+
+        Raises:
+            Exception: If Redis is not accessible
+        """
+        await self.client.ping()
 
 
 # Global Redis client instance

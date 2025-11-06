@@ -1,6 +1,11 @@
 """
 Two-Factor Authentication endpoints.
 
+Uses Dependency Injection pattern:
+- Routes handle HTTP concerns only
+- TwoFactorService is injected via FastAPI's Depends
+- All business logic is in TwoFactorService
+
 Provides endpoints for enabling, disabling, and verifying 2FA.
 """
 import logging
@@ -9,9 +14,10 @@ from pydantic import BaseModel, Field
 import asyncpg
 
 from app.core.redis_client import get_redis, RedisClient
-from app.services.email_service import EmailService
+from app.services.email_service import EmailService, get_email_service
 from app.services.two_factor_service import (
     TwoFactorService,
+    get_two_factor_service,
     InvalidCodeError
 )
 from app.db.connection import get_db_connection
@@ -70,13 +76,16 @@ class Confirm2FASetupRequest(BaseModel):
 async def enable_2fa(
     request: Enable2FARequest,
     conn: asyncpg.Connection = Depends(get_db_connection),
-    redis: RedisClient = Depends(get_redis),
-    email_svc: EmailService = Depends(EmailService),
+    twofa_svc: TwoFactorService = Depends(get_two_factor_service),
     # TODO: Add authentication - get current user from JWT
     # current_user: User = Depends(get_current_user)
 ):
     """
     Enable 2FA for authenticated user.
+
+    Uses Dependency Injection pattern:
+    - TwoFactorService handles all 2FA logic
+    - Route only handles HTTP concerns
 
     Returns QR code for authenticator app setup and backup codes.
     """
@@ -86,9 +95,6 @@ async def enable_2fa(
         # user_email = current_user.email
         user_id = "dummy-user-id"  # TODO: Replace with actual user from JWT
         user_email = "user@example.com"  # TODO: Replace with actual user email
-
-        # Create 2FA service
-        twofa_svc = TwoFactorService(redis, email_svc)
 
         # Generate TOTP secret
         secret = twofa_svc.generate_totp_secret()
@@ -139,13 +145,16 @@ async def enable_2fa(
 async def verify_2fa_setup(
     request: Confirm2FASetupRequest,
     conn: asyncpg.Connection = Depends(get_db_connection),
-    redis: RedisClient = Depends(get_redis),
+    twofa_svc: TwoFactorService = Depends(get_two_factor_service),
     # current_user: User = Depends(get_current_user)
 ):
     """
     Verify 2FA setup after scanning QR code.
 
-    This confirms that the authenticator app is working correctly.
+    Uses Dependency Injection pattern:
+    - TwoFactorService handles all 2FA logic
+    - Route only handles HTTP concerns
+    - This confirms that the authenticator app is working correctly.
     """
     try:
         # user_id = current_user.id
@@ -163,8 +172,7 @@ async def verify_2fa_setup(
                 detail="2FA not initialized"
             )
 
-        # Decrypt secret
-        twofa_svc = TwoFactorService(redis, None)  # No email service needed for verification
+        # Decrypt secret using injected service
         secret = twofa_svc.decrypt_secret(row["two_factor_secret"])
 
         # Verify TOTP code
@@ -201,8 +209,7 @@ async def verify_2fa_setup(
 async def verify_2fa_code(
     request: Verify2FARequest,
     conn: asyncpg.Connection = Depends(get_db_connection),
-    redis: RedisClient = Depends(get_redis),
-    email_svc: EmailService = Depends(EmailService)
+    twofa_svc: TwoFactorService = Depends(get_two_factor_service)
 ):
     """
     Verify 2FA code during login or other flows.
@@ -210,9 +217,7 @@ async def verify_2fa_code(
     This endpoint is used by the login flow when 2FA is enabled.
     """
     try:
-        twofa_svc = TwoFactorService(redis, email_svc)
-
-        # Check if user is locked out
+        # Check if user is locked out using injected service
         if await twofa_svc.is_locked_out(request.user_identifier, request.purpose):
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -281,6 +286,7 @@ async def disable_2fa(
     request: Disable2FARequest,
     conn: asyncpg.Connection = Depends(get_db_connection),
     redis: RedisClient = Depends(get_redis),
+    twofa_svc: TwoFactorService = Depends(get_two_factor_service),
     # current_user: User = Depends(get_current_user)
 ):
     """
@@ -304,8 +310,7 @@ async def disable_2fa(
                 detail="2FA is not enabled"
             )
 
-        # Decrypt secret
-        twofa_svc = TwoFactorService(redis, None)
+        # Decrypt secret using injected service
         secret = twofa_svc.decrypt_secret(row["two_factor_secret"])
 
         # Verify TOTP code

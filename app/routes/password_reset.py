@@ -1,23 +1,21 @@
 """
 Password reset endpoints.
 
-Uses Service Layer pattern for business logic.
-- Route handles HTTP
-- PasswordResetService handles business logic
-- PasswordValidationService handles password validation
+Uses Dependency Injection pattern for clean architecture:
+- Routes handle HTTP concerns only
+- Services are injected via FastAPI's Depends
+- All business logic is in services
 
-This separation makes code testable and maintainable.
+PasswordResetService handles password reset business logic.
+PasswordValidationService handles password validation.
 """
 import logging
 
-import asyncpg
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from app.config import settings
-from app.core.redis_client import RedisClient, get_redis
-from app.db.connection import get_db_connection
 from app.schemas.auth import (
     RequestPasswordResetRequest,
     RequestPasswordResetResponse,
@@ -26,10 +24,8 @@ from app.schemas.auth import (
     VerifyTempCodeRequest,
     VerifyTempCodeResponse
 )
-from app.services.email_service import get_email_service, EmailService
-from app.services.password_validation_service import get_password_validation_service, PasswordValidationService
-from app.services.password_reset_service import PasswordResetService, PasswordResetServiceError
-from app.services.two_factor_service import TwoFactorService
+from app.services.password_reset_service import PasswordResetService, get_password_reset_service, PasswordResetServiceError
+from app.services.two_factor_service import TwoFactorService, get_two_factor_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -58,34 +54,24 @@ async def request_password_reset(
     request: Request,
     data: RequestPasswordResetRequest,
     background_tasks: BackgroundTasks,
-    conn: asyncpg.Connection = Depends(get_db_connection),
-    redis: RedisClient = Depends(get_redis),
-    email_svc: EmailService = Depends(get_email_service),
-    password_validation_svc: PasswordValidationService = Depends(get_password_validation_service)
+    reset_service: PasswordResetService = Depends(get_password_reset_service),
+    twofa_svc: TwoFactorService = Depends(get_two_factor_service)
 ):
     """
     Request password reset code.
 
-    Uses Service Layer pattern:
+    Uses Dependency Injection pattern:
     - PasswordResetService handles business logic
+    - Route only handles HTTP concerns
 
     Flow:
-    1. Initialize PasswordResetService
-    2. Call service to check if user exists
-    3. Generate 6-digit reset code if user exists
-    4. Send code via email
-    5. Return generic message
+    1. Call service to check if user exists
+    2. Generate 6-digit reset code if user exists
+    3. Return generic message
     """
     try:
         # Generic response (for security - don't reveal if email exists)
         generic_message = "If an account exists for this email, a password reset code has been sent."
-
-        # Initialize service
-        reset_service = PasswordResetService(
-            conn=conn,
-            redis=redis,
-            password_validation_svc=password_validation_svc
-        )
 
         # Check if user exists
         user_id = await reset_service.check_user_exists(data.email)
@@ -93,7 +79,6 @@ async def request_password_reset(
         # If user exists, generate and send reset code
         if user_id:
             # Generate 6-digit reset code using TwoFactorService
-            twofa_svc = TwoFactorService(redis, email_svc)
             reset_code = await twofa_svc.create_temp_code(
                 user_id=user_id,
                 purpose="reset",
@@ -105,9 +90,6 @@ async def request_password_reset(
             message=generic_message,
             user_id=user_id
         )
-
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"Error requesting password reset: {str(e)}")
         raise HTTPException(
@@ -131,33 +113,23 @@ async def request_password_reset(
 async def reset_password(
     request: ResetPasswordRequest,
     conn: asyncpg.Connection = Depends(get_db_connection),
-    redis_client: RedisClient = Depends(get_redis),
-    password_validation_svc: PasswordValidationService = Depends(get_password_validation_service),
-    email_svc: EmailService = Depends(get_email_service)
+    twofa_svc: TwoFactorService = Depends(get_two_factor_service),
+    reset_service: PasswordResetService = Depends(get_password_reset_service)
 ):
     """
     Reset user password with 6-digit code.
 
-    Uses Service Layer pattern:
+    Uses Dependency Injection pattern:
     - PasswordResetService handles business logic
-    - PasswordValidationService validates new password
     - TwoFactorService verifies the code
+    - Route only handles HTTP concerns
 
     Flow:
     1. Verify code using TwoFactorService
-    2. Initialize PasswordResetService
-    3. Call service to reset password
-    4. Return success message
+    2. Reset password using PasswordResetService
+    3. Return success message
     """
     try:
-        # Initialize services
-        twofa_svc = TwoFactorService(redis_client, email_svc)
-        reset_service = PasswordResetService(
-            conn=conn,
-            redis=redis_client,
-            password_validation_svc=password_validation_svc
-        )
-
         # Step 1: Verify the code
         is_valid = await twofa_svc.verify_temp_code(
             user_id=request.user_id,
@@ -196,7 +168,7 @@ async def reset_password(
         return ResetPasswordResponse(
             message="Password updated successfully. You can now login with your new password."
         )
-
+    
     except PasswordResetServiceError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -227,11 +199,14 @@ async def reset_password(
 )
 async def verify_temp_code(
     data: VerifyTempCodeRequest,
-    redis_client: RedisClient = Depends(get_redis),
-    email_svc: EmailService = Depends(get_email_service)
+    twofa_svc: TwoFactorService = Depends(get_two_factor_service)
 ):
     """
     Verify temporary code without database modification.
+
+    Uses Dependency Injection pattern:
+    - TwoFactorService handles all 2FA logic
+    - Route only handles HTTP concerns
 
     This is a pure verification function that:
     1. Verifies the code using TwoFactorService
@@ -242,9 +217,6 @@ async def verify_temp_code(
     Can be used for email verification, password reset, etc.
     """
     try:
-        # Initialize TwoFactorService
-        twofa_svc = TwoFactorService(redis_client, email_svc)
-
         # Verify the code (consume=False means don't consume yet)
         is_valid = await twofa_svc.verify_temp_code(
             user_id=data.user_id,
@@ -276,7 +248,7 @@ async def verify_temp_code(
             message="Code verified successfully",
             verified=True
         )
-
+    
     except HTTPException:
         raise
     except Exception as e:

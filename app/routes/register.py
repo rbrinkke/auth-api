@@ -54,71 +54,39 @@ async def register(
     request: Request,
     data: RegisterRequest,
     background_tasks: BackgroundTasks,
-    conn: asyncpg.Connection = Depends(get_db_connection),
-    redis: RedisClient = Depends(get_redis),
-    email_svc: EmailService = Depends(get_email_service),
-    password_validation_svc: PasswordValidationService = Depends(get_password_validation_service)
+    registration_service: RegistrationService = Depends(get_registration_service),
+    twofa_svc: TwoFactorService = Depends(get_two_factor_service)
 ):
     """
     Register a new user with email verification.
 
-    Uses Service Layer pattern:
-    - Pydantic (data/schema validation only)
-    - RegistrationService (business logic)
-    - BackgroundTasks (sending emails asynchronously)
+    Uses Dependency Injection pattern:
+    - Services are injected via FastAPI's Depends
+    - Business logic is encapsulated in services
+    - Routes only handle HTTP concerns
 
     Flow:
-    1. Initialize RegistrationService with dependencies
-    2. Call service to handle business logic (user creation)
-    3. Generate 6-digit verification code
-    4. Send code via email (non-blocking)
-    5. Return immediate response
+    1. Call registration service to handle user creation
+    2. Generate 6-digit verification code via 2FA service
+    3. Return immediate response
     """
-    try:
-        # Initialize service with dependencies (Service Layer pattern)
-        registration_service = RegistrationService(
-            conn=conn,
-            redis=redis,
-            password_validation_svc=password_validation_svc
-        )
+    # Execute business logic via service
+    result = await registration_service.register_user(
+        email=data.email,
+        password=data.password
+    )
 
-        # Execute business logic via service
-        result = await registration_service.register_user(
-            email=data.email,
-            password=data.password
-        )
+    # Generate 6-digit verification code using TwoFactorService
+    verification_code = await twofa_svc.create_temp_code(
+        user_id=result.user.id,
+        purpose="verify",
+        email=result.user.email
+    )
 
-        # Generate 6-digit verification code using TwoFactorService
-        twofa_svc = TwoFactorService(redis, email_svc)
-        verification_code = await twofa_svc.create_temp_code(
-            user_id=result.user.id,
-            purpose="verify",
-            email=result.user.email
-        )
+    logger.info(f"Verification code generated for user: {result.user.email}")
 
-        logger.info(f"Verification code generated for user: {result.user.email}")
-
-        return RegisterResponse(
-            message=f"User registered successfully. A 6-digit verification code has been sent to {result.user.email}.",
-            email=result.user.email,
-            user_id=str(result.user.id)
-        )
-
-    except UserAlreadyExistsError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
-    except RegistrationServiceError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error during registration: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Registration failed. Please try again later."
-        )
+    return RegisterResponse(
+        message=f"User registered successfully. A 6-digit verification code has been sent to {result.user.email}.",
+        email=result.user.email,
+        user_id=str(result.user.id)
+    )

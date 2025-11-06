@@ -12,13 +12,42 @@ import logging
 from typing import NamedTuple
 
 import asyncpg
+from fastapi import Depends
 
-from app.core.redis_client import RedisClient
+from app.core.redis_client import RedisClient, get_redis
 from app.core.security import hash_password
 from app.core.tokens import generate_reset_token
+from app.db.connection import get_db_connection
 from app.db.procedures import sp_get_user_by_email, sp_update_password
+from app.services.password_validation_service import PasswordValidationService, get_password_validation_service
 
 logger = logging.getLogger(__name__)
+
+
+def get_password_reset_service(
+    conn: asyncpg.Connection = Depends(get_db_connection),
+    redis: RedisClient = Depends(get_redis),
+    password_validation_svc: PasswordValidationService = Depends(get_password_validation_service)
+) -> "PasswordResetService":
+    """
+    Dependency injection function for PasswordResetService.
+
+    Args:
+        conn: Database connection
+        redis: Redis client
+        password_validation_svc: Password validation service
+
+    Returns:
+        PasswordResetService: Configured password reset service instance
+
+    This enables easy mocking during testing:
+        app.dependency_overrides[get_password_reset_service] = lambda: MockPasswordResetService()
+    """
+    return PasswordResetService(
+        conn=conn,
+        redis=redis,
+        password_validation_svc=password_validation_svc
+    )
 
 
 class PasswordResetResult(NamedTuple):

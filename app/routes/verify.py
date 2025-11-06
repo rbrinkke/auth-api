@@ -1,6 +1,11 @@
 """
 Email verification endpoints.
 
+Uses Dependency Injection pattern:
+- Routes handle HTTP concerns only
+- TwoFactorService is injected via FastAPI's Depends
+- All business logic is in services
+
 Handles verification and resending verification emails using 6-digit codes.
 """
 import logging
@@ -23,7 +28,7 @@ from app.schemas.auth import (
     VerifyCodeResponse
 )
 from app.services.email_service import get_email_service, EmailService
-from app.services.two_factor_service import TwoFactorService
+from app.services.two_factor_service import TwoFactorService, get_two_factor_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -45,30 +50,23 @@ limiter = Limiter(key_func=get_remote_address)
 async def verify_code(
     data: VerifyCodeRequest,
     conn: asyncpg.Connection = Depends(get_db_connection),
-    redis_client: RedisClient = Depends(get_redis),
-    email_svc: EmailService = Depends(get_email_service)
+    twofa_svc: TwoFactorService = Depends(get_two_factor_service)
 ):
     """
     Verify user email with 6-digit code.
 
+    Uses Dependency Injection pattern:
+    - TwoFactorService handles all 2FA logic
+    - Route only handles HTTP concerns
+    - Business logic is encapsulated in the service
+
     Flow:
     1. Verify code using TwoFactorService
     2. If valid, mark user as verified in database
-    3. Delete code from Redis
-    4. Return success message
+    3. Return success message
     """
-    print(f"[VERIFY-ROUTE] ====================")
-    print(f"[VERIFY-ROUTE] Received verify-code request:")
-    print(f"[VERIFY-ROUTE]   user_id: {data.user_id}")
-    print(f"[VERIFY-ROUTE]   code: {data.code}")
-    print(f"[VERIFY-ROUTE] ====================")
-
     try:
-        # Initialize TwoFactorService
-        twofa_svc = TwoFactorService(redis_client, email_svc)
-
-        print(f"[VERIFY-ROUTE] Calling verify_temp_code...")
-        # 1. Verify the code
+        # 1. Verify the code using injected service
         is_valid = await twofa_svc.verify_temp_code(
             user_id=data.user_id,
             code=data.code,
@@ -76,51 +74,41 @@ async def verify_code(
             consume=True
         )
 
-        print(f"[VERIFY-ROUTE] verify_temp_code returned: {is_valid}")
-
         if not is_valid:
-            print(f"[VERIFY-ROUTE] Code INVALID - incrementing failed attempts")
             # Increment failed attempts
             await twofa_svc.increment_failed_attempt(data.user_id, "verify")
 
             # Check if locked out
             if await twofa_svc.is_locked_out(data.user_id, "verify"):
-                print(f"[VERIFY-ROUTE] User locked out - raising 429")
                 raise HTTPException(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                     detail="Too many failed attempts. Please try again later."
                 )
 
-            print(f"[VERIFY-ROUTE] Invalid code - raising 400")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid or expired verification code"
             )
 
         # 2. Reset failed attempts on success
-        print(f"[VERIFY-ROUTE] Code VALID - resetting failed attempts")
         await twofa_svc.reset_failed_attempts(data.user_id, "verify")
 
         # 3. Mark user as verified in database
-        print(f"[VERIFY-ROUTE] Updating database - calling sp_verify_user_email")
         success = await sp_verify_user_email(conn, data.user_id)
 
-        print(f"[VERIFY-ROUTE] Database update result: {success}")
-
         if not success:
-            print(f"[VERIFY-ROUTE] Database update failed - user not found")
             logger.error(f"Failed to verify user {data.user_id} - user not found")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid verification code"
             )
 
-        print(f"[VERIFY-ROUTE] SUCCESS! Returning success response")
         logger.info(f"Email verified successfully for user {data.user_id}")
 
         return VerifyCodeResponse(
             message="Email verified successfully! You can now login."
         )
+
 
     except HTTPException:
         raise
@@ -151,16 +139,20 @@ async def resend_verification(
     data: ResendVerificationRequest,
     background_tasks: BackgroundTasks,
     conn: asyncpg.Connection = Depends(get_db_connection),
-    redis_client: RedisClient = Depends(get_redis),
-    email_svc: EmailService = Depends(get_email_service)
+    twofa_svc: TwoFactorService = Depends(get_two_factor_service)
 ):
     """
     Resend verification code to user via email.
 
+    Uses Dependency Injection pattern:
+    - TwoFactorService handles all 2FA logic
+    - Route only handles HTTP concerns
+    - Business logic is encapsulated in the service
+
     Flow:
     1. Look up user by email
     2. Check if already verified
-    3. Generate and send new verification code
+    3. Generate and send new verification code via injected service
     4. Return generic success message
     """
     try:
@@ -183,8 +175,7 @@ async def resend_verification(
                 detail="Email already verified. You can login now."
             )
 
-        # 3. Generate and send verification code using TwoFactorService
-        twofa_svc = TwoFactorService(redis_client, email_svc)
+        # 3. Generate and send verification code using injected service
         await twofa_svc.create_temp_code(
             user_id=str(user.id),
             purpose="verify",
@@ -194,7 +185,6 @@ async def resend_verification(
         logger.info(f"Verification code resent to: {user.email}")
 
         return ResendVerificationResponse(message=generic_message)
-
     except HTTPException:
         raise
     except Exception as e:

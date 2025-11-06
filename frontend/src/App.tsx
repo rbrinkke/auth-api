@@ -1,15 +1,13 @@
-// Minimalist Professional Auth App
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+// Single Page Auth Application
+import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '@/hooks/useAuth';
-import { LoginPage } from '@/pages/LoginPage';
+import { AuthPage } from '@/pages/AuthPage';
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Routes>
-          <Route path="/*" element={<LoginPage />} />
-        </Routes>
+        <AuthPage />
       </BrowserRouter>
     </AuthProvider>
   );

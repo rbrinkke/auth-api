@@ -99,8 +99,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ...user,
         pendingVerificationId: undefined,
       });
-
-      return response;
     } catch (error: any) {
       console.log('[VERIFY-FRONTEND] ERROR:', error.message);
       console.log('[VERIFY-FRONTEND] Error response:', error.response?.data);

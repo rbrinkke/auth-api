@@ -1,6 +1,11 @@
 """
 User login endpoint.
 
+Uses Dependency Injection pattern for clean architecture:
+- Routes handle HTTP concerns only
+- Services are injected via FastAPI's Depends
+- All business logic is in AuthService and related services
+
 Implements hard verification: users MUST verify email before login.
 Supports 2FA/TOTP for enhanced security.
 """
@@ -12,14 +17,11 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from app.config import settings
-from app.core.security import verify_password
-from app.core.tokens import create_access_token, create_refresh_token
-from app.core.redis_client import RedisClient, get_redis
 from app.db.connection import get_db_connection
-from app.db.procedures import sp_get_user_by_email, sp_update_last_login
+from app.db.procedures import sp_get_user_by_id
 from app.schemas.auth import LoginRequest, TokenResponse
-from app.services.email_service import EmailService
-from app.services.two_factor_service import TwoFactorService
+from app.services.auth_service import AuthService, get_auth_service, AuthServiceError
+from app.services.two_factor_service import TwoFactorService, get_two_factor_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -51,103 +53,51 @@ limiter = Limiter(key_func=get_remote_address)
 async def login(
     request: Request,
     credentials: LoginRequest,
-    conn: asyncpg.Connection = Depends(get_db_connection),
-    redis: RedisClient = Depends(get_redis),
-    email_svc: EmailService = Depends(EmailService)
+    auth_service: AuthService = Depends(get_auth_service)
 ):
     """
     Authenticate user and return JWT tokens.
 
-    Flow with 2FA:
-    1. Find user by email
-    2. Verify password
-    3. CHECK: is_verified = TRUE (CRITICAL!)
-    4. CHECK: is_active = TRUE
-    5. CHECK: two_factor_enabled
-       - If TRUE: Generate 6-digit code, send via email, return 202
-       - If FALSE: Continue to step 6
-    6. Update last_login_at
-    7. Generate and return tokens
+    Uses Dependency Injection pattern:
+    - AuthService handles all business logic
+    - Route only handles HTTP concerns
+    - 2FA codes are sent via injected services
     """
     try:
-        # 1. Find user by email (username field is actually email)
-        user = await sp_get_user_by_email(conn, credentials.username)
+        # Authenticate user via service
+        result = await auth_service.authenticate_user(
+            email=credentials.username,
+            password=credentials.password
+        )
 
-        if not user:
-            # Generic error message to prevent email enumeration
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid credentials"
-            )
-
-        # 2. Verify password
-        if not verify_password(credentials.password, user.hashed_password):
-            logger.warning(f"Failed login attempt for user: {user.email}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid credentials"
-            )
-
-        # 3. CRITICAL: Check if email is verified (Hard Verification)
-        if not user.is_verified:
-            logger.info(f"Login attempt by unverified user: {user.email}")
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Email not verified. Please check your inbox or request a new verification email."
-            )
-
-        # 4. Check if account is active
-        if not user.is_active:
-            logger.warning(f"Login attempt by deactivated user: {user.email}")
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Account has been deactivated"
-            )
-
-        # 5. CHECK: Is 2FA enabled?
-        if getattr(user, 'two_factor_enabled', False):
-            logger.info(f"2FA required for user: {user.email}")
-
-            # Generate and send 2FA code
-            twofa_svc = TwoFactorService(redis, email_svc)
-            code = await twofa_svc.create_temp_code(
-                user_id=user.id,
-                purpose="login",
-                email=user.email
-            )
-
-            logger.info(f"2FA code sent to {user.email} for login")
-
+        # Check if 2FA is required
+        if result.two_factor_required:
             # Return 202 Accepted with message to check email
             raise HTTPException(
                 status_code=status.HTTP_202_ACCEPTED,
                 detail={
                     "message": "Two-factor authentication required. Check your email for a 6-digit code.",
                     "two_factor_required": True,
-                    "user_id": str(user.id)
+                    "user_id": result.user_id
                 }
             )
 
-        # 6. Update last login timestamp
-        await sp_update_last_login(conn, user.id)
-
-        # 7. Generate tokens
-        access_token = create_access_token(user.id)
-        refresh_token, _ = create_refresh_token(user.id)
-
-        logger.info(f"User logged in successfully: {user.email} (id: {user.id})")
-
+        # Return tokens
         return TokenResponse(
-            access_token=access_token,
-            refresh_token=refresh_token,
+            access_token=result.access_token,
+            refresh_token=result.refresh_token,
             token_type="bearer"
         )
 
+    except AuthServiceError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e)
+        )
     except HTTPException as http_exc:
         # Re-raise HTTP exceptions (including our 202 for 2FA)
         if http_exc.status_code == status.HTTP_202_ACCEPTED:
             raise http_exc
-        # Convert 202 to a proper response format
         raise http_exc
     except Exception as e:
         logger.error(f"Error during login: {str(e)}")
@@ -171,7 +121,7 @@ async def login_with_2fa(
     user_id: str,
     code: str,
     conn: asyncpg.Connection = Depends(get_db_connection),
-    redis: RedisClient = Depends(get_redis)
+    twofa_svc: TwoFactorService = Depends(get_two_factor_service)
 ):
     """
     Verify 2FA code and complete login.
@@ -184,9 +134,7 @@ async def login_with_2fa(
     5. Generate and return tokens
     """
     try:
-        # 1. Verify 2FA code
-        twofa_svc = TwoFactorService(redis, None)
-
+        # 1. Verify 2FA code using injected service
         if not await twofa_svc.verify_temp_code(user_id, code, "login"):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

@@ -14,13 +14,42 @@ import logging
 from typing import NamedTuple
 
 import asyncpg
+from fastapi import Depends
 
-from app.core.redis_client import RedisClient
+from app.core.redis_client import RedisClient, get_redis
 from app.core.security import hash_password
 from app.core.tokens import generate_verification_token
+from app.db.connection import get_db_connection
 from app.db.procedures import sp_create_user
+from app.services.password_validation_service import PasswordValidationService, get_password_validation_service
 
 logger = logging.getLogger(__name__)
+
+
+def get_registration_service(
+    conn: asyncpg.Connection = Depends(get_db_connection),
+    redis: RedisClient = Depends(get_redis),
+    password_validation_svc: PasswordValidationService = Depends(get_password_validation_service)
+) -> "RegistrationService":
+    """
+    Dependency injection function for RegistrationService.
+
+    Args:
+        conn: Database connection
+        redis: Redis client
+        password_validation_svc: Password validation service
+
+    Returns:
+        RegistrationService: Configured registration service instance
+
+    This enables easy mocking during testing:
+        app.dependency_overrides[get_registration_service] = lambda: MockRegistrationService()
+    """
+    return RegistrationService(
+        conn=conn,
+        redis=redis,
+        password_validation_svc=password_validation_svc
+    )
 
 
 class UserRecord(NamedTuple):

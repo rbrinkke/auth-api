@@ -33,6 +33,13 @@ from app.routes import (
     verify,
     twofa as twofa_router
 )
+from app.services.password_validation_service import PasswordValidationError
+from app.services.registration_service import (
+    RegistrationServiceError,
+    UserAlreadyExistsError
+)
+from app.services.password_reset_service import PasswordResetServiceError
+from app.services.two_factor_service import TwoFactorError
 
 # Initialize structured logging
 logger = get_logger(__name__)
@@ -190,6 +197,51 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
     )
 
 
+@app.exception_handler(UserAlreadyExistsError)
+async def user_already_exists_handler(request: Request, exc: UserAlreadyExistsError):
+    """Handle user already exists error."""
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"detail": str(exc) or "Email already registered"}
+    )
+
+
+@app.exception_handler(PasswordValidationError)
+async def password_validation_handler(request: Request, exc: PasswordValidationError):
+    """Handle password validation error."""
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"detail": str(exc)}
+    )
+
+
+@app.exception_handler(RegistrationServiceError)
+async def registration_error_handler(request: Request, exc: RegistrationServiceError):
+    """Handle general registration service error."""
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"detail": str(exc)}
+    )
+
+
+@app.exception_handler(PasswordResetServiceError)
+async def password_reset_error_handler(request: Request, exc: PasswordResetServiceError):
+    """Handle password reset service error."""
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"detail": str(exc)}
+    )
+
+
+@app.exception_handler(TwoFactorError)
+async def two_factor_error_handler(request: Request, exc: TwoFactorError):
+    """Handle two-factor authentication error."""
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"detail": str(exc)}
+    )
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """
@@ -246,29 +298,28 @@ app.include_router(twofa_router)
 async def health_check():
     """
     Health check endpoint for monitoring.
-    
+
     Returns:
         Status of the API and its dependencies
     """
     try:
-        # Check database connection
-        async with db.pool.acquire() as conn:
-            await conn.fetchval("SELECT 1")
+        # Check database connection using ping method
+        await db.ping()
         db_status = "healthy"
     except Exception as e:
         logger.error(f"Database health check failed: {str(e)}")
         db_status = "unhealthy"
-    
+
     try:
-        # Check Redis connection
-        await redis_client.client.ping()
+        # Check Redis connection using ping method
+        await redis_client.ping()
         redis_status = "healthy"
     except Exception as e:
         logger.error(f"Redis health check failed: {str(e)}")
         redis_status = "unhealthy"
-    
+
     overall_status = "healthy" if db_status == "healthy" and redis_status == "healthy" else "unhealthy"
-    
+
     return {
         "status": overall_status,
         "service": "auth-api",

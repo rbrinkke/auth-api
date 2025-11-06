@@ -13,9 +13,31 @@ from typing import List, Optional, Tuple
 from datetime import datetime, timedelta
 from cryptography.fernet import Fernet
 
+from fastapi import Depends
+
 from app.config import settings
-from app.core.redis_client import RedisClient
-from app.services.email_service import EmailService
+from app.core.redis_client import RedisClient, get_redis
+from app.services.email_service import EmailService, get_email_service
+
+
+def get_two_factor_service(
+    redis: RedisClient = Depends(get_redis),
+    email_svc: EmailService = Depends(get_email_service)
+) -> "TwoFactorService":
+    """
+    Dependency injection function for TwoFactorService.
+
+    Args:
+        redis: Redis client
+        email_svc: Email service for sending codes
+
+    Returns:
+        TwoFactorService: Configured 2FA service instance
+
+    This enables easy mocking during testing:
+        app.dependency_overrides[get_two_factor_service] = lambda: MockTwoFactorService()
+    """
+    return TwoFactorService(redis=redis, email_svc=email_svc)
 
 
 class TwoFactorError(Exception):

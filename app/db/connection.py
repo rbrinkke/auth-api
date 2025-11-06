@@ -49,17 +49,32 @@ class Database:
     async def acquire(self) -> asyncpg.Connection:
         """
         Acquire a connection from the pool.
-        
+
         Usage:
             async with db.pool.acquire() as conn:
                 result = await conn.fetchrow("SELECT ...")
-                
+
         Returns:
             A database connection
         """
         if not self.pool:
             raise RuntimeError("Database pool not initialized")
         return await self.pool.acquire()
+
+    async def ping(self) -> None:
+        """
+        Ping the database to check connectivity.
+
+        This method tests if the database connection is working by executing
+        a simple SELECT 1 query. Used for health checks.
+
+        Raises:
+            Exception: If the database is not accessible
+        """
+        if not self.pool:
+            raise RuntimeError("Database pool not initialized")
+        async with self.pool.acquire() as conn:
+            await conn.fetchval("SELECT 1")
 
 
 # Global database instance
