@@ -2,7 +2,10 @@ import logging
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from app.core.logging_config import setup_logging
+from app.core.rate_limiting import init_limiter
 from app.middleware.correlation import correlation_id_middleware
 from app.middleware.security import add_security_headers
 from app.db import db
@@ -28,6 +31,11 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Auth API")
+
+# Rate limiting setup
+limiter = init_limiter()
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 @app.on_event("startup")
 async def startup_event():
