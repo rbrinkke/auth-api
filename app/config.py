@@ -44,6 +44,8 @@ class Settings(BaseSettings):
 
     ENCRYPTION_KEY: str = "dev_encryption_key_for_2fa_secrets_32_chars_minimum_required"
 
+    TWO_FACTOR_ENABLED: bool = False
+
     VERIFICATION_TOKEN_TTL: int = 86400
     RESET_TOKEN_TTL: int = 3600
 

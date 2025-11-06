@@ -6,6 +6,7 @@ from uuid import UUID
 import logging
 from app.db.connection import get_db_connection
 from app.core.redis_client import get_redis_client
+from app.config import get_settings
 from app.db import procedures
 from app.core.exceptions import (
     InvalidCredentialsError,
@@ -38,6 +39,7 @@ class AuthService:
         self.token_service = token_service
         self.two_factor_service = two_factor_service
         self.settings = settings
+        self.logger = logging.getLogger(__name__)
 
     async def login_user(self, email: str, password: str) -> dict:
         trace_id = str(uuid.uuid4())
@@ -65,11 +67,13 @@ class AuthService:
             logger.debug(f"[{trace_id}] NOT_VERIFIED - raising AccountNotVerifiedError")
             raise AccountNotVerifiedError()
 
-        logger.debug(f"[{trace_id}] CHECK_2FA_START two_factor_enabled={getattr(self.settings, 'TWO_FACTOR_ENABLED', False)}")
-        if getattr(self.settings, 'TWO_FACTOR_ENABLED', False):
-            pre_auth_token = self.token_service.create_2fa_token(user.id)
-            logger.debug(f"[{trace_id}] 2FA_REQUIRED - raising TwoFactorRequiredError")
-            raise TwoFactorRequiredError(detail=pre_auth_token)
+        logger.debug(f"[{trace_id}] CHECK_2FA_START two_factor_enabled={self.settings.TWO_FACTOR_ENABLED}")
+        if self.settings.TWO_FACTOR_ENABLED:
+            user_totp_enabled = self.redis_client.get(f"2FA:{user.id}:totp_enabled")
+            if user_totp_enabled == b"true":
+                pre_auth_token = self.token_service.create_2fa_token(user.id)
+                logger.debug(f"[{trace_id}] 2FA_REQUIRED - raising TwoFactorRequiredError")
+                raise TwoFactorRequiredError(detail=pre_auth_token)
 
         logger.debug(f"[{trace_id}] GRANT_TOKENS_START")
         result = await self._grant_full_tokens(user.id)

@@ -5,7 +5,9 @@ from io import BytesIO
 from uuid import UUID
 from fastapi import Depends
 import asyncpg
+import redis
 from app.db.connection import get_db_connection
+from app.core.redis_client import get_redis_client
 from app.db import procedures
 from app.core.exceptions import (
     UserNotFoundError,
@@ -14,8 +16,13 @@ from app.core.exceptions import (
 )
 
 class TwoFactorService:
-    def __init__(self, db: asyncpg.Connection = Depends(get_db_connection)):
+    def __init__(
+        self,
+        db: asyncpg.Connection = Depends(get_db_connection),
+        redis_client: redis.Redis = Depends(get_redis_client)
+    ):
         self.db = db
+        self.redis_client = redis_client
 
     def generate_2fa_secret(self) -> str:
         return pyotp.random_base32()
@@ -41,11 +48,13 @@ class TwoFactorService:
         if not user:
             raise UserNotFoundError()
 
-        if user.is_2fa_enabled:
+        totp_enabled_key = f"2FA:{user_id}:totp_enabled"
+        if self.redis_client.get(totp_enabled_key) == b"true":
             raise TwoFactorSetupError("2FA is already enabled.")
 
         secret = self.generate_2fa_secret()
-        await procedures.sp_set_2fa_secret(self.db, user_id, secret, is_verified=False)
+        setup_pending_key = f"2FA:{user_id}:setup_pending"
+        self.redis_client.setex(setup_pending_key, 600, secret)
 
         uri = self.get_totp_uri(user.email, secret)
         qr_svg = self.generate_qr_code_svg(uri)
@@ -54,26 +63,50 @@ class TwoFactorService:
 
     async def verify_and_enable_2fa(self, user_id: UUID, code: str) -> dict:
         user = await procedures.sp_get_user_by_id(self.db, user_id)
-        if not user or not user.two_factor_secret:
-            raise TwoFactorSetupError("2FA setup not initiated or user not found.")
+        if not user:
+            raise UserNotFoundError()
 
-        if user.is_2fa_enabled:
-            raise TwoFactorSetupError("2FA is already enabled.")
+        setup_pending_key = f"2FA:{user_id}:setup_pending"
+        pending_secret = self.redis_client.get(setup_pending_key)
 
-        if self.verify_2fa_code(user.two_factor_secret, code):
-            await procedures.sp_set_2fa_secret(self.db, user_id, user.two_factor_secret, is_verified=True)
+        if not pending_secret:
+            raise TwoFactorSetupError("2FA setup not initiated or expired.")
+
+        pending_secret_str = pending_secret.decode('utf-8') if isinstance(pending_secret, bytes) else pending_secret
+
+        if self.verify_2fa_code(pending_secret_str, code):
+            totp_secret_key = f"2FA:{user_id}:totp_secret"
+            totp_enabled_key = f"2FA:{user_id}:totp_enabled"
+
+            self.redis_client.set(totp_secret_key, pending_secret_str)
+            self.redis_client.set(totp_enabled_key, "true")
+            self.redis_client.delete(setup_pending_key)
+
             return {"message": "2FA enabled successfully."}
         else:
             raise TwoFactorVerificationError("Invalid 2FA code.")
 
     async def disable_2fa(self, user_id: UUID) -> dict:
-        await procedures.sp_disable_2fa(self.db, user_id)
+        totp_secret_key = f"2FA:{user_id}:totp_secret"
+        totp_enabled_key = f"2FA:{user_id}:totp_enabled"
+
+        self.redis_client.delete(totp_secret_key)
+        self.redis_client.delete(totp_enabled_key)
+
         return {"message": "2FA disabled successfully."}
 
     async def validate_2fa_challenge(self, user_id: UUID, code: str):
-        user = await procedures.sp_get_user_by_id(self.db, user_id)
-        if not user or not user.is_2fa_enabled or not user.two_factor_secret:
+        totp_enabled_key = f"2FA:{user_id}:totp_enabled"
+        totp_secret_key = f"2FA:{user_id}:totp_secret"
+
+        if self.redis_client.get(totp_enabled_key) != b"true":
             raise TwoFactorVerificationError("2FA not enabled for this user.")
 
-        if not self.verify_2fa_code(user.two_factor_secret, code):
+        secret = self.redis_client.get(totp_secret_key)
+        if not secret:
+            raise TwoFactorVerificationError("2FA configuration missing.")
+
+        secret_str = secret.decode('utf-8') if isinstance(secret, bytes) else secret
+
+        if not self.verify_2fa_code(secret_str, code):
             raise TwoFactorVerificationError("Invalid 2FA code.")

@@ -153,28 +153,6 @@ async def sp_update_password(
     return bool(result)
 
 
-async def sp_set_2fa_secret(
-    conn: asyncpg.Connection,
-    user_id: UUID,
-    secret: str,
-    is_verified: bool
-) -> None:
-    await conn.execute(
-        "UPDATE activity.users SET two_factor_secret = $1, is_2fa_enabled = $2 WHERE id = $3",
-        secret,
-        is_verified,
-        user_id
-    )
-
-
-async def sp_disable_2fa(
-    conn: asyncpg.Connection,
-    user_id: UUID
-) -> None:
-    await conn.execute(
-        "UPDATE activity.users SET two_factor_secret = NULL, is_2fa_enabled = FALSE WHERE id = $1",
-        user_id
-    )
 
 
 async def check_email_exists(
