@@ -1,18 +1,29 @@
-# Route exports
-from app.routes.login import router as login
-from app.routes.logout import router as logout
-from app.routes.password_reset import router as password_reset
-from app.routes.refresh import router as refresh
-from app.routes.register import router as register
-from app.routes.verify import router as verify
-from app.routes.twofa import router as twofa
+# app/middleware/security.py
+"""Security middleware for adding HTTP security headers."""
+from fastapi import Request, Response
 
-__all__ = [
-    "login",
-    "logout",
-    "password_reset",
-    "refresh",
-    "register",
-    "verify",
-    "twofa"
-]
+from app.config import settings
+
+
+async def add_security_headers(request: Request, call_next) -> Response:
+    """Add security headers to all responses."""
+    response = await call_next(request)
+    
+    # Security headers
+    headers = {
+        "X-Content-Type-Options": "nosniff",
+        "X-XSS-Protection": "1; mode=block",
+        "X-Frame-Options": "DENY",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "Content-Security-Policy": "default-src 'self'",
+        "Server": "",  # Hide server details
+    }
+    
+    # HSTS only in production
+    if not settings.debug:
+        headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    
+    for header, value in headers.items():
+        response.headers[header] = value
+    
+    return response
