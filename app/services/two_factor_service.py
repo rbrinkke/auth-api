@@ -56,7 +56,7 @@ class TwoFactorService:
             raise UserNotFoundError()
 
         totp_enabled_key = f"2FA:{user_id}:totp_enabled"
-        if self.redis_client.get(totp_enabled_key) == b"true":
+        if self.redis_client.get(totp_enabled_key) == "true":
             logger.warning("2fa_setup_failed", user_id=str(user_id), reason="already_enabled")
             raise TwoFactorSetupError("2FA is already enabled.")
 
@@ -92,13 +92,11 @@ class TwoFactorService:
                           reason="setup_not_initiated_or_expired")
             raise TwoFactorSetupError("2FA setup not initiated or expired.")
 
-        pending_secret_str = pending_secret.decode('utf-8') if isinstance(pending_secret, bytes) else pending_secret
-
-        if self.verify_2fa_code(pending_secret_str, code):
+        if self.verify_2fa_code(pending_secret, code):
             totp_secret_key = f"2FA:{user_id}:totp_secret"
             totp_enabled_key = f"2FA:{user_id}:totp_enabled"
 
-            self.redis_client.set(totp_secret_key, pending_secret_str)
+            self.redis_client.set(totp_secret_key, pending_secret)
             self.redis_client.set(totp_enabled_key, "true")
             self.redis_client.delete(setup_pending_key)
 
@@ -130,7 +128,7 @@ class TwoFactorService:
         totp_enabled_key = f"2FA:{user_id}:totp_enabled"
         totp_secret_key = f"2FA:{user_id}:totp_secret"
 
-        if self.redis_client.get(totp_enabled_key) != b"true":
+        if self.redis_client.get(totp_enabled_key) != "true":
             logger.warning("2fa_challenge_failed",
                           user_id=str(user_id),
                           reason="2fa_not_enabled")
@@ -143,9 +141,7 @@ class TwoFactorService:
                           reason="configuration_missing")
             raise TwoFactorVerificationError("2FA configuration missing.")
 
-        secret_str = secret.decode('utf-8') if isinstance(secret, bytes) else secret
-
-        if not self.verify_2fa_code(secret_str, code):
+        if not self.verify_2fa_code(secret, code):
             logger.warning("2fa_challenge_failed",
                           user_id=str(user_id),
                           reason="invalid_code")

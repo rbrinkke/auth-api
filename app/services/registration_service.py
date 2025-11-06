@@ -94,7 +94,7 @@ class RegistrationService:
             return {"message": "Invalid or expired verification code."}
 
         # Extract user_id and stored_code from Redis value
-        token_data_str = stored_token_data.decode('utf-8') if isinstance(stored_token_data, bytes) else stored_token_data
+        token_data_str = stored_token_data
         try:
             stored_user_id_str, stored_code = token_data_str.split(':')
             user_id = UUID(stored_user_id_str)

@@ -95,8 +95,7 @@ class AuthService:
             logger.warning("login_failed_code_expired", user_id=str(user.id), email=email)
             raise InvalidTokenError("Login code expired or not found")
 
-        stored_code_str = stored_code.decode('utf-8') if isinstance(stored_code, bytes) else stored_code
-        if stored_code_str != code:
+        if stored_code != code:
             logger.warning("login_failed_invalid_code", user_id=str(user.id), email=email)
             raise InvalidTokenError("Invalid login code")
 
@@ -107,7 +106,7 @@ class AuthService:
         # Step 3: Check 2FA (existing logic)
         if self.settings.TWO_FACTOR_ENABLED:
             user_totp_enabled = self.redis_client.get(f"2FA:{user.id}:totp_enabled")
-            if user_totp_enabled == b"true":
+            if user_totp_enabled == "true":
                 pre_auth_token = self.token_service.create_2fa_token(user.id)
                 logger.info("login_requires_2fa", user_id=str(user.id), email=email)
                 raise TwoFactorRequiredError(detail=pre_auth_token)
