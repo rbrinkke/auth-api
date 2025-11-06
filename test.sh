@@ -25,7 +25,7 @@ EMAIL="ultimate_$(date +%s)@example.com"
 cat > ./reg.json << JSON
 {"email": "$EMAIL", "password": "$PASS"}
 JSON
-R=$(curl -s -X POST "$API/auth/register" -H "Content-Type: application/json" -d @./reg.json)
+R=$(curl -s -X POST "$API/api/auth/register" -H "Content-Type: application/json" -d @./reg.json)
 echo "$R" | grep -q "success" || (echo "Registration failed: $R" && exit 1)
 echo "      ✓ Registered: $EMAIL"
 echo ""
@@ -49,7 +49,7 @@ echo "[5/21] VERIFY EMAIL"
 cat > ./verify.json << JSON
 {"user_id": "$USER_ID", "code": "$CODE"}
 JSON
-R=$(curl -s -X POST "$API/auth/verify-code" -H "Content-Type: application/json" -d @./verify.json)
+R=$(curl -s -X POST "$API/api/auth/verify-code" -H "Content-Type: application/json" -d @./verify.json)
 echo "$R" | grep -qi "verified\|success" || (echo "Verify failed: $R" && exit 1)
 echo "      ✓ Email verified"
 echo ""
@@ -72,7 +72,7 @@ echo "[8/21] LOGIN (before password change)"
 cat > ./login.json << JSON
 {"username": "$EMAIL", "password": "$PASS"}
 JSON
-R=$(curl -s -X POST "$API/auth/login" -H "Content-Type: application/json" -d @./login.json)
+R=$(curl -s -X POST "$API/api/auth/login" -H "Content-Type: application/json" -d @./login.json)
 echo "$R" | grep -q "access_token" || exit 1
 ACCESS=$(echo "$R" | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
 REFRESH=$(echo "$R" | grep -o '"refresh_token":"[^"]*' | cut -d'"' -f4)
@@ -84,7 +84,7 @@ echo "[9/21] PASSWORD RESET REQUEST"
 cat > ./reset.json << JSON
 {"email": "$EMAIL"}
 JSON
-R=$(curl -s -X POST "$API/auth/request-password-reset" -H "Content-Type: application/json" -d @./reset.json)
+R=$(curl -s -X POST "$API/api/auth/request-password-reset" -H "Content-Type: application/json" -d @./reset.json)
 echo "$R" | grep -qi "sent\|account" || (echo "Reset request failed: $R" && exit 1)
 echo "      ✓ Reset requested"
 echo ""
@@ -100,7 +100,7 @@ echo "[11/21] EXECUTE PASSWORD RESET"
 cat > ./resetpass.json << JSON
 {"user_id": "$USER_ID", "code": "$RESET_CODE", "new_password": "NewStrongPassword2025"}
 JSON
-R=$(curl -s -X POST "$API/auth/reset-password" -H "Content-Type: application/json" -d @./resetpass.json)
+R=$(curl -s -X POST "$API/api/auth/reset-password" -H "Content-Type: application/json" -d @./resetpass.json)
 echo "$R" | grep -qi "success\|updated\|Password updated" || (echo "Password reset failed: $R" && exit 1)
 echo "      ✓ Password updated"
 echo ""
@@ -123,7 +123,7 @@ echo "[13/21] LOGIN NEW PASSWORD"
 cat > ./login_new.json << JSON
 {"username": "$EMAIL", "password": "NewStrongPassword2025"}
 JSON
-R=$(curl -s -X POST "$API/auth/login" -H "Content-Type: application/json" -d @./login_new.json)
+R=$(curl -s -X POST "$API/api/auth/login" -H "Content-Type: application/json" -d @./login_new.json)
 if echo "$R" | grep -q "access_token"; then
     echo "      ✓✓✓ LOGIN NEW PASSWORD SUCCESS ✓✓✓"
     REFRESH=$(echo "$R" | grep -o '"refresh_token":"[^"]*' | cut -d'"' -f4)
@@ -135,7 +135,7 @@ echo ""
 
 # LOGIN OLD
 echo "[14/21] LOGIN OLD PASSWORD (should fail)"
-R=$(curl -s -X POST "$API/auth/login" -H "Content-Type: application/json" -d @./login.json)
+R=$(curl -s -X POST "$API/api/auth/login" -H "Content-Type: application/json" -d @./login.json)
 if echo "$R" | grep -qi "invalid\|credentials"; then
     echo "      ✓✓✓ OLD PASSWORD CORRECTLY REJECTED ✓✓✓"
 else
@@ -149,7 +149,7 @@ echo "[15/21] TOKEN REFRESH"
 cat > ./refresh.json << JSON
 {"refresh_token": "$REFRESH"}
 JSON
-R=$(curl -s -X POST "$API/auth/refresh" -H "Content-Type: application/json" -d @./refresh.json)
+R=$(curl -s -X POST "$API/api/auth/refresh" -H "Content-Type: application/json" -d @./refresh.json)
 if echo "$R" | grep -q "access_token"; then
     echo "      ✓ Token refresh works"
 else
@@ -160,14 +160,14 @@ echo ""
 
 # LOGOUT
 echo "[16/21] LOGOUT (with response check)"
-R=$(curl -s -X POST "$API/auth/logout" -H "Content-Type: application/json" -d @./refresh.json)
+R=$(curl -s -X POST "$API/api/auth/logout" -H "Content-Type: application/json" -d @./refresh.json)
 echo "$R" | grep -qi "success\|Logged out\|successfully" || (echo "Logout failed: $R" && exit 1)
 echo "      ✓ Logout executed"
 echo ""
 
 # BLACKLIST
 echo "[17/21] BLACKLIST TEST"
-R=$(curl -s -X POST "$API/auth/refresh" -H "Content-Type: application/json" -d @./refresh.json)
+R=$(curl -s -X POST "$API/api/auth/refresh" -H "Content-Type: application/json" -d @./refresh.json)
 if echo "$R" | grep -qi "revoked\|invalid\|blacklist"; then
     echo "      ✓✓✓ Blacklisted token rejected ✓✓✓"
 else
@@ -187,7 +187,7 @@ echo ""
 echo "[19/21] RATE LIMITS - REAL TEST (21 login attempts)"
 echo "      Testing rate limit (should hit at ~20)..."
 for i in {1..21}; do
-    curl -s -X POST "$API/auth/login" -H "Content-Type: application/json" -d '{"username":"fake@test.com","password":"wrong"}' > /dev/null 2>&1
+    curl -s -X POST "$API/api/auth/login" -H "Content-Type: application/json" -d '{"username":"fake@test.com","password":"wrong"}' > /dev/null 2>&1
     if [ $i -eq 20 ]; then
         sleep 1
     fi
@@ -198,7 +198,7 @@ echo ""
 # 2FA ENDPOINTS - REAL TEST
 echo "[20/21] 2FA ENDPOINTS - REAL TEST"
 for endpoint in "enable-2fa" "verify-2fa-setup" "verify-2fa" "disable-2fa" "2fa-status"; do
-    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API/auth/$endpoint" -H "Content-Type: application/json" -d '{}' 2>/dev/null)
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API/api/auth/$endpoint" -H "Content-Type: application/json" -d '{}' 2>/dev/null)
     if [ "$HTTP_CODE" != "000" ]; then
         echo "      ✓ /$endpoint (HTTP $HTTP_CODE)"
     else

@@ -133,14 +133,6 @@ app.include_router(verify.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(password_reset.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(twofa.router, prefix="/api/auth/2fa", tags=["2FA"])
 
-app.include_router(register.router, prefix="/auth", tags=["Auth"])
-app.include_router(login.router, prefix="/auth", tags=["Auth"])
-app.include_router(logout.router, prefix="/auth", tags=["Auth"])
-app.include_router(refresh.router, prefix="/auth", tags=["Auth"])
-app.include_router(verify.router, prefix="/auth", tags=["Auth"])
-app.include_router(password_reset.router, prefix="/auth", tags=["Auth"])
-app.include_router(twofa.router, prefix="/auth/2fa", tags=["2FA"])
-
 @app.get("/api/health", status_code=status.HTTP_200_OK, tags=["Health"])
 async def health_check():
     return {"status": "ok"}
