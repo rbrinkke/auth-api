@@ -1,12 +1,11 @@
 from fastapi import Depends
 import asyncpg
-import secrets
-from datetime import timedelta
 from uuid import UUID
 from app.db.connection import get_db_connection
 from app.db import procedures
 from app.core.exceptions import UserAlreadyExistsError
 from app.core.utils import generate_verification_code
+from app.core.redis_utils import store_code_with_token, retrieve_and_verify_code, delete_code
 from app.services.password_service import PasswordService
 from app.services.email_service import EmailService
 from app.core.redis_client import get_redis_client
@@ -30,10 +29,6 @@ class RegistrationService:
         self.email_service = email_service
         self.redis_client = redis_client
 
-    def _generate_verification_token(self) -> str:
-        """Generate cryptographically secure opaque verification token."""
-        return secrets.token_hex(16)  # 32-character hex token
-
     async def register_user(self, user: UserCreate) -> dict:
         logger.info("user_registration_start", email=user.email)
 
@@ -52,13 +47,15 @@ class RegistrationService:
                    email=new_user.email)
 
         verification_code = generate_verification_code()
-        verification_token = self._generate_verification_token()
 
-        # Store verification token → {user_id}:{code} mapping in Redis
-        # This prevents account takeover by guessing user_ids
-        redis_key = f"verify_token:{verification_token}"
-        redis_value = f"{str(new_user.id)}:{verification_code}"
-        self.redis_client.setex(redis_key, 600, redis_value)
+        # Store code with opaque token (prevents UUID enumeration)
+        verification_token = store_code_with_token(
+            self.redis_client,
+            new_user.id,
+            verification_code,
+            key_prefix="verify_token",
+            ttl=600
+        )
 
         logger.info("verification_code_generated",
                    user_id=str(new_user.id),
@@ -84,36 +81,22 @@ class RegistrationService:
     async def verify_account_by_code(self, verification_token: str, code: str) -> dict:
         logger.info("account_verification_start", verification_token=verification_token)
 
-        # Lookup verification token → extract user_id and stored code
-        redis_key = f"verify_token:{verification_token}"
-        stored_token_data = self.redis_client.get(redis_key)
+        # Verify code using helper (handles constant-time comparison, UUID parsing, etc.)
+        user_id = retrieve_and_verify_code(
+            self.redis_client,
+            verification_token,
+            code,
+            key_prefix="verify_token"
+        )
 
-        if not stored_token_data:
+        if not user_id:
             logger.warning("account_verification_failed",
-                          reason="invalid_or_expired_token")
-            return {"message": "Invalid or expired verification code."}
-
-        # Extract user_id and stored_code from Redis value
-        token_data_str = stored_token_data
-        try:
-            stored_user_id_str, stored_code = token_data_str.split(':')
-            user_id = UUID(stored_user_id_str)
-        except (ValueError, IndexError):
-            logger.error("account_verification_failed",
-                        reason="malformed_token_data",
-                        token_data=token_data_str)
-            return {"message": "Invalid or expired verification code."}
-
-        # Validate code matches
-        if stored_code != code:
-            logger.warning("account_verification_failed",
-                          user_id=str(user_id),
-                          reason="invalid_code")
+                          reason="invalid_or_expired_token_or_code")
             return {"message": "Invalid or expired verification code."}
 
         # Verify user email in database
         await procedures.sp_verify_user_email(self.db, user_id)
-        self.redis_client.delete(redis_key)
+        delete_code(self.redis_client, verification_token, key_prefix="verify_token")
 
         logger.info("account_verification_success", user_id=str(user_id))
 

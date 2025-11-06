@@ -1,12 +1,12 @@
 from fastapi import Depends
 import asyncpg
-import secrets
 import redis
 from uuid import UUID
 from app.db.connection import get_db_connection
 from app.db import procedures
 from app.core.exceptions import UserNotFoundError, InvalidTokenError
 from app.core.utils import generate_verification_code
+from app.core.redis_utils import store_code_with_token, retrieve_and_verify_code, delete_code
 from app.services.password_service import PasswordService
 from app.services.email_service import EmailService
 from app.core.redis_client import get_redis_client
@@ -29,23 +29,21 @@ class PasswordResetService:
         self.email_service = email_service
         self.redis_client = redis_client
 
-    def _generate_reset_token(self) -> str:
-        """Generate cryptographically secure opaque reset token."""
-        return secrets.token_hex(16)  # 32-character hex token
-
     async def request_password_reset(self, request: RequestPasswordResetRequest) -> dict:
         logger.info("password_reset_request_start", email=request.email)
 
         user = await procedures.sp_get_user_by_email(self.db, request.email)
         if user:
             reset_code = generate_verification_code()
-            reset_token = self._generate_reset_token()
 
-            # Store reset token → {user_id}:{code} mapping in Redis
-            # This prevents account takeover by guessing user_ids
-            redis_key = f"reset_token:{reset_token}"
-            redis_value = f"{str(user.id)}:{reset_code}"
-            self.redis_client.setex(redis_key, 600, redis_value)
+            # Store code with opaque token (prevents UUID enumeration)
+            reset_token = store_code_with_token(
+                self.redis_client,
+                user.id,
+                reset_code,
+                key_prefix="reset_token",
+                ttl=600
+            )
 
             logger.info("password_reset_code_generated",
                        user_id=str(user.id),
@@ -63,29 +61,18 @@ class PasswordResetService:
     async def confirm_password_reset(self, request: ResetPasswordRequest) -> dict:
         logger.info("password_reset_confirm_start", reset_token=request.reset_token)
 
-        # Lookup reset token → extract user_id and stored code
-        redis_key = f"reset_token:{request.reset_token}"
-        stored_token_data = self.redis_client.get(redis_key)
+        # Verify code using helper (handles constant-time comparison, UUID parsing, etc.)
+        user_id = retrieve_and_verify_code(
+            self.redis_client,
+            request.reset_token,
+            request.code,
+            key_prefix="reset_token"
+        )
 
-        if not stored_token_data:
-            logger.warning("password_reset_failed", reason="invalid_or_expired_token")
+        if not user_id:
+            logger.warning("password_reset_failed",
+                          reason="invalid_or_expired_token_or_code")
             raise InvalidTokenError("Reset code expired or not found")
-
-        # Extract user_id and stored_code from Redis value
-        token_data_str = stored_token_data
-        try:
-            stored_user_id_str, stored_code = token_data_str.split(':')
-            user_id = UUID(stored_user_id_str)
-        except (ValueError, IndexError):
-            logger.error("password_reset_failed",
-                        reason="malformed_token_data",
-                        token_data=token_data_str)
-            raise InvalidTokenError("Invalid reset code")
-
-        # Validate code matches
-        if stored_code != request.code:
-            logger.warning("password_reset_code_invalid", user_id=str(user_id))
-            raise InvalidTokenError("Invalid reset code")
 
         logger.info("password_reset_code_validated", user_id=str(user_id))
 
@@ -98,7 +85,7 @@ class PasswordResetService:
             logger.error("password_reset_update_failed", user_id=str(user_id), reason="user_not_found")
             raise UserNotFoundError()
 
-        self.redis_client.delete(redis_key)
+        delete_code(self.redis_client, request.reset_token, key_prefix="reset_token")
 
         await procedures.sp_revoke_all_refresh_tokens(self.db, user_id)
 
