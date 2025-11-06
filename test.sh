@@ -126,6 +126,7 @@ JSON
 R=$(curl -s -X POST "$API/auth/login" -H "Content-Type: application/json" -d @./login_new.json)
 if echo "$R" | grep -q "access_token"; then
     echo "      ✓✓✓ LOGIN NEW PASSWORD SUCCESS ✓✓✓"
+    REFRESH=$(echo "$R" | grep -o '"refresh_token":"[^"]*' | cut -d'"' -f4)
 else
     echo "      ✗ Login new password failed"
     exit 1
@@ -177,8 +178,8 @@ echo ""
 
 # HEALTH CHECK
 echo "[18/21] HEALTH CHECK"
-R=$(curl -s "$API/health")
-echo "$R" | grep -q "healthy" || exit 1
+R=$(curl -s "$API/api/health")
+echo "$R" | grep -q "ok" || exit 1
 echo "      ✓ All services healthy"
 echo ""
 

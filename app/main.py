@@ -3,6 +3,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.logging_config import setup_logging
+from app.db import db
 from app.core.exceptions import (
     AuthException,
     InvalidCredentialsError,
@@ -24,6 +25,18 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Auth API")
+
+@app.on_event("startup")
+async def startup_event():
+    logger.info("Connecting to database...")
+    await db.connect()
+    logger.info("Database connected successfully")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    logger.info("Disconnecting from database...")
+    await db.disconnect()
+    logger.info("Database disconnected")
 
 app.add_middleware(
     CORSMiddleware,
@@ -119,6 +132,14 @@ app.include_router(refresh.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(verify.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(password_reset.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(twofa.router, prefix="/api/auth/2fa", tags=["2FA"])
+
+app.include_router(register.router, prefix="/auth", tags=["Auth"])
+app.include_router(login.router, prefix="/auth", tags=["Auth"])
+app.include_router(logout.router, prefix="/auth", tags=["Auth"])
+app.include_router(refresh.router, prefix="/auth", tags=["Auth"])
+app.include_router(verify.router, prefix="/auth", tags=["Auth"])
+app.include_router(password_reset.router, prefix="/auth", tags=["Auth"])
+app.include_router(twofa.router, prefix="/auth/2fa", tags=["2FA"])
 
 @app.get("/api/health", status_code=status.HTTP_200_OK, tags=["Health"])
 async def health_check():

@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 
-from app.config import settings
+from app.config import get_settings
 from app.services.registration_service import UserAlreadyExistsError
 from app.services.password_validation_service import PasswordValidationError
 from app.services.password_reset_service import PasswordResetServiceError
@@ -67,6 +67,7 @@ def register_exception_handlers(app: FastAPI) -> None:
             }
         )
         
+        settings = get_settings()
         error_message = (
             "An unexpected error occurred."
             if not settings.debug

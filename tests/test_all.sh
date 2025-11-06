@@ -14,7 +14,7 @@ echo ""
 
 # Test 1: Health Check
 echo "✓ Test 1: Health Check"
-if curl -s "$API_URL/health" | grep -q "healthy"; then
+if curl -s "$API_URL/api/health" | grep -q "ok"; then
     echo "  ├─ Health: OK"
     echo "  ├─ Database: Connected"
     echo "  └─ Redis: Connected"
@@ -26,8 +26,8 @@ echo ""
 
 # Test 2: Rate Limit Configuration
 echo "✓ Test 2: Rate Limit Configuration"
-REG_LIMIT=$(docker compose exec -T auth-api python -c "from app.config import settings; print(settings.rate_limit_register_per_hour)" 2>/dev/null)
-LOG_LIMIT=$(docker compose exec -T auth-api python -c "from app.config import settings; print(settings.rate_limit_login_per_minute)" 2>/dev/null)
+REG_LIMIT=$(docker compose exec -T auth-api python -c "from app.config import get_settings; print(get_settings().RATE_LIMIT_REQUESTS)" 2>/dev/null)
+LOG_LIMIT=$(docker compose exec -T auth-api python -c "from app.config import get_settings; print(get_settings().RATE_LIMIT_REQUESTS)" 2>/dev/null)
 echo "  ├─ Register limit: $REG_LIMIT per hour"
 echo "  └─ Login limit: $LOG_LIMIT per minute"
 echo ""
@@ -43,7 +43,7 @@ for i in 1 2 3; do
 {"email": "$EMAIL", "password": "$PASSWORD"}
 JSON
 
-    RESPONSE=$(curl -s -X POST "$API_URL/auth/register" -H "Content-Type: application/json" -d @/tmp/reg.json)
+    RESPONSE=$(curl -s -X POST "$API_URL/api/auth/register" -H "Content-Type: application/json" -d @/tmp/reg.json)
 
     if echo "$RESPONSE" | grep -q "User registered successfully"; then
         echo "  ├─ User $i: ✓ Registered ($EMAIL)"
@@ -61,7 +61,7 @@ cat > /tmp/login.json << JSON
 {"username": "test_user_1_$(date +%s)@example.com", "password": "$PASSWORD"}
 JSON
 
-RESPONSE=$(curl -s -X POST "$API_URL/auth/login" -H "Content-Type: application/json" -d @/tmp/login.json)
+RESPONSE=$(curl -s -X POST "$API_URL/api/auth/login" -H "Content-Type: application/json" -d @/tmp/login.json)
 
 if echo "$RESPONSE" | grep -q "Email not verified\|Invalid"; then
     echo "  └─ ✓ Unverified login correctly blocked"
@@ -72,7 +72,7 @@ echo ""
 
 # Test 5: Password Security
 echo "✓ Test 5: Password Security"
-RESPONSE=$(curl -s -X POST "$API_URL/auth/register" \
+RESPONSE=$(curl -s -X POST "$API_URL/api/auth/register" \
     -H "Content-Type: application/json" \
     -d '{"email":"breach@test.com","password":"TestPassword123!"}')
 
@@ -82,7 +82,7 @@ else
     echo "  ├─ Note: Breach check response"
 fi
 
-RESPONSE=$(curl -s -X POST "$API_URL/auth/register" \
+RESPONSE=$(curl -s -X POST "$API_URL/api/auth/register" \
     -H "Content-Type: application/json" \
     -d '{"email":"weak@test.com","password":"123"}')
 
@@ -96,7 +96,7 @@ echo ""
 # Test 6: Rate Limiting Still Active
 echo "✓ Test 6: Rate Limiting (abuse protection)"
 for i in {1..30}; do
-    curl -s -X POST "$API_URL/auth/login" -H "Content-Type: application/json" -d @/tmp/login.json > /tmp/rate_${i}.json
+    curl -s -X POST "$API_URL/api/auth/login" -H "Content-Type: application/json" -d @/tmp/login.json > /tmp/rate_${i}.json
 done
 
 if grep -q "rate\|limit\|429" /tmp/rate_*.json 2>/dev/null; then

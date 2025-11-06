@@ -4,7 +4,7 @@ class AuthException(Exception):
         super().__init__(self.detail)
 
 class InvalidCredentialsError(AuthException):
-    def __init__(self, detail: str = "Incorrect email or password"):
+    def __init__(self, detail: str = "Invalid credentials"):
         super().__init__(detail)
 
 class UserAlreadyExistsError(AuthException):

@@ -1,7 +1,9 @@
 from typing import Optional
 from uuid import UUID
+from datetime import timedelta, datetime
 
 import asyncpg
+from jose import jwt
 
 
 class UserRecord:
@@ -14,9 +16,6 @@ class UserRecord:
         self.created_at = record["created_at"]
         self.verified_at = record.get("verified_at")
         self.last_login_at = record.get("last_login_at")
-        self.two_factor_enabled: bool = record.get("two_factor_enabled", False)
-        self.two_factor_secret: Optional[str] = record.get("two_factor_secret")
-        self.two_factor_backup_codes: Optional[list] = record.get("two_factor_backup_codes", [])
 
 
 async def sp_create_user(
@@ -50,7 +49,7 @@ async def sp_get_user_by_email(
 
 async def sp_get_user_by_id(
     conn: asyncpg.Connection,
-    user_id: UUID
+    user_id: str
 ) -> Optional[UserRecord]:
     result = await conn.fetchrow(
         "SELECT * FROM activity.sp_get_user_by_id($1)",
@@ -84,21 +83,31 @@ async def sp_verify_user(
 
 async def sp_save_refresh_token(
     conn: asyncpg.Connection,
-    user_id: int,
+    user_id: str,
     token: str,
     expires_delta: timedelta
-) -> None:
-    await conn.execute(
-        "INSERT INTO activity.refresh_tokens (user_id, token, expires_at) VALUES ($1, $2, NOW() + $3)",
+) -> bool:
+    payload = jwt.get_unverified_claims(token)
+    jti = payload.get("jti")
+
+    if not jti:
+        raise ValueError("Token does not have a jti claim")
+
+    expires_at = datetime.utcnow() + expires_delta
+
+    result = await conn.fetchval(
+        "SELECT activity.sp_save_refresh_token($1, $2, $3, $4)",
         user_id,
         token,
-        expires_delta
+        jti,
+        expires_at
     )
+    return bool(result)
 
 
 async def sp_validate_refresh_token(
     conn: asyncpg.Connection,
-    user_id: int,
+    user_id: str,
     token: str
 ) -> bool:
     result = await conn.fetchval(
@@ -111,7 +120,7 @@ async def sp_validate_refresh_token(
 
 async def sp_revoke_refresh_token(
     conn: asyncpg.Connection,
-    user_id: int,
+    user_id: str,
     token: str
 ) -> None:
     await conn.execute(
@@ -123,7 +132,7 @@ async def sp_revoke_refresh_token(
 
 async def sp_revoke_all_refresh_tokens(
     conn: asyncpg.Connection,
-    user_id: int
+    user_id: str
 ) -> None:
     await conn.execute(
         "UPDATE activity.refresh_tokens SET revoked = TRUE WHERE user_id = $1",
@@ -131,21 +140,22 @@ async def sp_revoke_all_refresh_tokens(
     )
 
 
-async def sp_update_user_password(
+async def sp_update_password(
     conn: asyncpg.Connection,
-    user_id: int,
+    user_id: str,
     hashed_password: str
-) -> None:
-    await conn.execute(
-        "UPDATE activity.users SET hashed_password = $1 WHERE id = $2",
-        hashed_password,
-        user_id
+) -> bool:
+    result = await conn.fetchval(
+        "SELECT activity.sp_update_password($1, $2)",
+        user_id,
+        hashed_password
     )
+    return bool(result)
 
 
 async def sp_set_2fa_secret(
     conn: asyncpg.Connection,
-    user_id: int,
+    user_id: str,
     secret: str,
     is_verified: bool
 ) -> None:
@@ -159,7 +169,7 @@ async def sp_set_2fa_secret(
 
 async def sp_disable_2fa(
     conn: asyncpg.Connection,
-    user_id: int
+    user_id: str
 ) -> None:
     await conn.execute(
         "UPDATE activity.users SET two_factor_secret = NULL, is_2fa_enabled = FALSE WHERE id = $1",

@@ -40,7 +40,8 @@ class TokenResponse(BaseModel):
 
 
 class VerifyEmailRequest(BaseModel):
-    token: str = Field(..., min_length=1)
+    user_id: str = Field(..., min_length=1)
+    code: str = Field(..., min_length=6, max_length=6)
 
 
 class VerifyEmailResponse(BaseModel):
@@ -96,7 +97,6 @@ class RequestPasswordResetResponse(BaseModel):
 
 
 class ResetPasswordRequest(BaseModel):
-    user_id: str = Field(..., min_length=1, description="User ID")
     code: str = Field(..., min_length=6, max_length=6, description="6-digit password reset code")
     new_password: str = Field(
         ...,
@@ -119,6 +119,19 @@ class VerifyTempCodeRequest(BaseModel):
 class VerifyTempCodeResponse(BaseModel):
     message: str
     verified: bool = True
+
+
+class TwoFactorSetupRequest(BaseModel):
+    pass
+
+
+class TwoFactorVerifyRequest(BaseModel):
+    code: str = Field(..., min_length=6, max_length=6, description="6-digit TOTP code")
+
+
+class TwoFactorLoginRequest(BaseModel):
+    user_id: str = Field(..., min_length=1, description="User ID")
+    code: str = Field(..., min_length=6, max_length=6, description="6-digit TOTP code")
 
 
 class MessageResponse(BaseModel):

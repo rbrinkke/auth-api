@@ -2,7 +2,7 @@ from typing import Optional
 
 import asyncpg
 
-from app.config import settings
+from app.config import get_settings
 
 
 class Database:
@@ -10,18 +10,16 @@ class Database:
         self.pool: Optional[asyncpg.Pool] = None
 
     async def connect(self):
+        settings = get_settings()
         self.pool = await asyncpg.create_pool(
-            host=settings.postgres_host,
-            port=settings.postgres_port,
-            user=settings.postgres_user,
-            password=settings.postgres_password,
-            database=settings.postgres_db,
-            min_size=settings.postgres_pool_min_size,
-            max_size=settings.postgres_pool_max_size,
-            command_timeout=settings.postgres_pool_command_timeout,
-            server_settings={
-                'search_path': settings.postgres_schema
-            }
+            host=settings.POSTGRES_HOST,
+            port=settings.POSTGRES_PORT,
+            user=settings.POSTGRES_USER,
+            password=settings.POSTGRES_PASSWORD,
+            database=settings.POSTGRES_DB,
+            min_size=5,
+            max_size=20,
+            command_timeout=60
         )
 
     async def disconnect(self):

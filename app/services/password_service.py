@@ -1,4 +1,7 @@
 from fastapi import Depends
+import asyncio
+import uuid
+import logging
 from app.core.security import PasswordManager
 from app.services.password_validation_service import (
     PasswordValidationService,
@@ -6,6 +9,8 @@ from app.services.password_validation_service import (
     PasswordValidationError
 )
 from app.core.exceptions import InvalidPasswordError
+
+logger = logging.getLogger(__name__)
 
 class PasswordService:
     def __init__(
@@ -24,7 +29,26 @@ class PasswordService:
 
     async def get_password_hash(self, password: str) -> str:
         await self.validate_password_strength(password)
-        return self.password_manager.get_password_hash(password)
+        return await self.password_manager.get_password_hash(password)
 
-    def verify_password(self, plain_password: str, hashed_password: str) -> bool:
-        return self.password_manager.verify_password(plain_password, hashed_password)
+    async def verify_password(self, plain_password: str, hashed_password: str) -> bool:
+        trace_id = str(uuid.uuid4())
+
+        logger.info(f"[{trace_id}] verify_password START password_length={len(plain_password)} hash_length={len(hashed_password)}")
+        logger.info(f"[{trace_id}] asyncio.to_thread DISPATCH_START timeout=5s")
+
+        try:
+            result = await asyncio.wait_for(
+                asyncio.to_thread(
+                    self.password_manager.verify_password,
+                    plain_password,
+                    hashed_password
+                ),
+                timeout=5.0
+            )
+            logger.info(f"[{trace_id}] asyncio.to_thread DISPATCH_END result={result}")
+            logger.info(f"[{trace_id}] verify_password END result={result}")
+            return result
+        except asyncio.TimeoutError:
+            logger.error(f"[{trace_id}] asyncio.to_thread TIMEOUT after 5 seconds!")
+            raise

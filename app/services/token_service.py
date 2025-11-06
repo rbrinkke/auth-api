@@ -1,7 +1,8 @@
 from datetime import timedelta
 from fastapi import Depends
-from sqlalchemy.orm import Session
-from app.db.connection import get_db
+import asyncpg
+import uuid
+from app.db.connection import get_db_connection
 from app.db import procedures
 from app.config import Settings, get_settings
 from app.core.tokens import TokenHelper
@@ -13,29 +14,30 @@ class TokenService:
         self,
         settings: Settings = Depends(get_settings),
         token_helper: TokenHelper = Depends(TokenHelper),
-        db: Session = Depends(get_db)
+        db: asyncpg.Connection = Depends(get_db_connection)
     ):
         self.settings = settings
         self.token_helper = token_helper
         self.db = db
 
-    def create_access_token(self, user_id: int) -> str:
+    def create_access_token(self, user_id: str) -> str:
         expires_delta = timedelta(minutes=self.settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         return self.token_helper.create_token(
             data={"sub": str(user_id), "type": "access"},
             expires_delta=expires_delta
         )
 
-    def create_refresh_token(self, user_id: int) -> str:
+    async def create_refresh_token(self, user_id: str) -> str:
         expires_delta = timedelta(days=self.settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        jti = str(uuid.uuid4())
         token = self.token_helper.create_token(
-            data={"sub": str(user_id), "type": "refresh"},
+            data={"sub": str(user_id), "type": "refresh", "jti": jti},
             expires_delta=expires_delta
         )
-        procedures.sp_save_refresh_token(self.db, user_id, token, expires_delta)
+        await procedures.sp_save_refresh_token(self.db, user_id, token, expires_delta)
         return token
 
-    def create_verification_token(self, user_id: int) -> str:
+    def create_verification_token(self, user_id: str) -> str:
         expires_delta = timedelta(minutes=self.settings.VERIFICATION_TOKEN_EXPIRE_MINUTES)
         return self.token_helper.create_token(
             data={"sub": str(user_id), "type": "verification"},
@@ -56,21 +58,21 @@ class TokenService:
             expires_delta=expires_delta
         )
 
-    def refresh_access_token(self, refresh_token: str) -> TokenResponse:
+    async def refresh_access_token(self, refresh_token: str) -> TokenResponse:
         payload = self.token_helper.decode_token(refresh_token)
 
         if payload.get("type") != "refresh":
             raise InvalidTokenError("Invalid token type")
 
-        user_id = int(payload.get("sub"))
+        user_id = payload.get("sub")
 
-        if not procedures.sp_validate_refresh_token(self.db, user_id, refresh_token):
+        if not await procedures.sp_validate_refresh_token(self.db, user_id, refresh_token):
             raise InvalidTokenError("Token not found or revoked")
 
-        procedures.sp_revoke_refresh_token(self.db, user_id, refresh_token)
+        await procedures.sp_revoke_refresh_token(self.db, user_id, refresh_token)
 
         new_access_token = self.create_access_token(user_id)
-        new_refresh_token = self.create_refresh_token(user_id)
+        new_refresh_token = await self.create_refresh_token(user_id)
 
         return TokenResponse(
             access_token=new_access_token,

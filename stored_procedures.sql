@@ -28,17 +28,35 @@ CREATE TABLE IF NOT EXISTS activity.users (
     created_at TIMESTAMP DEFAULT NOW() NOT NULL,
     verified_at TIMESTAMP,
     last_login_at TIMESTAMP,
-    
+
     -- Constraints
     CONSTRAINT email_lowercase CHECK (email = LOWER(email))
 );
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_users_email ON activity.users(email);
-CREATE INDEX IF NOT EXISTS idx_users_verified ON activity.users(is_verified) 
+CREATE INDEX IF NOT EXISTS idx_users_verified ON activity.users(is_verified)
     WHERE is_verified = TRUE;
-CREATE INDEX IF NOT EXISTS idx_users_active ON activity.users(is_active) 
+CREATE INDEX IF NOT EXISTS idx_users_active ON activity.users(is_active)
     WHERE is_active = TRUE;
+
+-- =============================================================================
+-- 1.5. REFRESH TOKENS TABLE
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS activity.refresh_tokens (
+    id SERIAL PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES activity.users(id) ON DELETE CASCADE,
+    token VARCHAR(500) NOT NULL,
+    jti VARCHAR(50) UNIQUE NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+    revoked BOOLEAN DEFAULT FALSE NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON activity.refresh_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_jti ON activity.refresh_tokens(jti);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires ON activity.refresh_tokens(expires_at);
 
 -- =============================================================================
 -- 2. STORED PROCEDURES
@@ -92,10 +110,7 @@ CREATE OR REPLACE FUNCTION activity.sp_get_user_by_email(
     is_active BOOLEAN,
     created_at TIMESTAMP,
     verified_at TIMESTAMP,
-    last_login_at TIMESTAMP,
-    two_factor_enabled BOOLEAN,
-    two_factor_secret TEXT,
-    two_factor_backup_codes JSONB
+    last_login_at TIMESTAMP
 ) AS $$
 BEGIN
     RETURN QUERY
@@ -107,10 +122,7 @@ BEGIN
         u.is_active,
         u.created_at,
         u.verified_at,
-        u.last_login_at,
-        u.two_factor_enabled,
-        u.two_factor_secret,
-        u.two_factor_backup_codes
+        u.last_login_at
     FROM activity.users u
     WHERE u.email = LOWER(p_email);
 END;
@@ -256,10 +268,80 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION activity.sp_cleanup_unverified_users IS 
-'Delete users who have not verified their email after specified days. 
+COMMENT ON FUNCTION activity.sp_cleanup_unverified_users IS
+'Delete users who have not verified their email after specified days.
 Default is 7 days. Returns number of deleted users.
 This should be run as a scheduled job (cron/pg_cron).';
+
+-- -----------------------------------------------------------------------------
+-- sp_save_refresh_token: Save a refresh token for a user
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION activity.sp_save_refresh_token(
+    p_user_id UUID,
+    p_token VARCHAR,
+    p_jti VARCHAR,
+    p_expires_at TIMESTAMP
+) RETURNS BOOLEAN AS $$
+DECLARE
+    rows_affected INTEGER;
+BEGIN
+    INSERT INTO activity.refresh_tokens (user_id, token, jti, expires_at)
+    VALUES (p_user_id, p_token, p_jti, p_expires_at);
+
+    GET DIAGNOSTICS rows_affected = ROW_COUNT;
+    RETURN rows_affected > 0;
+END;
+$$ LANGUAGE plpgsql;
+
+-- -----------------------------------------------------------------------------
+-- sp_revoke_refresh_token: Revoke a refresh token
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION activity.sp_revoke_refresh_token(
+    p_user_id UUID,
+    p_token VARCHAR
+) RETURNS BOOLEAN AS $$
+DECLARE
+    rows_affected INTEGER;
+BEGIN
+    UPDATE activity.refresh_tokens
+    SET revoked = TRUE
+    WHERE user_id = p_user_id AND token = p_token AND revoked = FALSE;
+
+    GET DIAGNOSTICS rows_affected = ROW_COUNT;
+    RETURN rows_affected > 0;
+END;
+$$ LANGUAGE plpgsql;
+
+-- -----------------------------------------------------------------------------
+-- sp_get_valid_refresh_token: Get a valid refresh token
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION activity.sp_get_valid_refresh_token(
+    p_token VARCHAR
+) RETURNS TABLE(
+    id INTEGER,
+    user_id UUID,
+    token VARCHAR,
+    jti VARCHAR,
+    expires_at TIMESTAMP,
+    created_at TIMESTAMP,
+    revoked BOOLEAN
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        rt.id,
+        rt.user_id,
+        rt.token,
+        rt.jti,
+        rt.expires_at,
+        rt.created_at,
+        rt.revoked
+    FROM activity.refresh_tokens rt
+    WHERE rt.token = p_token
+      AND rt.revoked = FALSE
+      AND rt.expires_at > NOW();
+END;
+$$ LANGUAGE plpgsql;
 
 -- =============================================================================
 -- 3. VERIFICATION QUERIES

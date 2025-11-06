@@ -1,10 +1,11 @@
 from fastapi import Request, Response
 
-from app.config import settings
+from app.config import get_settings
 
 
 async def add_security_headers(request: Request, call_next) -> Response:
     response = await call_next(request)
+    settings = get_settings()
 
     headers = {
         "X-Content-Type-Options": "nosniff",
