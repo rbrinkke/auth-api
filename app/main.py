@@ -73,8 +73,13 @@ async def invalid_credentials_handler(request: Request, exc: InvalidCredentialsE
 @app.exception_handler(TwoFactorRequiredError)
 async def two_factor_required_handler(request: Request, exc: TwoFactorRequiredError):
     return JSONResponse(
-        status_code=status.HTTP_402_PAYMENT_REQUIRED,
-        content={"detail": "2FA required", "pre_auth_token": exc.detail},
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        content={
+            "detail": "2FA verification required",
+            "pre_auth_token": exc.detail,
+            "challenge_type": "2fa"
+        },
+        headers={"WWW-Authenticate": "Bearer"},
     )
 
 @app.exception_handler(TwoFactorVerificationError)
