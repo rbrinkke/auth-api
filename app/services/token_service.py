@@ -26,18 +26,18 @@ class TokenService:
         self.db = db
 
     def create_access_token(self, user_id: UUID) -> str:
-        expires_delta = timedelta(minutes=self.settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expires_delta = timedelta(minutes=self.settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
         token = self.token_helper.create_token(
             data={"sub": str(user_id), "type": "access"},
             expires_delta=expires_delta
         )
         logger.info("access_token_created",
                    user_id=str(user_id),
-                   expires_minutes=self.settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+                   expires_minutes=self.settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
         return token
 
     async def create_refresh_token(self, user_id: UUID) -> str:
-        expires_delta = timedelta(days=self.settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        expires_delta = timedelta(days=self.settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
         jti = str(uuid.uuid4())
         token = self.token_helper.create_token(
             data={"sub": str(user_id), "type": "refresh", "jti": jti},
@@ -47,7 +47,7 @@ class TokenService:
         logger.info("refresh_token_created",
                    user_id=str(user_id),
                    jti=jti,
-                   expires_days=self.settings.REFRESH_TOKEN_EXPIRE_DAYS)
+                   expires_days=self.settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
         return token
 
     def create_verification_token(self, user_id: UUID) -> str:

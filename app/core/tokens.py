@@ -7,8 +7,8 @@ from app.core.exceptions import TokenExpiredError, InvalidTokenError
 class TokenHelper:
     def __init__(self, settings: Settings = Depends(get_settings)):
         self.settings = settings
-        self.SECRET_KEY = settings.SECRET_KEY
-        self.ALGORITHM = settings.ALGORITHM
+        self.SECRET_KEY = settings.JWT_SECRET_KEY
+        self.ALGORITHM = settings.JWT_ALGORITHM
 
     def create_token(self, data: dict, expires_delta: timedelta) -> str:
         to_encode = data.copy()

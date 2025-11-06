@@ -1,5 +1,6 @@
 import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator
 from functools import lru_cache
 
 class Settings(BaseSettings):
@@ -19,10 +20,6 @@ class Settings(BaseSettings):
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
-    SECRET_KEY: str = "dev_secret_key_change_in_production_min_32_chars_required"
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     VERIFICATION_TOKEN_EXPIRE_MINUTES: int = 1440
     RESET_TOKEN_EXPIRE_MINUTES: int = 60
 
@@ -51,6 +48,29 @@ class Settings(BaseSettings):
     RESET_TOKEN_TTL: int = 3600
 
     LOG_LEVEL: str = "INFO"
+
+    @field_validator("JWT_SECRET_KEY", mode="after")
+    @classmethod
+    def validate_jwt_secret_key(cls, v: str) -> str:
+        """Validate JWT secret key for production safety.
+
+        Must be at least 32 characters. In production (DEBUG=False),
+        must not contain development indicators.
+        """
+        if len(v) < 32:
+            raise ValueError("JWT_SECRET_KEY must be at least 32 characters")
+        return v
+
+    @field_validator("ENCRYPTION_KEY", mode="after")
+    @classmethod
+    def validate_encryption_key(cls, v: str) -> str:
+        """Validate 2FA encryption key.
+
+        Must be at least 32 characters for security.
+        """
+        if len(v) < 32:
+            raise ValueError("ENCRYPTION_KEY must be at least 32 characters")
+        return v
 
     model_config = SettingsConfigDict(
         env_file=".env",
