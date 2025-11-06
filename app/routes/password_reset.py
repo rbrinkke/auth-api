@@ -9,7 +9,7 @@ limiter = get_limiter()
 @router.post("/request-password-reset", status_code=status.HTTP_200_OK)
 @limiter.limit(lambda: get_password_reset_rate_limit())
 async def request_password_reset(
-    http_request: Request,
+    request: Request,
     reset_request: RequestPasswordResetRequest,
     reset_service: PasswordResetService = Depends(PasswordResetService)
 ):
@@ -18,7 +18,7 @@ async def request_password_reset(
 @router.post("/reset-password", status_code=status.HTTP_200_OK)
 @limiter.limit(lambda: get_password_reset_rate_limit())
 async def confirm_password_reset(
-    http_request: Request,
+    request: Request,
     reset_request: ResetPasswordRequest,
     reset_service: PasswordResetService = Depends(PasswordResetService)
 ):

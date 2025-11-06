@@ -83,7 +83,9 @@ async def sp_save_refresh_token(
     if not jti:
         raise ValueError("Token does not have a jti claim")
 
-    expires_at = datetime.now(timezone.utc) + expires_delta
+    # Calculate expiration with explicit timezone awareness
+    now_utc = datetime.now(timezone.utc)
+    expires_at = now_utc + expires_delta
 
     result = await conn.fetchval(
         "SELECT activity.sp_save_refresh_token($1, $2, $3, $4)",

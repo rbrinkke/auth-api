@@ -9,7 +9,7 @@ limiter = get_limiter()
 @router.post("/verify-code", status_code=200)
 @limiter.limit(lambda: get_verify_code_rate_limit())
 async def verify_code(
-    http_request: Request,
+    request: Request,
     verify_request: VerifyEmailRequest,
     reg_service: RegistrationService = Depends(RegistrationService)
 ):

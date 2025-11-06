@@ -16,7 +16,7 @@ async def add_security_headers(request: Request, call_next) -> Response:
         "Server": "",
     }
 
-    if not settings.debug:
+    if not settings.DEBUG:
         headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
     for header, value in headers.items():

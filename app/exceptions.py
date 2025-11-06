@@ -70,7 +70,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         settings = get_settings()
         error_message = (
             "An unexpected error occurred."
-            if not settings.debug
+            if not settings.DEBUG
             else f"Internal error: {str(exc)}"
         )
         

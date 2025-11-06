@@ -27,6 +27,7 @@ cat > ./reg.json << JSON
 JSON
 R=$(curl -s -X POST "$API/api/auth/register" -H "Content-Type: application/json" -d @./reg.json)
 echo "$R" | grep -q "success" || (echo "Registration failed: $R" && exit 1)
+VERIFICATION_TOKEN=$(echo "$R" | grep -o '"verification_token":"[^"]*' | cut -d'"' -f4)
 echo "      ✓ Registered: $EMAIL"
 echo ""
 
@@ -39,15 +40,15 @@ echo ""
 
 # GET CODE
 echo "[4/21] GET VERIFICATION CODE"
-CODE_KEY=$(docker compose exec -T redis redis-cli KEYS "2FA:*:verify" 2>/dev/null | head -1)
-CODE=$(docker compose exec -T redis redis-cli GET "$CODE_KEY" 2>/dev/null)
+CODE_DATA=$(docker compose exec -T redis redis-cli GET "verify_token:$VERIFICATION_TOKEN" 2>/dev/null)
+CODE=$(echo "$CODE_DATA" | cut -d':' -f2)
 echo "      ✓ Code: $CODE"
 echo ""
 
 # VERIFY
 echo "[5/21] VERIFY EMAIL"
 cat > ./verify.json << JSON
-{"user_id": "$USER_ID", "code": "$CODE"}
+{"verification_token": "$VERIFICATION_TOKEN", "code": "$CODE"}
 JSON
 R=$(curl -s -X POST "$API/api/auth/verify-code" -H "Content-Type: application/json" -d @./verify.json)
 echo "$R" | grep -qi "verified\|success" || (echo "Verify failed: $R" && exit 1)
@@ -99,19 +100,21 @@ cat > ./reset.json << JSON
 JSON
 R=$(curl -s -X POST "$API/api/auth/request-password-reset" -H "Content-Type: application/json" -d @./reset.json)
 echo "$R" | grep -qi "sent\|account" || (echo "Reset request failed: $R" && exit 1)
+RESET_TOKEN=$(echo "$R" | grep -o '"reset_token":"[^"]*' | cut -d'"' -f4)
 echo "      ✓ Reset requested"
 echo ""
 
 # GET RESET CODE
 echo "[10/21] GET RESET CODE"
-RESET_CODE=$(docker compose exec -T redis redis-cli GET "2FA:$USER_ID:reset" 2>/dev/null)
+RESET_CODE_DATA=$(docker compose exec -T redis redis-cli GET "reset_token:$RESET_TOKEN" 2>/dev/null)
+RESET_CODE=$(echo "$RESET_CODE_DATA" | cut -d':' -f2)
 echo "      ✓ Reset code: $RESET_CODE"
 echo ""
 
 # PASSWORD RESET
 echo "[11/21] EXECUTE PASSWORD RESET"
 cat > ./resetpass.json << JSON
-{"user_id": "$USER_ID", "code": "$RESET_CODE", "new_password": "NewStrongPassword2025"}
+{"reset_token": "$RESET_TOKEN", "code": "$RESET_CODE", "new_password": "NewStrongPassword2025"}
 JSON
 R=$(curl -s -X POST "$API/api/auth/reset-password" -H "Content-Type: application/json" -d @./resetpass.json)
 echo "$R" | grep -qi "success\|updated\|Password updated" || (echo "Password reset failed: $R" && exit 1)
