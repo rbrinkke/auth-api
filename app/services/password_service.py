@@ -1,163 +1,36 @@
-"""
-Password service implementing password management business logic.
-
-This service encapsulates all password operations:
-- Password validation
-- Password hashing
-- Password updates
-
-Separates business logic from HTTP handling for better architecture and testability.
-"""
-import logging
-from typing import NamedTuple
-
-import asyncpg
 from fastapi import Depends
-
-from app.core.redis_client import RedisClient, get_redis
-from app.core.security import hash_password, verify_password
-from app.db.connection import get_db_connection
-from app.db.procedures import sp_get_user_by_id, sp_update_password
-from app.services.password_validation_service import PasswordValidationService, get_password_validation_service
-
-logger = logging.getLogger(__name__)
-
-
-class PasswordUpdateResult(NamedTuple):
-    """Result of password update operation."""
-    user_id: str
-    password_updated: bool
-
-
-class PasswordServiceError(Exception):
-    """Base exception for password service errors."""
-    pass
-
+from app.core.security import PasswordManager
+from app.services.password_validation_service import (
+    PasswordValidationService, 
+    get_password_validation_service,
+    PasswordValidationError
+)
+from app.core.exceptions import InvalidPasswordError
 
 class PasswordService:
-    """
-    Service for handling password management business logic.
-
-    Responsibilities:
-    - Password validation
-    - Password hashing
-    - Password updates
-    """
-
+    """Geconsolideerde service voor wachtwoordoperaties."""
+    
     def __init__(
         self,
-        conn: asyncpg.Connection,
-        redis: RedisClient,
-        password_validation_svc: PasswordValidationService
+        password_manager: PasswordManager = Depends(PasswordManager),
+        validation_service: PasswordValidationService = Depends(get_password_validation_service)
     ):
-        """
-        Initialize password service with dependencies.
+        self.password_manager = password_manager
+        self.validation_service = validation_service
 
-        Args:
-            conn: Database connection
-            redis: Redis client
-            password_validation_svc: Service for password validation
-        """
-        self.conn = conn
-        self.redis = redis
-        self.password_validation_svc = password_validation_svc
-
-    async def update_password(
-        self,
-        user_id: str,
-        old_password: str,
-        new_password: str
-    ) -> PasswordUpdateResult:
-        """
-        Update user password with old password verification.
-
-        Flow:
-        1. Get user from database
-        2. Verify old password
-        3. Validate new password
-        4. Hash new password
-        5. Update password in database
-        6. Blacklist all existing refresh tokens
-
-        Args:
-            user_id: User ID
-            old_password: Current password
-            new_password: New password to set
-
-        Returns:
-            PasswordUpdateResult: Operation result
-
-        Raises:
-            PasswordServiceError: If update fails
-        """
+    async def validate_password_strength(self, password: str):
+        """Valideert wachtwoordsterkte, gooit error indien ongeldig."""
         try:
-            # Step 1: Get user from database
-            user = await sp_get_user_by_id(self.conn, user_id)
+            await self.validation_service.validate_password(password)
+        except PasswordValidationError as e:
+            # Vang de specifieke validatie-error op en zet om naar onze core exception
+            raise InvalidPasswordError(str(e))
 
-            if not user:
-                logger.error(f"Password update failed - user not found: {user_id}")
-                raise PasswordServiceError("User not found")
+    async def get_password_hash(self, password: str) -> str:
+        """Hasht een wachtwoord na validatie."""
+        await self.validate_password_strength(password)
+        return self.password_manager.get_password_hash(password)
 
-            # Step 2: Verify old password
-            if not verify_password(old_password, user.hashed_password):
-                logger.warning(f"Password update failed - invalid old password for user: {user.email}")
-                raise PasswordServiceError("Invalid current password")
-
-            # Step 3: Validate new password
-            logger.info(f"Validating new password for user {user_id}")
-            await self.password_validation_svc.validate_password(new_password)
-
-            # Step 4: Hash new password
-            hashed_password = hash_password(new_password)
-
-            # Step 5: Update password in database
-            success = await sp_update_password(self.conn, user_id, hashed_password)
-
-            if not success:
-                logger.error(f"Password update failed - database error for user: {user_id}")
-                raise PasswordServiceError("Failed to update password")
-
-            # Step 6: Blacklist all existing refresh tokens (force re-login)
-            # This is a security best practice
-            # Note: This would require a list of all active refresh tokens
-            # For now, we'll log this step
-            logger.info(f"Password updated successfully for user: {user.email} (id: {user_id})")
-
-            return PasswordUpdateResult(
-                user_id=user_id,
-                password_updated=True
-            )
-
-        except PasswordServiceError:
-            raise
-        except Exception as e:
-            logger.error(f"Password update failed for user {user_id}: {str(e)}")
-            raise PasswordServiceError(
-                f"Password update failed: {str(e)}"
-            )
-
-
-def get_password_service(
-    conn: asyncpg.Connection = Depends(get_db_connection),
-    redis: RedisClient = Depends(get_redis),
-    password_validation_svc: PasswordValidationService = Depends(get_password_validation_service)
-) -> "PasswordService":
-    """
-    Dependency injection function for PasswordService.
-
-    Args:
-        conn: Database connection
-        redis: Redis client
-        password_validation_svc: Password validation service
-
-    Returns:
-        PasswordService: Configured password service instance
-
-    This enables easy mocking during testing:
-        app.dependency_overrides[get_password_service] = lambda: MockPasswordService()
-    """
-    return PasswordService(
-        conn=conn,
-        redis=redis,
-        password_validation_svc=password_validation_svc
-    )
+    def verify_password(self, plain_password: str, hashed_password: str) -> bool:
+        """Verifieert een plain wachtwoord tegen een hash."""
+        return self.password_manager.verify_password(plain_password, hashed_password)

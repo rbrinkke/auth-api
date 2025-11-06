@@ -1,79 +1,58 @@
-"""Centralized exception handling for the application."""
-import logging
-from fastapi import FastAPI, Request, status
-from fastapi.responses import JSONResponse
-from slowapi.errors import RateLimitExceeded
+# /mnt/d/activity/auth-api/app/core/exceptions.py
+class AuthException(Exception):
+    """Base exception for authentication errors."""
+    def __init__(self, detail: str):
+        self.detail = detail
+        super().__init__(self.detail)
 
-from app.config import settings
-from app.services.registration_service import UserAlreadyExistsError
-from app.services.password_validation_service import PasswordValidationError
-from app.services.password_reset_service import PasswordResetServiceError
-from app.services.two_factor_service import TwoFactorError
+class InvalidCredentialsError(AuthException):
+    """Raised when login credentials are invalid."""
+    def __init__(self, detail: str = "Incorrect email or password"):
+        super().__init__(detail)
 
-logger = logging.getLogger(__name__)
+class UserAlreadyExistsError(AuthException):
+    """Raised when trying to register an existing user."""
+    def __init__(self, detail: str = "Email already registered"):
+        super().__init__(detail)
 
+class UserNotFoundError(AuthException):
+    """Raised when a user is not found."""
+    def __init__(self, detail: str = "User not found"):
+        super().__init__(detail)
 
-def register_exception_handlers(app: FastAPI) -> None:
-    """Register all exception handlers with the FastAPI app."""
+class TokenExpiredError(AuthException):
+    """Raised when a token is expired."""
+    def __init__(self, detail: str = "Token has expired"):
+        super().__init__(detail)
 
-    @app.exception_handler(RateLimitExceeded)
-    async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
-        return JSONResponse(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            content={
-                "detail": "Rate limit exceeded. Please try again later.",
-                "retry_after": getattr(exc, 'retry_after', None)
-            }
-        )
+class InvalidTokenError(AuthException):
+    """Raised when a token is invalid."""
+    def __init__(self, detail: str = "Invalid token"):
+        super().__init__(detail)
 
-    @app.exception_handler(UserAlreadyExistsError)
-    async def user_exists_handler(request: Request, exc: UserAlreadyExistsError):
-        return JSONResponse(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            content={"detail": str(exc) or "Email already registered"}
-        )
+class VerificationError(AuthException):
+    """Raised for account verification errors."""
+    pass
 
-    @app.exception_handler(PasswordValidationError)
-    async def password_validation_handler(request: Request, exc: PasswordValidationError):
-        return JSONResponse(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            content={"detail": str(exc)}
-        )
+class AccountNotVerifiedError(AuthException):
+    """Raised when an action requires a verified account."""
+    def __init__(self, detail: str = "Account not verified"):
+        super().__init__(detail)
 
-    @app.exception_handler(PasswordResetServiceError)
-    async def password_reset_handler(request: Request, exc: PasswordResetServiceError):
-        return JSONResponse(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            content={"detail": str(exc)}
-        )
+class InvalidPasswordError(AuthException):
+    """Raised for password validation errors."""
+    pass
 
-    @app.exception_handler(TwoFactorError)
-    async def two_factor_handler(request: Request, exc: TwoFactorError):
-        return JSONResponse(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            content={"detail": str(exc)}
-        )
+class TwoFactorRequiredError(AuthException):
+    """Raised when 2FA is required but not provided."""
+    def __init__(self, detail: str = "2FA token required"):
+        super().__init__(detail)
 
-    @app.exception_handler(Exception)
-    async def global_exception_handler(request: Request, exc: Exception):
-        """Handle unexpected errors without leaking sensitive information."""
-        logger.error(
-            "Unhandled exception",
-            exc_info=exc,
-            extra={
-                "error_type": type(exc).__name__,
-                "request_url": str(request.url),
-                "request_method": request.method,
-            }
-        )
+class TwoFactorSetupError(AuthException):
+    """Raised during 2FA setup."""
+    pass
 
-        error_message = (
-            "An unexpected error occurred."
-            if not settings.debug
-            else f"Internal error: {str(exc)}"
-        )
-
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"detail": error_message}
-        )
+class TwoFactorVerificationError(AuthException):
+    """Raised when 2FA verification fails."""
+    def __init__(self, detail: str = "Invalid 2FA code"):
+        super().__init__(detail)

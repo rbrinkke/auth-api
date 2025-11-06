@@ -1,48 +1,17 @@
-# app/routes/refresh.py
-"""Token refresh endpoint with automatic rotation."""
-import logging
-
-from fastapi import APIRouter, Depends, HTTPException, status
-
+# /mnt/d/activity/auth-api/app/routes/refresh.py
+from fastapi import APIRouter, Depends
 from app.schemas.auth import RefreshTokenRequest, TokenResponse
-from app.services.token_service import TokenService, get_token_service, TokenServiceError
+from app.services.token_service import TokenService
 
-logger = logging.getLogger(__name__)
 router = APIRouter()
 
-
-@router.post(
-    "/refresh",
-    response_model=TokenResponse,
-    summary="Refresh access token",
-    description="Exchange refresh token for new tokens. Old token is automatically blacklisted."
-)
-async def refresh_tokens(
+@router.post("/refresh", response_model=TokenResponse)
+async def refresh_token(
     request: RefreshTokenRequest,
-    token_service: TokenService = Depends(get_token_service)
+    token_service: TokenService = Depends(TokenService)
 ):
     """
-    Refresh tokens with automatic rotation.
-    
-    Security: Old refresh token is immediately blacklisted (mandatory).
+    Refreshes an access token using a valid refresh token.
+    Raises 401 if the refresh token is invalid, expired, or revoked.
     """
-    try:
-        result = await token_service.refresh_tokens(request.refresh_token)
-        
-        return TokenResponse(
-            access_token=result.access_token,
-            refresh_token=result.refresh_token,
-            token_type="bearer"
-        )
-        
-    except TokenServiceError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e)
-        )
-    except Exception as e:
-        logger.error(f"Token refresh error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Token refresh failed. Please login again."
-        )
+    return await token_service.refresh_access_token(request.refresh_token)

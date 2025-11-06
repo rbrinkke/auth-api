@@ -1,197 +1,99 @@
-"""
-Authentication service implementing login business logic.
-
-This service encapsulates all authentication logic:
-- User lookup and validation
-- Password verification
-- 2FA handling
-- Token generation
-
-Separates business logic from HTTP handling for better architecture and testability.
-"""
-import logging
-from typing import NamedTuple
-
-import asyncpg
+# /mnt/d/activity/auth-api/app/services/auth_service.py
 from fastapi import Depends
-
-from app.core.redis_client import RedisClient, get_redis
-from app.core.security import verify_password
-from app.core.tokens import create_access_token, create_refresh_token
-from app.db.connection import get_db_connection
-from app.db.procedures import sp_get_user_by_email, sp_update_last_login
-from app.services.email_service import EmailService, get_email_service
-from app.services.two_factor_service import TwoFactorService, get_two_factor_service
-
-logger = logging.getLogger(__name__)
-
-
-class LoginResult(NamedTuple):
-    """Result of authentication operation."""
-    user_id: str
-    email: str
-    access_token: str
-    refresh_token: str
-    two_factor_required: bool
-    two_factor_user_id: str | None
-
-
-class AuthServiceError(Exception):
-    """Base exception for authentication service errors."""
-    pass
-
+from sqlalchemy.orm import Session
+import redis
+from app.db.connection import get_db
+from app.core.redis_client import get_redis_client
+from app.db import procedures
+from app.core.exceptions import (
+    InvalidCredentialsError, 
+    AccountNotVerifiedError,
+    TwoFactorRequiredError,
+    TwoFactorVerificationError,
+    UserNotFoundError
+)
+from app.services.password_service import PasswordService
+from app.services.token_service import TokenService
+from app.services.two_factor_service import TwoFactorService
+from app.schemas.auth import TokenResponse, TwoFactorLoginRequest
 
 class AuthService:
-    """
-    Service for handling user authentication business logic.
-
-    Responsibilities:
-    - User lookup and validation
-    - Password verification
-    - 2FA handling
-    - Token generation
-    - Last login timestamp update
-    """
-
+    """Handles user authentication, login, logout, and 2FA challenge."""
+    
     def __init__(
         self,
-        conn: asyncpg.Connection,
-        redis: RedisClient,
-        email_svc: EmailService
+        db: Session = Depends(get_db),
+        redis_client: redis.Redis = Depends(get_redis_client),
+        password_service: PasswordService = Depends(PasswordService),
+        token_service: TokenService = Depends(TokenService),
+        two_factor_service: TwoFactorService = Depends(TwoFactorService)
     ):
+        self.db = db
+        self.redis_client = redis_client
+        self.password_service = password_service
+        self.token_service = token_service
+        self.two_factor_service = two_factor_service
+
+    def login_user(self, email: str, password: str) -> dict:
         """
-        Initialize authentication service with dependencies.
-
-        Args:
-            conn: Database connection
-            redis: Redis client
-            email_svc: Email service for sending 2FA codes
+        Logs in a user.
+        Returns full tokens if 2FA is disabled.
+        Returns a 2FA challenge token if 2FA is enabled.
         """
-        self.conn = conn
-        self.redis = redis
-        self.email_svc = email_svc
+        user = procedures.sp_get_user_by_email(self.db, email)
+        
+        if not user or not self.password_service.verify_password(password, user.hashed_password):
+            raise InvalidCredentialsError()
+            
+        if not user.is_verified:
+            raise AccountNotVerifiedError()
+            
+        if user.is_2fa_enabled:
+            # User has 2FA enabled, issue a temporary token for the 2FA step
+            pre_auth_token = self.token_service.create_2fa_token(user.id)
+            raise TwoFactorRequiredError(detail=pre_auth_token)
 
-    async def authenticate_user(
-        self,
-        email: str,
-        password: str
-    ) -> LoginResult:
+        # 2FA is not enabled, issue full tokens
+        return self._grant_full_tokens(user.id)
+
+    def login_2fa_challenge(self, request: TwoFactorLoginRequest) -> TokenResponse:
         """
-        Authenticate user with email and password.
-
-        Flow:
-        1. Find user by email
-        2. Verify password
-        3. Check if email is verified (hard verification)
-        4. Check if account is active
-        5. Handle 2FA if enabled
-        6. Update last login timestamp
-        7. Generate tokens
-
-        Args:
-            email: User's email address
-            password: User's password
-
-        Returns:
-            LoginResult: Authentication result with tokens or 2FA requirement
-
-        Raises:
-            AuthServiceError: If authentication fails
+        Verifies a 2FA code after the initial login.
+        Issues full tokens upon success.
         """
+        user_id = self.token_service.get_user_id_from_token(
+            request.pre_auth_token, 
+            "2fa_pre_auth"
+        )
+        
+        # This raises TwoFactorVerificationError on failure
+        self.two_factor_service.validate_2fa_challenge(user_id, request.code)
+
+        # 2FA code is valid, grant full tokens
+        return self._grant_full_tokens(user_id)
+
+    def logout_user(self, refresh_token: str) -> dict:
+        """Logs out a user by invalidating their refresh token."""
         try:
-            # Step 1: Find user by email
-            user = await sp_get_user_by_email(self.conn, email.lower())
+            payload = self.token_service.token_helper.decode_token(refresh_token)
+            if payload.get("type") == "refresh":
+                user_id = int(payload.get("sub"))
+                procedures.sp_revoke_refresh_token(self.db, user_id, refresh_token)
+        except Exception:
+            # If token is invalid or expired, user is effectively logged out.
+            # Do not raise an error, just accept the logout.
+            pass
+        
+        return {"message": "Logged out successfully"}
 
-            if not user:
-                logger.warning(f"Login attempt with non-existent email: {email}")
-                raise AuthServiceError("Invalid credentials")
+    def _grant_full_tokens(self, user_id: int) -> TokenResponse:
+        """Helper to create and return access and refresh tokens."""
+        access_token = self.token_service.create_access_token(user_id)
+        refresh_token = self.token_service.create_refresh_token(user_id)
+        
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type="bearer"
+        )
 
-            # Step 2: Verify password
-            if not verify_password(password, user.hashed_password):
-                logger.warning(f"Failed login attempt for user: {user.email}")
-                raise AuthServiceError("Invalid credentials")
-
-            # Step 3: Check if email is verified (Hard Verification)
-            if not user.is_verified:
-                logger.info(f"Login attempt by unverified user: {user.email}")
-                raise AuthServiceError("Email not verified. Please check your inbox.")
-
-            # Step 4: Check if account is active
-            if not user.is_active:
-                logger.warning(f"Login attempt by deactivated user: {user.email}")
-                raise AuthServiceError("Account has been deactivated")
-
-            # Step 5: Check if 2FA is enabled
-            if getattr(user, 'two_factor_enabled', False):
-                logger.info(f"2FA required for user: {user.email}")
-
-                # Generate and send 2FA code
-                twofa_svc = TwoFactorService(self.redis, self.email_svc)
-                code = await twofa_svc.create_temp_code(
-                    user_id=str(user.id),
-                    purpose="login",
-                    email=user.email
-                )
-
-                logger.info(f"2FA code sent to {user.email}")
-
-                return LoginResult(
-                    user_id=str(user.id),
-                    email=user.email,
-                    access_token="",
-                    refresh_token="",
-                    two_factor_required=True,
-                    two_factor_user_id=str(user.id)
-                )
-
-            # Step 6: Update last login timestamp
-            await sp_update_last_login(self.conn, user.id)
-
-            # Step 7: Generate tokens
-            access_token = create_access_token(user.id)
-            refresh_token, _ = create_refresh_token(user.id)
-
-            logger.info(f"User logged in successfully: {user.email} (id: {user.id})")
-
-            return LoginResult(
-                user_id=str(user.id),
-                email=user.email,
-                access_token=access_token,
-                refresh_token=refresh_token,
-                two_factor_required=False,
-                two_factor_user_id=None
-            )
-
-        except AuthServiceError:
-            raise
-        except Exception as e:
-            logger.error(f"Authentication failed for {email}: {str(e)}")
-            raise AuthServiceError(
-                f"Authentication failed: {str(e)}"
-            )
-
-
-def get_auth_service(
-    conn: asyncpg.Connection = Depends(get_db_connection),
-    redis: RedisClient = Depends(get_redis),
-    email_svc: EmailService = Depends(get_email_service)
-) -> AuthService:
-    """
-    Dependency injection function for AuthService.
-
-    Args:
-        conn: Database connection
-        redis: Redis client
-        email_svc: Email service
-
-    Returns:
-        AuthService: Configured authentication service instance
-
-    This enables easy mocking during testing:
-        app.dependency_overrides[get_auth_service] = lambda: MockAuthService()
-    """
-    return AuthService(
-        conn=conn,
-        redis=redis,
-        email_svc=email_svc
-    )

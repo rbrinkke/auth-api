@@ -1,122 +1,131 @@
-"""
-Auth API - Main Application
-
-A minimalistic authentication service focused on:
-- User registration with email verification
-- JWT-based authentication
-- Token refresh with rotation
-- Password reset functionality
-- Two-factor authentication
-"""
-from contextlib import asynccontextmanager
-
+import logging
 from fastapi import FastAPI, Request, status
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from slowapi import Limiter
-from slowapi.errors import RateLimitExceeded
-from slowapi.middleware import SlowAPIMiddleware
-from slowapi.util import get_remote_address
+from fastapi.middleware.cors import CORSMiddleware
+from app.core.logging_config import setup_logging
+from app.core.exceptions import (
+    AuthException,
+    InvalidCredentialsError,
+    UserAlreadyExistsError,
+    AccountNotVerifiedError,
+    TokenExpiredError,
+    InvalidTokenError,
+    TwoFactorRequiredError,
+    TwoFactorVerificationError
+)
+# Importeer de correcte validatie error
+from app.services.password_validation_service import PasswordValidationError
 
-from app.config import settings
-from app.core.logging_config import get_logger
-from app.core.redis_client import redis_client
-from app.db.connection import db
-from app.middleware.security import add_security_headers
-from app.routes import auth_router
-from app.exceptions import register_exception_handlers
+from app.routes import (
+    login, register, logout, refresh, 
+    verify, password_reset, twofa
+)
 
-logger = get_logger(__name__)
+# Setup logging
+setup_logging()
+logger = logging.getLogger(__name__)
 
+app = FastAPI(title="Auth API")
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Application lifecycle management."""
-    logger.info("Starting Auth API...")
-    
-    try:
-        await db.connect()
-        logger.info("Database connected")
-        
-        await redis_client.connect()
-        logger.info("Redis connected")
-        
-        logger.info("Auth API started successfully")
-        yield
-        
-    except Exception as e:
-        logger.error(f"Startup failed: {str(e)}")
-        raise
-    finally:
-        logger.info("Shutting down...")
-        await db.disconnect()
-        await redis_client.disconnect()
-        logger.info("Shutdown complete")
+# Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Adjust in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info(f"Incoming request: {request.method} {request.url}")
+    response = await call_next(request)
+    logger.info(f"Response status: {response.status_code}")
+    return response
 
-def create_app() -> FastAPI:
-    """Create and configure FastAPI application."""
-    
-    app = FastAPI(
-        title="Auth API",
-        description="Minimalistic authentication service for Activity App",
-        version="1.0.0",
-        lifespan=lifespan,
-        docs_url="/docs" if settings.debug else None,
-        redoc_url="/redoc" if settings.debug else None,
+# Centralized Exception Handlers
+@app.exception_handler(InvalidCredentialsError)
+async def invalid_credentials_handler(request: Request, exc: InvalidCredentialsError):
+    return JSONResponse(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        content={"detail": exc.detail},
+        headers={"WWW-Authenticate": "Bearer"},
     )
-    
-    # Configure rate limiting
-    limiter = Limiter(key_func=get_remote_address)
-    app.state.limiter = limiter
-    app.add_middleware(SlowAPIMiddleware)
-    
-    # Add security headers
-    app.middleware("http")(add_security_headers)
-    
-    # CORS
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=True,
-        allow_methods=["GET", "POST"],
-        allow_headers=["*"],
+
+@app.exception_handler(TwoFactorRequiredError)
+async def two_factor_required_handler(request: Request, exc: TwoFactorRequiredError):
+    return JSONResponse(
+        status_code=status.HTTP_402_PAYMENT_REQUIRED,  # Using 402 as "further action required"
+        content={"detail": "2FA required", "pre_auth_token": exc.detail},
     )
-    
-    # Register exception handlers
-    register_exception_handlers(app)
-    
-    # Include routes
-    app.include_router(auth_router, prefix="/auth", tags=["auth"])
-    
-    # Health check
-    @app.get("/health")
-    async def health_check():
-        """Service health check."""
-        try:
-            await db.ping()
-            await redis_client.ping()
-            
-            return {
-                "status": "healthy",
-                "service": "auth-api",
-                "version": "1.0.0",
-                "dependencies": {
-                    "database": "healthy",
-                    "redis": "healthy"
-                }
-            }
-        except Exception as e:
-            logger.error(f"Health check failed: {str(e)}")
-            return JSONResponse(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                content={
-                    "status": "unhealthy",
-                    "error": "Service dependencies unavailable"
-                }
-            )
-    
-    return app
 
+@app.exception_handler(TwoFactorVerificationError)
+async def two_factor_verification_handler(request: Request, exc: TwoFactorVerificationError):
+    return JSONResponse(
+        status_code=status.HTTP_403_FORBIDDEN,
+        content={"detail": exc.detail},
+    )
 
-app = create_app()
+@app.exception_handler(AccountNotVerifiedError)
+async def account_not_verified_handler(request: Request, exc: AccountNotVerifiedError):
+    return JSONResponse(
+        status_code=status.HTTP_403_FORBIDDEN,
+        content={"detail": exc.detail},
+    )
+
+@app.exception_handler(UserAlreadyExistsError)
+async def user_exists_handler(request: Request, exc: UserAlreadyExistsError):
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
+        content={"detail": exc.detail},
+    )
+
+# Gebruik de correcte PasswordValidationError van de validation service
+@app.exception_handler(PasswordValidationError)
+async def password_validation_handler(request: Request, exc: PasswordValidationError):
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"detail": str(exc)},
+    )
+
+@app.exception_handler(TokenExpiredError)
+async def token_expired_handler(request: Request, exc: TokenExpiredError):
+    return JSONResponse(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        content={"detail": exc.detail},
+    )
+
+@app.exception_handler(InvalidTokenError)
+async def invalid_token_handler(request: Request, exc: InvalidTokenError):
+    return JSONResponse(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        content={"detail": exc.detail},
+    )
+
+@app.exception_handler(AuthException)
+async def generic_auth_handler(request: Request, exc: AuthException):
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"detail": exc.detail},
+    )
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "An internal server error occurred"},
+    )
+
+# Include API routers
+app.include_router(login.router, prefix="/api/auth", tags=["Auth"])
+app.include_router(register.router, prefix="/api/auth", tags=["Auth"])
+app.include_router(logout.router, prefix="/api/auth", tags=["Auth"])
+app.include_router(refresh.router, prefix="/api/auth", tags=["Auth"])
+app.include_router(verify.router, prefix="/api/auth", tags=["Auth"])
+app.include_router(password_reset.router, prefix="/api/auth", tags=["Auth"])
+app.include_router(twofa.router, prefix="/api/auth/2fa", tags=["2FA"])
+
+@app.get("/api/health", status_code=status.HTTP_200_OK, tags=["Health"])
+async def health_check():
+    return {"status": "ok"}

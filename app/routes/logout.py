@@ -1,45 +1,16 @@
-# app/routes/logout.py
-"""User logout endpoint."""
-import logging
+# /mnt/d/activity/auth-api/app/routes/logout.py
+from fastapi import APIRouter, Depends
+from app.schemas.auth import RefreshTokenRequest
+from app.services.auth_service import AuthService
 
-from fastapi import APIRouter, Depends, HTTPException, status
-
-from app.schemas.auth import LogoutRequest, LogoutResponse
-from app.services.token_service import TokenService, get_token_service, TokenServiceError
-
-logger = logging.getLogger(__name__)
 router = APIRouter()
 
-
-@router.post(
-    "/logout",
-    response_model=LogoutResponse,
-    summary="Logout and revoke refresh token",
-    description="Blacklist refresh token. Access tokens remain valid until expiry."
-)
+@router.post("/logout", status_code=200)
 async def logout(
-    request: LogoutRequest,
-    token_service: TokenService = Depends(get_token_service)
+    token_data: RefreshTokenRequest,
+    auth_service: AuthService = Depends(AuthService)
 ):
     """
-    Logout user by blacklisting refresh token.
-    
-    Note: Access tokens remain valid until natural expiry (15 min).
-    For immediate revocation, implement token validation in your API gateway.
+    Logs out the user by revoking the provided refresh token.
     """
-    try:
-        await token_service.logout(request.refresh_token)
-        
-        return LogoutResponse(message="Logged out successfully")
-        
-    except TokenServiceError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
-    except Exception as e:
-        logger.error(f"Logout error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Logout failed. Please try again."
-        )
+    return await auth_service.logout_user(token_data.refresh_token)

@@ -1,197 +1,115 @@
-"""
-Token service implementing token management business logic.
-
-This service encapsulates all token operations:
-- Token validation
-- Token blacklisting (logout)
-- Token refresh with rotation
-
-Separates business logic from HTTP handling for better architecture and testability.
-"""
-import logging
-from typing import NamedTuple
-
-import asyncpg
+# /mnt/d/activity/auth-api/app/services/token_service.py
+from datetime import timedelta
 from fastapi import Depends
-
-from app.core.redis_client import RedisClient, get_redis
-from app.core.tokens import (
-    create_access_token,
-    create_refresh_token,
-    get_jti_from_refresh_token,
-    get_user_id_from_token
-)
-from app.db.connection import get_db_connection
-from app.db.procedures import sp_get_user_by_id
-
-logger = logging.getLogger(__name__)
-
-
-class TokenRefreshResult(NamedTuple):
-    """Result of token refresh operation."""
-    access_token: str
-    refresh_token: str
-    user_email: str
-
-
-class TokenServiceError(Exception):
-    """Base exception for token service errors."""
-    pass
-
+from sqlalchemy.orm import Session
+from app.db.connection import get_db
+from app.db import procedures
+from app.config import Settings, get_settings
+from app.core.tokens import TokenHelper
+from app.core.exceptions import UserNotFoundError, InvalidTokenError, TokenExpiredError
+from app.schemas.auth import TokenResponse
 
 class TokenService:
-    """
-    Service for handling token management business logic.
-
-    Responsibilities:
-    - Token validation
-    - Token blacklisting (logout)
-    - Token refresh with rotation
-    """
-
+    """Service for managing token creation and refresh."""
+    
     def __init__(
         self,
-        conn: asyncpg.Connection,
-        redis: RedisClient
+        settings: Settings = Depends(get_settings),
+        token_helper: TokenHelper = Depends(TokenHelper),
+        db: Session = Depends(get_db)
     ):
-        """
-        Initialize token service with dependencies.
+        self.settings = settings
+        self.token_helper = token_helper
+        self.db = db
 
-        Args:
-            conn: Database connection
-            redis: Redis client for token storage and blacklisting
-        """
-        self.conn = conn
-        self.redis = redis
+    def create_access_token(self, user_id: int) -> str:
+        """Creates a new access token for a user."""
+        expires_delta = timedelta(minutes=self.settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        return self.token_helper.create_token(
+            data={"sub": str(user_id), "type": "access"}, 
+            expires_delta=expires_delta
+        )
 
-    async def refresh_tokens(
-        self,
-        refresh_token: str
-    ) -> TokenRefreshResult:
-        """
-        Refresh access token with automatic rotation.
+    def create_refresh_token(self, user_id: int) -> str:
+        """Creates a new refresh token and stores it."""
+        expires_delta = timedelta(days=self.settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        token = self.token_helper.create_token(
+            data={"sub": str(user_id), "type": "refresh"}, 
+            expires_delta=expires_delta
+        )
+        procedures.sp_save_refresh_token(self.db, user_id, token, expires_delta)
+        return token
 
-        Flow:
-        1. Decode and validate refresh token
-        2. Extract JTI (JWT ID)
-        3. Check if token is blacklisted
-        4. Extract user_id
-        5. Verify user still exists and is valid
-        6. Blacklist the old refresh token (Token Rotation)
-        7. Generate new access + refresh tokens
+    def create_verification_token(self, user_id: int) -> str:
+        """Creates a one-time verification token."""
+        expires_delta = timedelta(minutes=self.settings.VERIFICATION_TOKEN_EXPIRE_MINUTES)
+        return self.token_helper.create_token(
+            data={"sub": str(user_id), "type": "verification"},
+            expires_delta=expires_delta
+        )
 
-        Args:
-            refresh_token: The refresh token to exchange
+    def create_password_reset_token(self, email: str) -> str:
+        """Creates a one-time password reset token."""
+        expires_delta = timedelta(minutes=self.settings.RESET_TOKEN_EXPIRE_MINUTES)
+        return self.token_helper.create_token(
+            data={"sub": email, "type": "reset"},
+            expires_delta=expires_delta
+        )
 
-        Returns:
-            TokenRefreshResult: New access and refresh tokens
+    def create_2fa_token(self, user_id: int) -> str:
+        """Creates a short-lived token for 2FA verification step."""
+        expires_delta = timedelta(minutes=5)
+        return self.token_helper.create_token(
+            data={"sub": str(user_id), "type": "2fa_pre_auth"},
+            expires_delta=expires_delta
+        )
 
-        Raises:
-            TokenServiceError: If refresh fails
-        """
+    def refresh_access_token(self, refresh_token: str) -> TokenResponse:
+        """Validates a refresh token and issues new tokens."""
+        payload = self.token_helper.decode_token(refresh_token)
+        
+        if payload.get("type") != "refresh":
+            raise InvalidTokenError("Invalid token type")
+
+        user_id = int(payload.get("sub"))
+        
+        if not procedures.sp_validate_refresh_token(self.db, user_id, refresh_token):
+            raise InvalidTokenError("Token not found or revoked")
+        
+        # Invalidate old refresh token (making it single-use)
+        procedures.sp_revoke_refresh_token(self.db, user_id, refresh_token)
+        
+        # Issue new tokens
+        new_access_token = self.create_access_token(user_id)
+        new_refresh_token = self.create_refresh_token(user_id)
+        
+        return TokenResponse(
+            access_token=new_access_token,
+            refresh_token=new_refresh_token,
+            token_type="bearer"
+        )
+
+    def get_user_id_from_token(self, token: str, expected_type: str) -> int:
+        """Decodes a token and validates its type."""
+        payload = self.token_helper.decode_token(token)
+        
+        if payload.get("type") != expected_type:
+            raise InvalidTokenError(f"Invalid token type, expected '{expected_type}'")
+            
         try:
-            # Step 1 & 2. Decode token and get JTI
-            jti = get_jti_from_refresh_token(refresh_token)
+            user_id = int(payload.get("sub"))
+            return user_id
+        except (ValueError, TypeError):
+            raise InvalidTokenError("Invalid subject in token")
 
-            # Step 3. Check if token is blacklisted
-            if await self.redis.is_token_blacklisted(jti):
-                logger.warning(f"Attempted use of blacklisted refresh token: {jti}")
-                raise TokenServiceError("Token has been revoked")
+    def get_email_from_token(self, token: str, expected_type: str) -> str:
+        """Decodes a token and validates its type, returning email subject."""
+        payload = self.token_helper.decode_token(token)
+        
+        if payload.get("type") != expected_type:
+            raise InvalidTokenError(f"Invalid token type, expected '{expected_type}'")
 
-            # Step 4. Get user_id from token
-            user_id = get_user_id_from_token(refresh_token, expected_type="refresh")
-
-            # Step 5. Verify user still exists and is valid
-            user = await sp_get_user_by_id(self.conn, user_id)
-
-            if not user:
-                logger.error(f"Refresh token for non-existent user: {user_id}")
-                raise TokenServiceError("Invalid token")
-
-            if not user.is_active:
-                logger.warning(f"Refresh attempt by deactivated user: {user.email}")
-                raise TokenServiceError("Account has been deactivated")
-
-            if not user.is_verified:
-                logger.warning(f"Refresh attempt by unverified user: {user.email}")
-                raise TokenServiceError("Email not verified")
-
-            # Step 6. Blacklist the old refresh token (Token Rotation)
-            await self.redis.blacklist_refresh_token(jti)
-
-            # Step 7. Generate new tokens
-            new_access_token = create_access_token(user.id)
-            new_refresh_token, new_jti = create_refresh_token(user.id)
-
-            logger.info(f"Tokens refreshed for user: {user.email} (id: {user.id})")
-            logger.debug(f"Old JTI blacklisted: {jti}, New JTI: {new_jti}")
-
-            return TokenRefreshResult(
-                access_token=new_access_token,
-                refresh_token=new_refresh_token,
-                user_email=user.email
-            )
-
-        except TokenServiceError:
-            raise
-        except Exception as e:
-            logger.error(f"Token refresh failed: {str(e)}")
-            raise TokenServiceError(
-                f"Token refresh failed: {str(e)}"
-            )
-
-    async def logout(
-        self,
-        refresh_token: str
-    ) -> bool:
-        """
-        Logout user by blacklisting refresh token.
-
-        Args:
-            refresh_token: The refresh token to blacklist
-
-        Returns:
-            bool: True if logout successful
-
-        Raises:
-            TokenServiceError: If logout fails
-        """
-        try:
-            # Get JTI from token
-            jti = get_jti_from_refresh_token(refresh_token)
-
-            # Blacklist the token
-            await self.redis.blacklist_refresh_token(jti)
-
-            logger.info(f"User logged out, JTI blacklisted: {jti}")
-
-            return True
-
-        except Exception as e:
-            logger.error(f"Logout failed: {str(e)}")
-            raise TokenServiceError(
-                f"Logout failed: {str(e)}"
-            )
-
-
-def get_token_service(
-    conn: asyncpg.Connection = Depends(get_db_connection),
-    redis: RedisClient = Depends(get_redis)
-) -> TokenService:
-    """
-    Dependency injection function for TokenService.
-
-    Args:
-        conn: Database connection
-        redis: Redis client
-
-    Returns:
-        TokenService: Configured token service instance
-
-    This enables easy mocking during testing:
-        app.dependency_overrides[get_token_service] = lambda: MockTokenService()
-    """
-    return TokenService(
-        conn=conn,
-        redis=redis
-    )
+        email = payload.get("sub")
+        if not email:
+            raise InvalidTokenError("Invalid subject in token")
+        return email

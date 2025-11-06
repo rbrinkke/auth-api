@@ -1,289 +1,96 @@
-"""
-Two-Factor Authentication Service.
-
-Handles TOTP (Time-based One-Time Password) authentication,
-backup codes, and temporary verification codes.
-"""
-import base64
-import secrets
+# /mnt/d/activity/auth-api/app/services/two_factor_service.py
 import pyotp
 import qrcode
-import io
-from typing import List, Optional, Tuple
-from datetime import datetime, timedelta
-from cryptography.fernet import Fernet
-
+import qrcode.image.svg
+from io import BytesIO
 from fastapi import Depends
-
-from app.config import settings
-from app.core.redis_client import RedisClient, get_redis
-from app.services.email_service import EmailService, get_email_service
-
-
-def get_two_factor_service(
-    redis: RedisClient = Depends(get_redis),
-    email_svc: EmailService = Depends(get_email_service)
-) -> "TwoFactorService":
-    """
-    Dependency injection function for TwoFactorService.
-
-    Args:
-        redis: Redis client
-        email_svc: Email service for sending codes
-
-    Returns:
-        TwoFactorService: Configured 2FA service instance
-
-    This enables easy mocking during testing:
-        app.dependency_overrides[get_two_factor_service] = lambda: MockTwoFactorService()
-    """
-    return TwoFactorService(redis=redis, email_svc=email_svc)
-
-
-class TwoFactorError(Exception):
-    """Base exception for 2FA operations."""
-    pass
-
-
-class InvalidCodeError(TwoFactorError):
-    """Raised when an invalid TOTP or backup code is provided."""
-    pass
-
+from sqlalchemy.orm import Session
+from app.db.connection import get_db
+from app.db import procedures
+from app.core.exceptions import (
+    UserNotFoundError, 
+    TwoFactorSetupError, 
+    TwoFactorVerificationError
+)
 
 class TwoFactorService:
-    """Service for handling 2FA TOTP and backup codes."""
+    """Service for managing 2FA setup and verification."""
 
-    def __init__(self, redis: RedisClient, email_svc: EmailService):
-        self.redis = redis
-        self.email_svc = email_svc
-        # Encryption for TOTP secrets
-        self.cipher_suite = Fernet(settings.encryption_key.encode())
+    def __init__(self, db: Session = Depends(get_db)):
+        self.db = db
 
-    def generate_totp_secret(self) -> str:
-        """Generate a new TOTP secret for a user."""
-        # Generate random secret
-        secret = pyotp.random_base32()
-        return secret
+    def generate_2fa_secret(self) -> str:
+        """Generates a new 2FA (TOTP) secret."""
+        return pyotp.random_base32()
 
-    def encrypt_secret(self, secret: str) -> str:
-        """Encrypt TOTP secret before storing in database."""
-        encrypted = self.cipher_suite.encrypt(secret.encode())
-        return base64.b64encode(encrypted).decode()
-
-    def decrypt_secret(self, encrypted_secret: str) -> str:
-        """Decrypt TOTP secret from database."""
-        encrypted_bytes = base64.b64decode(encrypted_secret.encode())
-        decrypted = self.cipher_suite.decrypt(encrypted_bytes)
-        return decrypted.decode()
-
-    def generate_qr_code(self, secret: str, email: str) -> str:
-        """Generate QR code for authenticator app setup."""
-        # Create TOTP URI for QR code
-        issuer = "AuthAPI"
-        totp_uri = pyotp.totp.TOTP(secret).provisioning_uri(
-            name=email,
-            issuer_name=issuer
+    def get_totp_uri(self, email: str, secret: str) -> str:
+        """Generates a TOTP provisioning URI for QR codes."""
+        return pyotp.totp.TOTP(secret).provisioning_uri(
+            name=email, 
+            issuer_name="AuthApp"
         )
 
-        # Generate QR code
-        qr = qrcode.QRCode(version=1, box_size=10, border=4)
-        qr.add_data(totp_uri)
-        qr.make(fit=True)
+    def generate_qr_code_svg(self, uri: str) -> str:
+        """Generates an SVG QR code from a URI."""
+        img = qrcode.make(uri, image_factory=qrcode.image.svg.SvgPathImage)
+        stream = BytesIO()
+        img.save(stream)
+        return stream.getvalue().decode('utf-8')
 
-        # Create image
-        img = qr.make_image(fill_color="black", back_color="white")
+    def verify_2fa_code(self, secret: str, code: str) -> bool:
+        """Verifies a TOTP code against the user's secret."""
+        totp = pyotp.TOTP(secret)
+        return totp.verify(code)
 
-        # Convert to base64
-        buffer = io.BytesIO()
-        img.save(buffer, format='PNG')
-        buffer.seek(0)
-
-        img_base64 = base64.b64encode(buffer.getvalue()).decode()
-        return f"data:image/png;base64,{img_base64}"
-
-    def verify_totp_code(self, secret: str, code: str) -> bool:
-        """Verify TOTP code from authenticator app."""
-        try:
-            totp = pyotp.TOTP(secret)
-            # Allow 1 time step skew for clock drift (30 seconds)
-            return totp.verify(code, valid_window=1)
-        except Exception:
-            return False
-
-    def generate_backup_codes(self, count: int = 8) -> List[str]:
-        """Generate backup codes for emergency use."""
-        codes = []
-        for _ in range(count):
-            # Generate 8-digit backup code
-            code = ''.join(secrets.choice('0123456789') for _ in range(8))
-            codes.append(code)
-        return codes
-
-    def hash_backup_code(self, code: str) -> str:
-        """Hash backup code before storing (single-use)."""
-        import hashlib
-        return hashlib.sha256(code.encode()).hexdigest()
-
-    async def create_temp_code(
-        self,
-        user_id: str,
-        purpose: str,
-        email: Optional[str] = None
-    ) -> str:
+    def setup_2fa(self, user_id: int) -> dict:
         """
-        Create temporary 6-digit code for 2FA verification.
-
-        Args:
-            user_id: User ID
-            purpose: Purpose ('login', 'reset', 'verify')
-            email: User email (for sending code)
-
-        Returns:
-            The generated 6-digit code
+        Initiates 2FA setup for a user.
+        Generates a secret and a QR code.
         """
-        # Generate 6-digit code
-        code = ''.join(secrets.choice('0123456789') for _ in range(6))
+        user = procedures.sp_get_user_by_id(self.db, user_id)
+        if not user:
+            raise UserNotFoundError()
 
-        # Store in Redis with 5-minute expiry
-        key = f"2FA:{user_id}:{purpose}"
-        print(f"[2FA] create_temp_code: Storing code {code} with key {key}, TTL=300")
-        await self.redis.client.setex(key, 300, code)  # 5 minutes
+        if user.is_2fa_enabled:
+            raise TwoFactorSetupError("2FA is already enabled.")
 
-        # Send code via email
-        if email:
-            print(f"[2FA] create_temp_code: Sending code {code} to email {email}")
-            await self.email_svc.send_2fa_code_email(email, code, purpose)
+        secret = self.generate_2fa_secret()
+        # Store the secret temporarily for verification
+        procedures.sp_set_2fa_secret(self.db, user_id, secret, is_verified=False)
+        
+        uri = self.get_totp_uri(user.email, secret)
+        qr_svg = self.generate_qr_code_svg(uri)
+        
+        return {"qr_code_svg": qr_svg, "secret": secret} # Return secret for manual entry
 
-        print(f"[2FA] create_temp_code: Successfully created code for {key}")
-        return code
-
-    async def verify_temp_code(
-        self,
-        user_id: str,
-        code: str,
-        purpose: str,
-        consume: bool = True
-    ) -> bool:
+    def verify_and_enable_2fa(self, user_id: int, code: str) -> dict:
         """
-        Verify temporary 2FA code.
-
-        Args:
-            user_id: User ID
-            code: 6-digit code to verify
-            purpose: Purpose ('login', 'reset', 'verify')
-            consume: Whether to consume the code (single-use)
-
-        Returns:
-            True if code is valid, False otherwise
+        Verifies the first 2FA code provided during setup and enables 2FA.
         """
-        print(f"[2FA] verify_temp_code: VERSION=2025-11-05-FIX - FIXED DECODE BUG")
-        try:
-            key = f"2FA:{user_id}:{purpose}"
-            print(f"[2FA] verify_temp_code: Getting key {key}")
-            stored_code = await self.redis.client.get(key)
-            print(f"[2FA] verify_temp_code: Got stored_code={stored_code}, type={type(stored_code)}")
+        user = procedures.sp_get_user_by_id(self.db, user_id)
+        if not user or not user.two_factor_secret:
+            raise TwoFactorSetupError("2FA setup not initiated or user not found.")
+            
+        if user.is_2fa_enabled:
+            raise TwoFactorSetupError("2FA is already enabled.")
 
-            if not stored_code:
-                print(f"[2FA] verify_temp_code: No code found for key {key}")
-                return False
+        if self.verify_2fa_code(user.two_factor_secret, code):
+            # Mark 2FA as verified and enabled
+            procedures.sp_set_2fa_secret(self.db, user_id, user.two_factor_secret, is_verified=True)
+            return {"message": "2FA enabled successfully."}
+        else:
+            raise TwoFactorVerificationError("Invalid 2FA code.")
 
-            # SAFE HANDLING: Check type before decode
-            if isinstance(stored_code, bytes):
-                print("[2FA] verify_temp_code: Decoding bytes to string")
-                stored_code = stored_code.decode()
-            elif isinstance(stored_code, str):
-                print("[2FA] verify_temp_code: Already a string, no decode needed")
-                # Already decoded by Redis (decode_responses=True)
-                pass
-            else:
-                print(f"[2FA] verify_temp_code: Unexpected type {type(stored_code)}")
-                return False
+    def disable_2fa(self, user_id: int) -> dict:
+        """Disables 2FA for a user."""
+        procedures.sp_disable_2fa(self.db, user_id)
+        return {"message": "2FA disabled successfully."}
 
-            print(f"[2FA] verify_temp_code: Comparing '{stored_code}' == '{code}'")
-            if stored_code != code:
-                print(f"[2FA] verify_temp_code: Code mismatch")
-                return False
+    def validate_2fa_challenge(self, user_id: int, code: str):
+        """Validates a 2FA code during login challenge."""
+        user = procedures.sp_get_user_by_id(self.db, user_id)
+        if not user or not user.is_2fa_enabled or not user.two_factor_secret:
+            raise TwoFactorVerificationError("2FA not enabled for this user.")
 
-            # If consuming, delete the code
-            if consume:
-                print(f"[2FA] verify_temp_code: Deleting key {key}")
-                await self.redis.client.delete(key)
-
-            print(f"[2FA] verify_temp_code: Verification successful for {key}")
-            return True
-
-        except Exception as e:
-            import traceback
-            print(f"[2FA] verify_temp_code: Error - {str(e)}")
-            print(f"[2FA] Traceback: {traceback.format_exc()}")
-            raise
-
-    async def cleanup_expired_codes(self):
-        """Clean up expired codes from Redis."""
-        # Redis TTL handles this automatically, but we can force cleanup
-        pattern = "2FA:*"
-        keys = await self.redis.client.keys(pattern)
-        # Keys with TTL will expire automatically, no manual cleanup needed
-        pass
-
-    async def get_remaining_attempts(self, user_id: str, purpose: str) -> int:
-        """
-        Get remaining verification attempts.
-
-        For security, we track failed attempts in Redis.
-        """
-        key = f"2FA_ATTEMPTS:{user_id}:{purpose}"
-        attempts = await self.redis.client.get(key)
-        if not attempts:
-            return 3  # Max attempts
-        return max(0, 3 - int(attempts.decode()))
-
-    async def increment_failed_attempt(self, user_id: str, purpose: str):
-        """Increment failed verification attempt counter."""
-        key = f"2FA_ATTEMPTS:{user_id}:{purpose}"
-        await self.redis.client.incr(key)
-        # Set 5-minute lockout after max attempts
-        await self.redis.client.expire(key, 300)
-
-    async def reset_failed_attempts(self, user_id: str, purpose: str):
-        """Reset failed attempt counter after successful verification."""
-        key = f"2FA_ATTEMPTS:{user_id}:{purpose}"
-        await self.redis.client.delete(key)
-
-    async def is_locked_out(self, user_id: str, purpose: str) -> bool:
-        """Check if user is locked out due to too many failed attempts."""
-        remaining = await self.get_remaining_attempts(user_id, purpose)
-        return remaining <= 0
-
-    async def generate_login_session(self, user_id: str) -> str:
-        """
-        Generate temporary login session after successful 2FA.
-
-        This prevents users from having to re-enter their 2FA code
-        for subsequent requests in the same session.
-        """
-        session_id = secrets.token_urlsafe(32)
-        key = f"LOGIN_SESSION:{session_id}"
-        await self.redis.client.setex(key, 900, user_id)  # 15 minutes
-        return session_id
-
-    async def validate_login_session(self, session_id: str) -> Optional[str]:
-        """
-        Validate login session and return user_id.
-
-        Returns None if session is invalid or expired.
-        """
-        key = f"LOGIN_SESSION:{session_id}"
-        user_id = await self.redis.client.get(key)
-        if user_id:
-            return user_id.decode()
-        return None
-
-    async def invalidate_login_session(self, session_id: str):
-        """Invalidate login session (logout)."""
-        key = f"LOGIN_SESSION:{session_id}"
-        await self.redis.client.delete(key)
-
-    def generate_verification_token(self) -> str:
-        """Generate secure verification token for email verification."""
-        return secrets.token_urlsafe(32)
+        if not self.verify_2fa_code(user.two_factor_secret, code):
+            raise TwoFactorVerificationError("Invalid 2FA code.")

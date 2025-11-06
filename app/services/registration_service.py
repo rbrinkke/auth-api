@@ -1,225 +1,48 @@
-"""
-Registration service implementing user registration business logic.
-
-This service encapsulates all business logic for user registration:
-- Password validation
-- User creation
-- Token generation
-
-Email sending is handled by the route via BackgroundTasks for better performance.
-
-Separates business logic from HTTP handling for better architecture and testability.
-"""
-import logging
-from typing import NamedTuple
-
-import asyncpg
 from fastapi import Depends
-
-from app.core.redis_client import RedisClient, get_redis
-from app.core.security import hash_password
-from app.core.tokens import generate_verification_token
-from app.db.connection import get_db_connection
-from app.db.procedures import sp_create_user
-from app.services.password_validation_service import PasswordValidationService, get_password_validation_service
-
-logger = logging.getLogger(__name__)
-
-
-def get_registration_service(
-    conn: asyncpg.Connection = Depends(get_db_connection),
-    redis: RedisClient = Depends(get_redis),
-    password_validation_svc: PasswordValidationService = Depends(get_password_validation_service)
-) -> "RegistrationService":
-    """
-    Dependency injection function for RegistrationService.
-
-    Args:
-        conn: Database connection
-        redis: Redis client
-        password_validation_svc: Password validation service
-
-    Returns:
-        RegistrationService: Configured registration service instance
-
-    This enables easy mocking during testing:
-        app.dependency_overrides[get_registration_service] = lambda: MockRegistrationService()
-    """
-    return RegistrationService(
-        conn=conn,
-        redis=redis,
-        password_validation_svc=password_validation_svc
-    )
-
-
-class UserRecord(NamedTuple):
-    """User record from database."""
-    id: str
-    email: str
-    is_verified: bool
-    is_active: bool
-    created_at: str
-
-
-class RegistrationResult(NamedTuple):
-    """Result of registration operation."""
-    user: UserRecord
-    verification_token: str
-
-
-class RegistrationServiceError(Exception):
-    """Base exception for registration service errors."""
-    pass
-
-
-class UserAlreadyExistsError(RegistrationServiceError):
-    """Raised when user with email already exists."""
-    pass
-
+from sqlalchemy.orm import Session
+from app.db.connection import get_db
+from app.db import procedures
+from app.core.exceptions import UserAlreadyExistsError
+from app.services.password_service import PasswordService
+from app.services.email_service import EmailService
+from app.services.token_service import TokenService
+from app.schemas.user import UserCreate
 
 class RegistrationService:
-    """
-    Service for handling user registration business logic.
-
-    Responsibilities:
-    - Validate password strength and breach status
-    - Create user in database
-    - Generate and store verification token
-    - Send verification email
-
-    All database and external service calls are handled here,
-    making it easy to test and maintain.
-    """
-
+    """Service voor gebruikersregistratie en verificatie."""
+    
     def __init__(
         self,
-        conn: asyncpg.Connection,
-        redis: RedisClient,
-        password_validation_svc
+        db: Session = Depends(get_db),
+        password_service: PasswordService = Depends(PasswordService),
+        email_service: EmailService = Depends(EmailService),
+        token_service: TokenService = Depends(TokenService)
     ):
-        """
-        Initialize registration service with dependencies.
+        self.db = db
+        self.password_service = password_service
+        self.email_service = email_service
+        self.token_service = token_service
 
-        Args:
-            conn: Database connection
-            redis: Redis client for token storage
-            password_validation_svc: Service for password validation
-        """
-        self.conn = conn
-        self.redis = redis
-        self.password_validation_svc = password_validation_svc
+    async def register_user(self, user: UserCreate) -> dict:
+        """Registreert een nieuwe gebruiker en stuurt verificatie e-mail."""
+        
+        existing_user = procedures.sp_get_user_by_email(self.db, user.email)
+        if existing_user:
+            raise UserAlreadyExistsError()
+            
+        # Wacht op de (nu async) password hash functie
+        hashed_password = await self.password_service.get_password_hash(user.password)
+        
+        new_user = procedures.sp_create_user(self.db, user.email, hashed_password)
+        
+        verification_token = self.token_service.create_verification_token(new_user.id)
+        
+        self.email_service.send_verification_email(new_user.email, verification_token)
+        
+        return {"message": "Registration successful. Please check your email to verify your account."}
 
-    async def register_user(
-        self,
-        email: str,
-        password: str
-    ) -> RegistrationResult:
-        """
-        Register a new user with email verification.
-
-        Business logic flow:
-        1. Validate password (strength + breach check)
-        2. Hash password
-        3. Create user in database
-        4. Generate verification token
-        5. Store token in Redis
-        6. Email sending is handled by the route via BackgroundTasks
-
-        Args:
-            email: User's email address
-            password: User's password
-
-        Returns:
-            RegistrationResult: User record and verification token
-
-        Raises:
-            RegistrationServiceError: If registration fails
-            UserAlreadyExistsError: If email already registered
-        """
-        try:
-            # Step 1: Validate password using dedicated service (async)
-            logger.info(f"Validating password for {email}")
-            await self.password_validation_svc.validate_password(password)
-
-            # Step 2: Hash password
-            logger.info(f"Hashing password for {email}")
-            hashed_password = hash_password(password)
-
-            # Step 3: Create user in database via stored procedure
-            logger.info(f"Creating user in database: {email}")
-            try:
-                user = await sp_create_user(self.conn, email.lower(), hashed_password)
-            except asyncpg.UniqueViolationError:
-                logger.warning(f"Registration failed - email already exists: {email}")
-                raise UserAlreadyExistsError("Email already registered")
-
-            # Step 4: Generate verification token
-            verification_token = generate_verification_token()
-
-            # Step 5: Store token in Redis (with TTL)
-            logger.info(f"Storing verification token for user {user.id}")
-            await self.redis.set_verification_token(verification_token, user.id)
-
-            # Convert to namedtuple for consistency
-            user_record = UserRecord(
-                id=str(user.id),
-                email=user.email,
-                is_verified=user.is_verified,
-                is_active=user.is_active,
-                created_at=str(user.created_at)
-            )
-
-            result = RegistrationResult(
-                user=user_record,
-                verification_token=verification_token
-            )
-
-            logger.info(f"Registration successful: {email} (id: {user.id})")
-            return result
-
-        except UserAlreadyExistsError:
-            raise
-        except Exception as e:
-            logger.error(f"Registration failed for {email}: {str(e)}")
-            raise RegistrationServiceError(
-                f"Registration failed: {str(e)}"
-            )
-
-
-class MockRegistrationService(RegistrationService):
-    """
-    Mock registration service for testing.
-
-    Simulates registration without actual database or email operations.
-    """
-
-    def __init__(self):
-        """Initialize mock service."""
-        self.users = []  # In-memory storage
-        self.verification_tokens = {}  # In-memory token storage
-
-    async def register_user(self, email: str, password: str) -> RegistrationResult:
-        """Mock registration - no database or email operations."""
-        # Validate password (async)
-        await self.password_validation_svc.validate_password(password)
-
-        # Create mock user
-        user = UserRecord(
-            id=f"mock-{len(self.users)}",
-            email=email.lower(),
-            is_verified=False,
-            is_active=True,
-            created_at="2024-01-01T00:00:00"
-        )
-
-        # Generate token
-        token = f"mock-token-{len(self.verification_tokens)}"
-
-        self.users.append(user)
-        self.verification_tokens[token] = user.id
-
-        logger.info(f"Mock registration successful: {email}")
-        return RegistrationResult(
-            user=user,
-            verification_token=token
-        )
+    async def verify_account(self, token: str) -> dict:
+        """Verifieert een gebruikersaccount met de opgegeven token."""
+        user_id = self.token_service.get_user_id_from_token(token, "verification")
+        procedures.sp_verify_user(self.db, user_id)
+        return {"message": "Account verified successfully."}

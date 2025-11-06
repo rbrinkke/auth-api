@@ -1,177 +1,63 @@
-"""
-Email service client for sending transactional emails.
-
-Communicates with the external email service via HTTP.
-"""
-import logging
-from typing import Any
-
-import httpx
-
-from app.config import settings
-
-logger = logging.getLogger(__name__)
-
+# /mnt/d/activity/auth-api/app/services/email_service.py
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from fastapi import Depends
+from app.config import Settings, get_settings
 
 class EmailService:
-    """Client for the email service."""
+    """Service to send emails."""
     
-    def __init__(self):
-        self.base_url = settings.email_service_url
-        self.timeout = settings.email_service_timeout
-    
-    async def send_email(
-        self,
-        to: str,
-        template: str,
-        subject: str,
-        data: dict[str, Any]
-    ) -> bool:
-        """
-        Send an email via the email service.
-        
-        Args:
-            to: Recipient email address
-            template: Template name (e.g., "email_verification")
-            subject: Email subject line
-            data: Template data (variables to interpolate)
-            
-        Returns:
-            True if email was sent successfully, False otherwise
-            
-        Note:
-            Failures are logged but don't raise exceptions to prevent
-            blocking the main application flow.
-        """
+    def __init__(self, settings: Settings = Depends(get_settings)):
+        self.settings = settings
+
+    def send_email(self, to_email: str, subject: str, html_content: str):
+        """Sends an email using SMTP."""
+        msg = MIMEMultipart()
+        msg['From'] = self.settings.EMAIL_FROM
+        msg['To'] = to_email
+        msg['Subject'] = subject
+        msg.attach(MIMEText(html_content, 'html'))
+
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    f"{self.base_url}/send",
-                    json={
-                        "to": to,
-                        "template": template,
-                        "subject": subject,
-                        "data": data
-                    },
-                    timeout=self.timeout
-                )
-                
-                if response.status_code == 200:
-                    logger.info(f"Email sent successfully to {to} (template: {template})")
-                    return True
-                else:
-                    logger.error(
-                        f"Failed to send email to {to}. "
-                        f"Status: {response.status_code}, "
-                        f"Response: {response.text}"
-                    )
-                    return False
-                    
-        except httpx.TimeoutException:
-            logger.error(f"Timeout sending email to {to} (template: {template})")
-            return False
+            with smtplib.SMTP(self.settings.EMAIL_HOST, self.settings.EMAIL_PORT) as server:
+                server.starttls()
+                server.login(self.settings.EMAIL_USERNAME, self.settings.EMAIL_PASSWORD)
+                server.sendmail(self.settings.EMAIL_FROM, to_email, msg.as_string())
         except Exception as e:
-            logger.error(f"Error sending email to {to}: {str(e)}")
-            return False
-    
-    async def send_verification_email(self, email: str, code: str) -> bool:
+            # In a real app, log this error
+            print(f"Failed to send email: {e}")
+            # Depending on policy, you might want to re-raise or handle
+            pass
+
+    def send_verification_email(self, email: str, token: str):
+        """Sends an account verification email."""
+        verification_url = f"{self.settings.FRONTEND_URL}/verify?token={token}"
+        subject = "Verify Your Account"
+        html_content = f"""
+        <html>
+        <body>
+            <p>Hi,</p>
+            <p>Thanks for registering. Please click the link below to verify your account:</p>
+            <p><a href="{verification_url}">{verification_url}</a></p>
+            <p>This link will expire in 24 hours.</p>
+        </body>
+        </html>
         """
-        Send email verification code (6-digit).
+        self.send_email(email, subject, html_content)
 
-        Args:
-            email: Recipient email
-            code: 6-digit verification code
-
-        Returns:
-            True if sent successfully
+    def send_password_reset_email(self, email: str, token: str):
+        """Sends a password reset email."""
+        reset_url = f"{self.settings.FRONTEND_URL}/reset-password?token={token}"
+        subject = "Reset Your Password"
+        html_content = f"""
+        <html>
+        <body>
+            <p>Hi,</p>
+            <p>You requested a password reset. Click the link below to reset your password:</p>
+            <p><a href="{reset_url}">{reset_url}</a></p>
+            <p>This link will expire in 1 hour. If you did not request this, please ignore this email.</p>
+        </body>
+        </html>
         """
-        # Use the same 2FA email template for consistency
-        return await self.send_2fa_code_email(email, code, "verify")
-    
-    async def send_2fa_code_email(self, email: str, code: str, purpose: str) -> bool:
-        """
-        Send 2FA verification code via email.
-
-        Args:
-            email: Recipient email address
-            code: 6-digit verification code
-            purpose: Purpose of the code (login, reset, verify)
-
-        Returns:
-            True if sent successfully
-        """
-        # Get appropriate subject and message based on purpose
-        subjects = {
-            "login": "Your login verification code",
-            "reset": "Password reset verification code",
-            "verify": "Email verification code"
-        }
-
-        purposes = {
-            "login": "login",
-            "reset": "password reset",
-            "verify": "email verification"
-        }
-
-        subject = subjects.get(purpose, "Verification code")
-        purpose_text = purposes.get(purpose, purpose)
-
-        return await self.send_email(
-            to=email,
-            template="2fa_code",
-            subject=subject,
-            data={
-                "code": code,
-                "purpose": purpose_text,
-                "expires_minutes": 5
-            }
-        )
-
-    async def send_password_reset_email(self, email: str, code: str) -> bool:
-        """
-        Send password reset code (6-digit).
-
-        Args:
-            email: Recipient email
-            code: 6-digit reset code
-
-        Returns:
-            True if sent successfully
-        """
-        # Use the same 2FA email template for consistency
-        return await self.send_2fa_code_email(email, code, "reset")
-    
-    async def send_welcome_email(self, email: str) -> bool:
-        """
-        Send welcome email after successful verification.
-        
-        Args:
-            email: Recipient email
-            
-        Returns:
-            True if sent successfully
-        """
-        return await self.send_email(
-            to=email,
-            template="welcome",
-            subject="Welcome to our platform!",
-            data={"email": email}
-        )
-
-
-# Global email service instance
-email_service = EmailService()
-
-
-def get_email_service() -> EmailService:
-    """
-    Dependency injection function for EmailService.
-
-    Returns:
-        EmailService: Configured email service instance
-
-    This enables easy mocking during testing:
-        app.dependency_overrides[get_email_service] = get_mock_email_service
-    """
-    return email_service
-
+        self.send_email(email, subject, html_content)
