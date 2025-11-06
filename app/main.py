@@ -13,24 +13,21 @@ from app.core.exceptions import (
     TwoFactorRequiredError,
     TwoFactorVerificationError
 )
-# Importeer de correcte validatie error
 from app.services.password_validation_service import PasswordValidationError
 
 from app.routes import (
-    login, register, logout, refresh, 
+    login, register, logout, refresh,
     verify, password_reset, twofa
 )
 
-# Setup logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Auth API")
 
-# Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust in production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -43,7 +40,6 @@ async def log_requests(request: Request, call_next):
     logger.info(f"Response status: {response.status_code}")
     return response
 
-# Centralized Exception Handlers
 @app.exception_handler(InvalidCredentialsError)
 async def invalid_credentials_handler(request: Request, exc: InvalidCredentialsError):
     return JSONResponse(
@@ -55,7 +51,7 @@ async def invalid_credentials_handler(request: Request, exc: InvalidCredentialsE
 @app.exception_handler(TwoFactorRequiredError)
 async def two_factor_required_handler(request: Request, exc: TwoFactorRequiredError):
     return JSONResponse(
-        status_code=status.HTTP_402_PAYMENT_REQUIRED,  # Using 402 as "further action required"
+        status_code=status.HTTP_402_PAYMENT_REQUIRED,
         content={"detail": "2FA required", "pre_auth_token": exc.detail},
     )
 
@@ -80,7 +76,6 @@ async def user_exists_handler(request: Request, exc: UserAlreadyExistsError):
         content={"detail": exc.detail},
     )
 
-# Gebruik de correcte PasswordValidationError van de validation service
 @app.exception_handler(PasswordValidationError)
 async def password_validation_handler(request: Request, exc: PasswordValidationError):
     return JSONResponse(
@@ -117,7 +112,6 @@ async def generic_exception_handler(request: Request, exc: Exception):
         content={"detail": "An internal server error occurred"},
     )
 
-# Include API routers
 app.include_router(login.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(register.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(logout.router, prefix="/api/auth", tags=["Auth"])

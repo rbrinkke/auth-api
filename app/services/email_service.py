@@ -1,4 +1,3 @@
-# /mnt/d/activity/auth-api/app/services/email_service.py
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -6,13 +5,10 @@ from fastapi import Depends
 from app.config import Settings, get_settings
 
 class EmailService:
-    """Service to send emails."""
-    
     def __init__(self, settings: Settings = Depends(get_settings)):
         self.settings = settings
 
     def send_email(self, to_email: str, subject: str, html_content: str):
-        """Sends an email using SMTP."""
         msg = MIMEMultipart()
         msg['From'] = self.settings.EMAIL_FROM
         msg['To'] = to_email
@@ -25,13 +21,10 @@ class EmailService:
                 server.login(self.settings.EMAIL_USERNAME, self.settings.EMAIL_PASSWORD)
                 server.sendmail(self.settings.EMAIL_FROM, to_email, msg.as_string())
         except Exception as e:
-            # In a real app, log this error
             print(f"Failed to send email: {e}")
-            # Depending on policy, you might want to re-raise or handle
             pass
 
     def send_verification_email(self, email: str, token: str):
-        """Sends an account verification email."""
         verification_url = f"{self.settings.FRONTEND_URL}/verify?token={token}"
         subject = "Verify Your Account"
         html_content = f"""
@@ -47,7 +40,6 @@ class EmailService:
         self.send_email(email, subject, html_content)
 
     def send_password_reset_email(self, email: str, token: str):
-        """Sends a password reset email."""
         reset_url = f"{self.settings.FRONTEND_URL}/reset-password?token={token}"
         subject = "Reset Your Password"
         html_content = f"""

@@ -1,4 +1,3 @@
-# /mnt/d/activity/auth-api/app/services/auth_service.py
 from fastapi import Depends
 from sqlalchemy.orm import Session
 import redis
@@ -6,7 +5,7 @@ from app.db.connection import get_db
 from app.core.redis_client import get_redis_client
 from app.db import procedures
 from app.core.exceptions import (
-    InvalidCredentialsError, 
+    InvalidCredentialsError,
     AccountNotVerifiedError,
     TwoFactorRequiredError,
     TwoFactorVerificationError,
@@ -18,8 +17,6 @@ from app.services.two_factor_service import TwoFactorService
 from app.schemas.auth import TokenResponse, TwoFactorLoginRequest
 
 class AuthService:
-    """Handles user authentication, login, logout, and 2FA challenge."""
-    
     def __init__(
         self,
         db: Session = Depends(get_db),
@@ -35,62 +32,45 @@ class AuthService:
         self.two_factor_service = two_factor_service
 
     def login_user(self, email: str, password: str) -> dict:
-        """
-        Logs in a user.
-        Returns full tokens if 2FA is disabled.
-        Returns a 2FA challenge token if 2FA is enabled.
-        """
         user = procedures.sp_get_user_by_email(self.db, email)
-        
+
         if not user or not self.password_service.verify_password(password, user.hashed_password):
             raise InvalidCredentialsError()
-            
+
         if not user.is_verified:
             raise AccountNotVerifiedError()
-            
+
         if user.is_2fa_enabled:
-            # User has 2FA enabled, issue a temporary token for the 2FA step
             pre_auth_token = self.token_service.create_2fa_token(user.id)
             raise TwoFactorRequiredError(detail=pre_auth_token)
 
-        # 2FA is not enabled, issue full tokens
         return self._grant_full_tokens(user.id)
 
     def login_2fa_challenge(self, request: TwoFactorLoginRequest) -> TokenResponse:
-        """
-        Verifies a 2FA code after the initial login.
-        Issues full tokens upon success.
-        """
         user_id = self.token_service.get_user_id_from_token(
-            request.pre_auth_token, 
+            request.pre_auth_token,
             "2fa_pre_auth"
         )
-        
-        # This raises TwoFactorVerificationError on failure
+
         self.two_factor_service.validate_2fa_challenge(user_id, request.code)
 
-        # 2FA code is valid, grant full tokens
         return self._grant_full_tokens(user_id)
 
     def logout_user(self, refresh_token: str) -> dict:
-        """Logs out a user by invalidating their refresh token."""
         try:
             payload = self.token_service.token_helper.decode_token(refresh_token)
             if payload.get("type") == "refresh":
                 user_id = int(payload.get("sub"))
                 procedures.sp_revoke_refresh_token(self.db, user_id, refresh_token)
         except Exception:
-            # If token is invalid or expired, user is effectively logged out.
-            # Do not raise an error, just accept the logout.
             pass
-        
+
         return {"message": "Logged out successfully"}
 
     def _grant_full_tokens(self, user_id: int) -> TokenResponse:
-        """Helper to create and return access and refresh tokens."""
         access_token = self.token_service.create_access_token(user_id)
         refresh_token = self.token_service.create_refresh_token(user_id)
-        
+
         return TokenResponse(
             access_token=access_token,
             refresh_token=refresh_token,
