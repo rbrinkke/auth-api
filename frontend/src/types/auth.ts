@@ -1,103 +1,108 @@
-// API Types for Auth Endpoints
+// frontend/src/types/auth.ts
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
-export interface LoginRequest {
-  username: string;
-  password: string;
+// This interface would typically define the user object structure
+interface User {
+  id: string;
+  email: string;
+  is_verified: boolean;
+  is_2fa_enabled: boolean;
+  // add other user properties as needed
 }
 
-export interface RegisterRequest {
+// Defines the shape of the authentication state
+interface AuthState {
+  isAuthenticated: boolean;
+  user: User | null;
+  // Add any other auth-related state properties
+}
+
+// Defines the shape of the authentication context
+interface AuthContextType {
+  isAuthenticated: boolean;
+  user: User | null;
+  authMode: AuthMode;
+  error: string | null;
+  success: string | null;
+  isLoading: boolean;
+  setAuthMode: (mode: AuthMode) => void;
+  handleLogin: (data: LoginData) => Promise<void>;
+  handleRegister: (data: RegisterData) => Promise<void>;
+  handleRequestReset: (data: PasswordResetRequestData) => Promise<void>;
+  handleConfirmReset: (data: PasswordResetConfirmData) => Promise<void>;
+  handleTwoFactorLogin: (data: TwoFactorLoginData) => Promise<void>;
+  handleLogout: () => Promise<void>;
+  clearError: () => void;
+  clearSuccess: () => void;
+}
+
+export type AuthMode = 'login' | 'register' | 'passwordReset' | '2fa';
+
+export interface LoginData {
   email: string;
   password: string;
+  code: string;
 }
 
-export interface TokenResponse {
+export interface RegisterData {
+  email: string;
+  password: string;
+  confirmPassword: string;
+  code: string;
+}
+
+export interface LoginResponse {
+  message: string;
+  user: {
+    id: string;
+    email: string;
+    is_verified: boolean;
+    is_2fa_enabled: boolean;
+  };
+  // No tokens here, login initiates 2FA if needed, or separate call
+}
+
+export interface TwoFactorLoginData {
+  email: string;
+  code: string;
+}
+
+export interface TwoFactorLoginResponse {
   access_token: string;
   refresh_token: string;
-  token_type: 'bearer';
-}
-
-export interface LoginResponse extends TokenResponse {}
-
-export interface ApiError {
-  detail: string;
-  code?: string;
-  field?: string;
-}
-
-export interface ValidationError {
-  field: string;
   message: string;
 }
 
-export interface PasswordResetRequest {
-  email: string;
-}
 
-export interface PasswordResetConfirmRequest {
-  token: string;
-  new_password: string;
-}
-
-export interface EmailVerificationRequest {
-  token: string;
-}
-
-export interface TwoFactorEnableResponse {
-  qr_code_url: string;
-  backup_codes: string[];
-  secret: string;
+export interface RegisterResponse {
   message: string;
-}
-
-export interface TwoFactorVerifyRequest {
-  code: string;
-}
-
-export interface TwoFactorLoginRequest {
-  user_id: string;
-  code: string;
-}
-
-export interface TwoFactorVerifySetupResponse {
-  verified: boolean;
-  message: string;
-  session_id?: string;
-}
-
-export interface TwoFactorVerifyResponse {
-  verified: boolean;
-  message?: string;
-  session_id?: string;
-}
-
-export interface TwoFactorDisableRequest {
-  password: string;
-  code: string;
-}
-
-export interface TwoFactorDisableResponse {
-  disabled: boolean;
-  message: string;
-}
-
-export interface TwoFactorStatusResponse {
-  two_factor_enabled: boolean;
-}
-
-// Error responses
-export interface LoginErrorResponse {
-  detail: string;
-}
-
-export interface TwoFactorRequiredResponse {
-  detail: {
-    message: string;
-    two_factor_required: true;
-    user_id: string;
+  user: {
+    id: string;
+    email: string;
+    is_verified: boolean;
   };
 }
 
-export interface RateLimitError {
-  detail: string;
-  retry_after?: number;
+export interface PasswordResetRequestData {
+  email: string;
+}
+
+export interface PasswordResetConfirmData {
+  code: string;
+  newPassword: string;
+  // confirmNewPassword is validated in the form, not sent
+}
+
+export interface RefreshTokenResponse {
+  access_token: string;
+  message: string;
+}
+
+export interface LogoutResponse {
+  message: string;
+}
+
+export interface ApiError {
+  message: string;
+  // You might have other properties like 'code' or 'details'
 }

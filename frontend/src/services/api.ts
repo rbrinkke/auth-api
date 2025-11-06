@@ -1,166 +1,143 @@
-// API Service Layer
-import axios, { AxiosInstance, AxiosError } from 'axios';
-import type {
-  LoginRequest,
-  RegisterRequest,
-  TokenResponse,
-  ApiError,
-  PasswordResetRequest,
-  PasswordResetConfirmRequest,
-  EmailVerificationRequest,
-  TwoFactorEnableResponse,
-  TwoFactorVerifyRequest,
-  TwoFactorLoginRequest,
-  TwoFactorVerifySetupResponse,
-  TwoFactorVerifyResponse,
-  TwoFactorDisableRequest,
-  TwoFactorDisableResponse,
-  TwoFactorStatusResponse,
-  TwoFactorRequiredResponse,
-} from '@/types/auth';
+// frontend/src/services/api.ts
+import axios, { AxiosError } from 'axios';
+import { 
+  LoginData, 
+  RegisterData, 
+  PasswordResetRequestData, 
+  PasswordResetConfirmData, 
+  TwoFactorLoginData,
+  LoginResponse,
+  RegisterResponse,
+  RefreshTokenResponse,
+  LogoutResponse,
+  TwoFactorLoginResponse
+} from '../types/auth';
 
-class ApiService {
-  private api: AxiosInstance;
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
-  constructor() {
-    this.api = axios.create({
-      baseURL: '/api',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      withCredentials: true,
-    });
+const api = axios.create({
+  baseURL: API_URL,
+  withCredentials: true, // This is crucial for handling cookies (like http-only refresh tokens)
+});
 
-    // Request interceptor to add auth token
-    this.api.interceptors.request.use((config) => {
-      const token = localStorage.getItem('access_token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+// Interceptor to handle token refresh
+let isRefreshing = false;
+let failedQueue: { resolve: (token: string) => void; reject: (error: AxiosError) => void; }[] = [];
+
+const processQueue = (error: AxiosError | null, token: string | null = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token as string);
+    }
+  });
+  failedQueue = [];
+};
+
+api.interceptors.response.use(
+  response => response,
+  async (error: AxiosError) => {
+    const originalRequest = error.config as any; // Using any to access _retry
+
+    // If the error is 401 and it's not a retry, try to refresh the token
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // If refreshing, add to queue
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          originalRequest.headers['Authorization'] = 'Bearer ' + token;
+          return axios(originalRequest);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
       }
-      return config;
-    });
 
-    // Response interceptor for error handling
-    this.api.interceptors.response.use(
-      (response) => response,
-      async (error: AxiosError) => {
-        const originalRequest = error.config as any;
+      originalRequest._retry = true;
+      isRefreshing = true;
 
-        if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
-          originalRequest._retry = true;
-
-          try {
-            const refreshToken = localStorage.getItem('refresh_token');
-            if (refreshToken) {
-              const response = await this.refreshToken(refreshToken);
-              const { access_token } = response.data;
-              localStorage.setItem('access_token', access_token);
-
-              return this.api(originalRequest);
-            }
-          } catch (refreshError) {
-            // Refresh failed, redirect to login
-            this.logout();
-            window.location.href = '/login';
-          }
-        }
-
-        return Promise.reject(error);
-      }
-    );
-  }
-
-  // Auth endpoints
-  async register(data: RegisterRequest) {
-    return this.api.post<TokenResponse>('/auth/register', data);
-  }
-
-  async login(data: LoginRequest) {
-    return this.api.post<TokenResponse | TwoFactorRequiredResponse>('/auth/login', data);
-  }
-
-  async verifyCode(userId: string, code: string) {
-    const payload = { user_id: userId, code };
-
-    return this.api.post('/auth/verify-code', payload).then(response => {
-      return response;
-    }).catch(error => {
-      throw error;
-    });
-  }
-
-  async verifyTempCode(userId: string, code: string, purpose: string) {
-    return this.api.post('/auth/verify-temp-code', { user_id: userId, code, purpose });
-  }
-
-  async resendVerification(email: string) {
-    return this.api.post('/auth/resend-verification', { email });
-  }
-
-  async requestPasswordReset(data: PasswordResetRequest) {
-    return this.api.post('/auth/request-password-reset', data);
-  }
-
-  async resetPassword(data: { user_id: string; code: string; new_password: string }) {
-    return this.api.post('/auth/reset-password', data);
-  }
-
-  async refreshToken(refreshToken: string) {
-    return this.api.post<TokenResponse>('/auth/refresh', { refresh_token: refreshToken });
-  }
-
-  async logout() {
-    const refreshToken = localStorage.getItem('refresh_token');
-    if (refreshToken) {
       try {
-        await this.api.post('/auth/logout', { refresh_token: refreshToken });
-      } catch (error) {
-        // Ignore logout errors
+        const { data } = await api.post<RefreshTokenResponse>('/auth/refresh-token');
+        const newAccessToken = data.access_token;
+
+        api.defaults.headers.common['Authorization'] = 'Bearer ' + newAccessToken;
+        originalRequest.headers['Authorization'] = 'Bearer ' + newAccessToken;
+        
+        processQueue(null, newAccessToken);
+        return axios(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError as AxiosError, null);
+        // If refresh fails, redirect to login
+        // This logic might be better handled in a global error handler or auth context
+        console.error('Token refresh failed', refreshError);
+        // We can't use useAuth hook here, so we might need another way to signal logout
+        // For now, just reject the promise
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
       }
     }
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-  }
 
-  // Two-factor authentication endpoints
-  async enableTwoFactor() {
-    return this.api.post<TwoFactorEnableResponse>('/auth/enable-2fa');
+    // For other errors, just reject the promise
+    return Promise.reject(error);
   }
+);
 
-  async verifyTwoFactorSetup(data: TwoFactorVerifyRequest) {
-    return this.api.post<TwoFactorVerifySetupResponse>('/auth/verify-2fa-setup', data);
+
+// Authentication API calls
+
+export const loginUser = async (data: LoginData) => {
+  // Sending email, password, AND code
+  const response = await api.post<LoginResponse>('/auth/login', {
+    email: data.email,
+    password: data.password,
+    code: data.code // TOEGEVOEGD
+  });
+  return response.data;
+};
+
+export const registerUser = async (data: RegisterData) => {
+  // Sending email, password, confirmPassword, AND code
+  const response = await api.post<RegisterResponse>('/auth/register', {
+    email: data.email,
+    password: data.password,
+    confirmPassword: data.confirmPassword,
+    code: data.code // TOEGEVOEGD
+  });
+  return response.data;
+};
+
+export const requestPasswordReset = async (data: PasswordResetRequestData) => {
+  const response = await api.post('/auth/password-reset/request', data);
+  return response.data;
+};
+
+export const confirmPasswordReset = async (data: PasswordResetConfirmData) => {
+  const response = await api.post('/auth/password-reset/confirm', data);
+  return response.data;
+};
+
+export const twoFactorLogin = async (data: TwoFactorLoginData) => {
+  const response = await api.post<TwoFactorLoginResponse>('/auth/2fa/login', data);
+  // Store the new access token
+  if (response.data.access_token) {
+    api.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
   }
+  return response.data;
+};
 
-  async loginWithTwoFactor(data: TwoFactorLoginRequest) {
-    return this.api.post<TokenResponse>('/auth/login-2fa', data);
-  }
+export const logoutUser = async () => {
+  const response = await api.post<LogoutResponse>('/auth/logout');
+  // Clear the authorization header
+  delete api.defaults.headers.common['Authorization'];
+  return response.data;
+};
 
-  async verifyTwoFactorCode(userId: string, code: string, purpose: string) {
-    return this.api.post<TwoFactorVerifyResponse>('/auth/verify-2fa', {
-      user_identifier: userId,
-      code,
-      purpose,
-    });
-  }
+// Example of a protected route
+export const getProtectedData = async () => {
+  const response = await api.get('/protected-route'); // Adjust endpoint as needed
+  return response.data;
+};
 
-  async disableTwoFactor(data: TwoFactorDisableRequest) {
-    return this.api.post<TwoFactorDisableResponse>('/auth/disable-2fa', data);
-  }
-
-  async getTwoFactorStatus() {
-    return this.api.get<TwoFactorStatusResponse>('/auth/2fa-status');
-  }
-
-  // Health check
-  async healthCheck() {
-    return this.api.get('/health');
-  }
-
-  // Get API instance for custom requests
-  getApi() {
-    return this.api;
-  }
-}
-
-export const apiService = new ApiService();
-export default apiService;
+export default api;

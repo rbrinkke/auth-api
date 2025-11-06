@@ -71,16 +71,6 @@ async def sp_verify_user_email(
     return bool(result)
 
 
-async def sp_verify_user(
-    conn: asyncpg.Connection,
-    user_id: UUID
-) -> None:
-    await conn.execute(
-        "UPDATE activity.users SET is_verified = TRUE, verified_at = NOW() WHERE id = $1",
-        user_id
-    )
-
-
 async def sp_save_refresh_token(
     conn: asyncpg.Connection,
     user_id: UUID,

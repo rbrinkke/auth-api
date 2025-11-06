@@ -53,18 +53,6 @@ class RegistrationService:
             "user_id": str(new_user.id)
         }
 
-    async def verify_account(self, code: str) -> dict:
-        user_id_str = self.redis_client.get(f"verify_code:{code}")
-        if not user_id_str:
-            return {"message": "Invalid or expired verification code."}
-
-        user_id = UUID(user_id_str)
-        await procedures.sp_verify_user(self.db, user_id)
-
-        self.redis_client.delete(f"verify_code:{code}")
-
-        return {"message": "Account verified successfully."}
-
     async def verify_account_by_code(self, user_id: UUID, code: str) -> dict:
         redis_key = f"2FA:{user_id}:verify"
         stored_code = self.redis_client.get(redis_key)

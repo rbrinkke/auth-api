@@ -1,211 +1,172 @@
-// Password Reset Form Component
-import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Alert } from '@/components/ui/Alert';
-import { PasswordStrengthIndicator } from './PasswordStrength';
-import { validatePassword, validateConfirmPassword } from '@/utils/validation';
-import apiService from '@/services/api';
-import { Lock, KeyRound } from 'lucide-react';
+// frontend/src/components/auth/PasswordResetForm.tsx
+import React, { useState } from 'react';
+import { useAuth } from '../../hooks/useAuth';
+import { Input } from '../ui/Input';
+import { Button } from '../ui/Button';
+import { Alert } from '../ui/Alert';
 
-interface LocationState {
-  userId?: string;
-  code?: string;
-}
+const PasswordResetForm: React.FC = () => {
+  const [step, setStep] = useState(1); // 1: Request, 2: Confirm
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  // const [confirmNewPassword, setConfirmNewPassword] = useState(''); // VERWIJDERD
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-export function PasswordResetForm() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const state = location.state as LocationState;
+  const { 
+    handleRequestReset, 
+    handleConfirmReset, 
+    setAuthMode, 
+    isLoading, 
+    error: authError, 
+    clearError,
+    success: authSuccess,
+    clearSuccess
+  } = useAuth();
 
-  const [step, setStep] = useState<'request' | 'reset'>(state?.userId && state?.code ? 'reset' : 'request');
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-  });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [apiError, setApiError] = useState<string>('');
-  const [successMessage, setSuccessMessage] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  const passwordValidation = validatePassword(formData.password, [formData.email]);
-
-  useEffect(() => {
-    // Check if we're on the reset step with code
-    if (state?.userId && state?.code) {
-      setStep('reset');
-    }
-  }, [state]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
-    }
-    if (apiError) {
-      setApiError('');
-    }
-  };
-
-  const handleRequestSubmit = async (e: React.FormEvent) => {
+  const handleSubmitRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    setApiError('');
-
-    if (!formData.email) {
-      setErrors({ email: 'Email is required' });
-      return;
-    }
-
-    setIsLoading(true);
+    setLocalError(null);
+    clearError();
+    setSuccessMessage(null);
+    clearSuccess();
 
     try {
-      const response = await apiService.requestPasswordReset({ email: formData.email });
-      setSuccessMessage(
-        'If an account exists for this email, a password reset code has been sent.'
-      );
-      // Don't redirect immediately, let user see the message
+      await handleRequestReset({ email });
+      // Success message is set from useAuth
+      setSuccessMessage('Instructies voor wachtwoordherstel zijn naar je e-mail verzonden.');
+      setStep(2); // Move to the next step
     } catch (error: any) {
-      setApiError(error.response?.data?.detail || 'Request failed. Please try again.');
-    } finally {
-      setIsLoading(false);
+      // Error is set in useAuth
+      setLocalError(error.message || 'Er is een fout opgetreden.');
     }
   };
 
-  const handleResetSubmit = async (e: React.FormEvent) => {
+  const handleSubmitConfirm = async (e: React.FormEvent) => {
     e.preventDefault();
-    setApiError('');
-
-    const newErrors: Record<string, string> = {};
-
-    if (!passwordValidation.isValid) {
-      newErrors.password = passwordValidation.errors[0];
-    }
-
-    const confirmResult = validateConfirmPassword(formData.password, formData.confirmPassword);
-    if (!confirmResult.isValid) {
-      newErrors.confirmPassword = confirmResult.errors[0];
-    }
-
-    if (!state?.userId || !state?.code) {
-      newErrors.code = 'Invalid reset code';
-    }
-
-    setErrors(newErrors);
-    if (Object.keys(newErrors).length > 0) return;
-
-    setIsLoading(true);
+    setLocalError(null);
+    clearError();
+    setSuccessMessage(null);
+    clearSuccess();
 
     try {
-      await apiService.resetPassword({
-        user_id: state.userId!,
-        code: state.code!,
-        new_password: formData.password,
-      });
+      // if (newPassword !== confirmNewPassword) { // VERWIJDERD
+      //   throw new Error("Wachtwoorden komen niet overeen.");
+      // }
+      
+      if (!newPassword || !code) { // AANGEPAST
+        throw new Error("Code en nieuw wachtwoord zijn verplicht.");
+      }
 
-      setSuccessMessage('Password reset successfully! You can now log in with your new password.');
-      setTimeout(() => navigate('/login'), 3000);
+      await handleConfirmReset({ code, newPassword });
+      setSuccessMessage("Je wachtwoord is gereset. Je kunt nu inloggen.");
+      // Reset fields after successful reset
+      setCode('');
+      setNewPassword('');
+      // setConfirmNewPassword(''); // VERWIJDERD
+      
+      // Switch to login after a delay
+      setTimeout(() => {
+        setAuthMode('login');
+      }, 3000);
+
     } catch (error: any) {
-      setApiError(error.response?.data?.detail || 'Password reset failed. Please try again.');
-    } finally {
-      setIsLoading(false);
+      setLocalError(error.message || 'Er is een fout opgetreden.');
+      setCode(''); // TOEGEVOEGD: Veld leegmaken bij fout
     }
   };
+
+  const displayError = localError || authError;
+  const displaySuccess = successMessage || authSuccess;
 
   return (
-    <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-lg">
-      <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-4">
-          <Lock className="w-8 h-8 text-primary-600" />
-        </div>
-        <h2 className="text-3xl font-bold text-gray-900">
-          {step === 'request' ? 'Reset Password' : 'Set New Password'}
-        </h2>
-      </div>
+    <div className="space-y-4">
+      {step === 1 ? (
+        <form onSubmit={handleSubmitRequest} className="space-y-4">
+          <h2 className="text-2xl font-semibold text-center">Wachtwoord Resetten</h2>
+          
+          {displayError && <Alert type="error" message={displayError} onClose={localError ? () => setLocalError(null) : clearError} />}
+          {displaySuccess && <Alert type="success" message={displaySuccess} onClose={() => setSuccessMessage(null)} />}
 
-      {apiError && <Alert type="error" message={apiError} onClose={() => setApiError('')} />}
-
-      {successMessage && <Alert type="success" message={successMessage} />}
-
-      {step === 'request' ? (
-        <form onSubmit={handleRequestSubmit} className="space-y-4">
-          <p className="text-sm text-gray-600 mb-4">
-            Enter your email address and we'll send you a code to reset your password.
+          <p className="text-sm text-gray-600 text-center">
+            Voer je e-mailadres in. We sturen je een code om je wachtwoord te resetten.
           </p>
-
+          
           <Input
-            label="Email Address"
-            name="email"
+            id="reset-email"
+            label="Email"
             type="email"
-            value={formData.email}
-            onChange={handleChange}
-            error={errors.email}
-            placeholder="you@example.com"
-            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={isLoading}
             required
           />
-
-          <Button type="submit" variant="primary" size="lg" isLoading={isLoading} className="w-full">
-            Send Reset Code
+          
+          <Button type="submit" disabled={isLoading} className="w-full">
+            {isLoading ? 'Bezig...' : 'Verstuur Code'}
           </Button>
-
-          <p className="text-center text-sm text-gray-600">
-            Remember your password?{' '}
-            <button
-              type="button"
-              onClick={() => navigate('/login')}
-              className="text-primary-600 hover:text-primary-700 font-medium"
-            >
-              Sign in
-            </button>
-          </p>
-
-          <div className="text-center">
-            <p className="text-xs text-gray-500">
-              After receiving the code, you'll need to enter it to continue.
-            </p>
-          </div>
         </form>
       ) : (
-        <form onSubmit={handleResetSubmit} className="space-y-4">
+        <form onSubmit={handleSubmitConfirm} className="space-y-4">
+          <h2 className="text-2xl font-semibold text-center">Nieuw Wachtwoord</h2>
+          
+          {displayError && <Alert type="error" message={displayError} onClose={localError ? () => setLocalError(null) : clearError} />}
+          {displaySuccess && <Alert type="success" message={displaySuccess} onClose={() => setSuccessMessage(null)} />}
+
+          <p className="text-sm text-gray-600 text-center">
+            Voer de code in die je per e-mail hebt ontvangen en kies een nieuw wachtwoord.
+          </p>
+
           <Input
-            label="New Password"
-            name="password"
-            type="password"
-            value={formData.password}
-            onChange={handleChange}
-            error={errors.password}
-            placeholder="••••••••••••"
-            autoComplete="new-password"
+            id="reset-code"
+            label="Reset Code"
+            type="text"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            disabled={isLoading}
             required
           />
 
-          {formData.password && (
-            <PasswordStrengthIndicator
-              password={formData.password}
-              strength={passwordValidation.passwordStrength}
-            />
-          )}
-
           <Input
-            label="Confirm New Password"
-            name="confirmPassword"
+            id="reset-new-password"
+            label="Nieuw Wachtwoord"
             type="password"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            error={errors.confirmPassword}
-            placeholder="••••••••••••"
-            autoComplete="new-password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            disabled={isLoading}
             required
           />
 
-          <Button type="submit" variant="primary" size="lg" isLoading={isLoading} className="w-full">
-            Reset Password
+          {/* VERWIJDERD: Bevestig Wachtwoord Veld */}
+          {/* <Input
+            id="reset-confirm-new-password"
+            label="Bevestig Nieuw Wachtwoord"
+            type="password"
+            value={confirmNewPassword}
+            onChange={(e) => setConfirmNewPassword(e.target.value)}
+            disabled={isLoading}
+            required
+          /> */}
+
+          <Button type="submit" disabled={isLoading} className="w-full">
+            {isLoading ? 'Bezig...' : 'Wachtwoord Instellen'}
           </Button>
         </form>
       )}
+
+      <div className="text-sm text-center">
+        <button
+          type="button"
+          onClick={() => setAuthMode('login')}
+          className="font-medium text-indigo-600 hover:text-indigo-500"
+          disabled={isLoading}
+        >
+          Terug naar Inloggen
+        </button>
+      </div>
     </div>
   );
-}
+};
+
+export default PasswordResetForm;

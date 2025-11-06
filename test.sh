@@ -67,13 +67,26 @@ HASH_OLD=$(docker compose exec postgres psql -U activity_user -d activitydb -t -
 echo "      ✓ Old hash: ${HASH_OLD:0:30}..."
 echo ""
 
-# LOGIN
-echo "[8/21] LOGIN (before password change)"
+# LOGIN STEP 1: Request login code
+echo "[8/21] LOGIN STEP 1: Request code (before password change)"
 cat > ./login.json << JSON
 {"username": "$EMAIL", "password": "$PASS"}
 JSON
 R=$(curl -s -X POST "$API/api/auth/login" -H "Content-Type: application/json" -d @./login.json)
-echo "$R" | grep -q "access_token" || exit 1
+echo "$R" | grep -q "requires_code" || (echo "Login code request failed: $R" && exit 1)
+echo "      ✓ Login code requested"
+
+# GET LOGIN CODE
+LOGIN_CODE=$(docker compose exec -T redis redis-cli GET "2FA:$USER_ID:login" 2>/dev/null)
+echo "      ✓ Login code: $LOGIN_CODE"
+
+# LOGIN STEP 2: Submit code
+echo "[8b/21] LOGIN STEP 2: Submit code"
+cat > ./login_with_code.json << JSON
+{"username": "$EMAIL", "password": "$PASS", "code": "$LOGIN_CODE"}
+JSON
+R=$(curl -s -X POST "$API/api/auth/login" -H "Content-Type: application/json" -d @./login_with_code.json)
+echo "$R" | grep -q "access_token" || (echo "Login with code failed: $R" && exit 1)
 ACCESS=$(echo "$R" | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
 REFRESH=$(echo "$R" | grep -o '"refresh_token":"[^"]*' | cut -d'"' -f4)
 echo "      ✓ Tokens obtained"
@@ -118,12 +131,20 @@ else
 fi
 echo ""
 
-# LOGIN NEW
-echo "[13/21] LOGIN NEW PASSWORD"
+# LOGIN NEW PASSWORD
+echo "[13/21] LOGIN NEW PASSWORD - Step 1: Request code"
 cat > ./login_new.json << JSON
 {"username": "$EMAIL", "password": "NewStrongPassword2025"}
 JSON
 R=$(curl -s -X POST "$API/api/auth/login" -H "Content-Type: application/json" -d @./login_new.json)
+echo "$R" | grep -q "requires_code" || (echo "Login new password code request failed: $R" && exit 1)
+
+NEW_LOGIN_CODE=$(docker compose exec -T redis redis-cli GET "2FA:$USER_ID:login" 2>/dev/null)
+
+cat > ./login_new_with_code.json << JSON
+{"username": "$EMAIL", "password": "NewStrongPassword2025", "code": "$NEW_LOGIN_CODE"}
+JSON
+R=$(curl -s -X POST "$API/api/auth/login" -H "Content-Type: application/json" -d @./login_new_with_code.json)
 if echo "$R" | grep -q "access_token"; then
     echo "      ✓✓✓ LOGIN NEW PASSWORD SUCCESS ✓✓✓"
     REFRESH=$(echo "$R" | grep -o '"refresh_token":"[^"]*' | cut -d'"' -f4)
@@ -133,13 +154,13 @@ else
 fi
 echo ""
 
-# LOGIN OLD
+# LOGIN OLD PASSWORD (should fail immediately - invalid credentials)
 echo "[14/21] LOGIN OLD PASSWORD (should fail)"
 R=$(curl -s -X POST "$API/api/auth/login" -H "Content-Type: application/json" -d @./login.json)
 if echo "$R" | grep -qi "invalid\|credentials"; then
     echo "      ✓✓✓ OLD PASSWORD CORRECTLY REJECTED ✓✓✓"
 else
-    echo "      ✗ Old password not rejected"
+    echo "      ✗ Old password login failed. Response: $R"
     exit 1
 fi
 echo ""

@@ -26,6 +26,7 @@ class RegisterResponse(BaseModel):
 class LoginRequest(BaseModel):
     username: EmailStr = Field(..., description="User's email address")
     password: str
+    code: str | None = Field(None, min_length=6, max_length=6, description="Optional 6-digit login verification code")
 
     @field_validator("username")
     @classmethod
@@ -37,6 +38,14 @@ class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+
+
+class LoginCodeSentResponse(BaseModel):
+    message: str
+    email: str
+    user_id: str
+    expires_in: int = 600
+    requires_code: bool = True
 
 
 class VerifyEmailRequest(BaseModel):
@@ -97,6 +106,7 @@ class RequestPasswordResetResponse(BaseModel):
 
 
 class ResetPasswordRequest(BaseModel):
+    user_id: str = Field(..., min_length=1, description="User ID")
     code: str = Field(..., min_length=6, max_length=6, description="6-digit password reset code")
     new_password: str = Field(
         ...,

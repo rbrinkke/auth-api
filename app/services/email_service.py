@@ -45,3 +45,12 @@ class EmailService:
             "expires_minutes": 10
         }
         return await self.send_email(email, "2fa_code", subject, data)
+
+    async def send_2fa_code(self, email: str, code: str, purpose: str = "verification"):
+        subject = f"Your {purpose.title()} Code"
+        data = {
+            "code": code,
+            "purpose": purpose,
+            "expires_minutes": 10
+        }
+        return await self.send_email(email, "2fa_code", subject, data)

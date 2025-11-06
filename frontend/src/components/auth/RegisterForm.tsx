@@ -1,204 +1,146 @@
-// Register Form Component
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Alert } from '@/components/ui/Alert';
-import { PasswordStrengthIndicator, PasswordRequirementsChecklist } from './PasswordStrength';
-import { validateEmail, validatePassword, validateConfirmPassword } from '@/utils/validation';
-import apiService from '@/services/api';
-import { Mail, Lock, UserPlus } from 'lucide-react';
+// frontend/src/components/auth/RegisterForm.tsx
+import React, { useState } from 'react';
+import { useAuth } from '../../hooks/useAuth';
+import { Input } from '../ui/Input';
+import { Button } from '../ui/Button';
+import { Alert } from '../ui/Alert';
+import PasswordStrength from './PasswordStrength';
+import { validatePassword } from '../../utils/validation';
+import { PasswordCriteria } from '../../types/validation';
 
-export function RegisterForm() {
-  const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
+const RegisterForm: React.FC = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [code, setCode] = useState(''); // TOEGEVOEGD
+  
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [passwordCriteria, setPasswordCriteria] = useState<PasswordCriteria>({
+    length: false,
+    uppercase: false,
+    lowercase: false,
+    number: false,
+    specialChar: false,
   });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [apiError, setApiError] = useState<string>('');
-  const [successMessage, setSuccessMessage] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
 
-  // Validate password on change
-  const passwordValidation = validatePassword(formData.password, [formData.email]);
+  const { handleRegister, setAuthMode, isLoading, error: authError, clearError, success: authSuccess, clearSuccess } = useAuth();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-
-    // Clear field errors when user types
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
-    }
-    if (apiError) {
-      setApiError('');
-    }
-    if (successMessage) {
-      setSuccessMessage('');
-    }
-  };
-
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    // Email validation
-    const emailResult = validateEmail(formData.email);
-    if (!emailResult.isValid) {
-      newErrors.email = emailResult.errors[0];
-    }
-
-    // Password validation
-    if (!passwordValidation.isValid) {
-      newErrors.password = passwordValidation.errors[0];
-    }
-
-    // Confirm password validation
-    const confirmResult = validateConfirmPassword(formData.password, formData.confirmPassword);
-    if (!confirmResult.isValid) {
-      newErrors.confirmPassword = confirmResult.errors[0];
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPassword = e.target.value;
+    setPassword(newPassword);
+    setPasswordCriteria(validatePassword(newPassword));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setApiError('');
-    setSuccessMessage('');
+    setLocalError(null);
+    clearError();
+    clearSuccess();
 
-    if (!validateForm()) {
+    if (password !== confirmPassword) {
+      setLocalError('Wachtwoorden komen niet overeen.');
       return;
     }
 
-    setIsLoading(true);
+    const isPasswordValid = Object.values(passwordCriteria).every(Boolean);
+    if (!isPasswordValid) {
+      setLocalError('Wachtwoord voldoet niet aan de criteria.');
+      return;
+    }
+
+    if (!code) { // TOEGEVOEGD
+      setLocalError('Code is verplicht.');
+      return;
+    }
 
     try {
-      await apiService.register({
-        email: formData.email,
-        password: formData.password,
-      });
-
-      setSuccessMessage(
-        'Account created successfully! Please check your email to verify your account.'
-      );
-      setTimeout(() => {
-        navigate('/login', {
-          state: { message: 'Please verify your email before logging in.' },
-        });
-      }, 3000);
+      // Pass email, password, confirmPassword, and code
+      await handleRegister({ email, password, confirmPassword, code }); // AANGEPAST
+      // Success message is handled by useAuth and displayed
+      // The form will switch to 'login' on success (handled in useAuth)
     } catch (error: any) {
-      setApiError(error.response?.data?.detail || 'Registration failed. Please try again.');
-    } finally {
-      setIsLoading(false);
+      // Error is set in useAuth, no local action needed
     }
   };
 
+  const displayError = localError || authError;
+
   return (
-    <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-lg">
-      <h2 className="text-3xl font-bold text-gray-900 mb-6 text-center">
-        Create Account
-      </h2>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <h2 className="text-2xl font-semibold text-center">Registreren</h2>
 
-      {apiError && <Alert type="error" message={apiError} onClose={() => setApiError('')} />}
+      {displayError && (
+        <Alert type="error" message={displayError} onClose={localError ? () => setLocalError(null) : clearError} />
+      )}
+      
+      {authSuccess && (
+        <Alert type="success" message={authSuccess} onClose={clearSuccess} />
+      )}
 
-      {successMessage && <Alert type="success" message={successMessage} />}
+      <Input
+        id="register-email"
+        label="Email"
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        disabled={isLoading}
+        required
+      />
+      
+      <Input
+        id="register-password"
+        label="Wachtwoord"
+        type="password"
+        value={password}
+        onChange={handlePasswordChange}
+        disabled={isLoading}
+        required
+      />
+      
+      <PasswordStrength criteria={passwordCriteria} />
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Input
-          label="Email Address"
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={handleChange}
-          error={errors.email}
-          placeholder="you@example.com"
-          autoComplete="email"
-          required
-        />
+      <Input
+        id="register-confirm-password"
+        label="Bevestig Wachtwoord"
+        type="password"
+        value={confirmPassword}
+        onChange={(e) => setConfirmPassword(e.target.value)}
+        disabled={isLoading}
+        required
+      />
 
-        <Input
-          label="Password"
-          name="password"
-          type="password"
-          value={formData.password}
-          onChange={handleChange}
-          error={errors.password}
-          placeholder="••••••••••••"
-          autoComplete="new-password"
-          required
-        />
+      {/* --- NIEUW VELD --- */}
+      <Input
+        id="register-code"
+        label="Code"
+        type="text"
+        value={code}
+        onChange={(e) => setCode(e.target.value)}
+        disabled={isLoading}
+        required
+        autoComplete="one-time-code"
+      />
+      {/* --- EINDE NIEUW VELD --- */}
 
-        {formData.password && (
-          <>
-            <PasswordStrengthIndicator
-              password={formData.password}
-              strength={passwordValidation.passwordStrength}
-            />
-            <PasswordRequirementsChecklist password={formData.password} />
-          </>
-        )}
+      <Button type="submit" disabled={isLoading} className="w-full">
+        {isLoading ? 'Bezig...' : 'Registreren'}
+      </Button>
 
-        <Input
-          label="Confirm Password"
-          name="confirmPassword"
-          type="password"
-          value={formData.confirmPassword}
-          onChange={handleChange}
-          error={errors.confirmPassword}
-          placeholder="••••••••••••"
-          autoComplete="new-password"
-          required
-        />
-
-        <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded">
-          <p className="font-medium mb-1">Password Requirements:</p>
-          <ul className="list-disc list-inside space-y-1 text-xs">
-            <li>Minimum 12 characters</li>
-            <li>At least one uppercase letter (A-Z)</li>
-            <li>At least one lowercase letter (a-z)</li>
-            <li>At least one number (0-9)</li>
-            <li>At least one special character (!@#$%^&*)</li>
-            <li>Not found in known data breaches</li>
-          </ul>
-        </div>
-
-        <div className="flex items-start">
-          <input
-            type="checkbox"
-            id="terms"
-            className="mt-1 rounded text-primary-600 focus:ring-primary-500"
-            required
-          />
-          <label htmlFor="terms" className="ml-2 text-sm text-gray-600">
-            I agree to the{' '}
-            <a href="/terms" className="text-primary-600 hover:text-primary-700">
-              Terms of Service
-            </a>{' '}
-            and{' '}
-            <a href="/privacy" className="text-primary-600 hover:text-primary-700">
-              Privacy Policy
-            </a>
-          </label>
-        </div>
-
-        <Button type="submit" variant="primary" size="lg" isLoading={isLoading} className="w-full">
-          Create Account
-        </Button>
-
-        <p className="text-center text-sm text-gray-600">
-          Already have an account?{' '}
+      <div className="text-sm text-center">
+        <p className="text-gray-600">
+          Al een account?{' '}
           <button
             type="button"
-            onClick={() => navigate('/login')}
-            className="text-primary-600 hover:text-primary-700 font-medium"
+            onClick={() => setAuthMode('login')}
+            className="font-medium text-indigo-600 hover:text-indigo-500"
+            disabled={isLoading}
           >
-            Sign in
+            Log hier in
           </button>
         </p>
-      </form>
-    </div>
+      </div>
+    </form>
   );
-}
+};
+
+export default RegisterForm;

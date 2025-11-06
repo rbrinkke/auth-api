@@ -1,15 +1,15 @@
 from fastapi import APIRouter, Depends, status
-from app.schemas.auth import TokenResponse, TwoFactorLoginRequest, MessageResponse, LoginRequest
+from app.schemas.auth import TokenResponse, TwoFactorLoginRequest, MessageResponse, LoginRequest, LoginCodeSentResponse
 from app.services.auth_service import AuthService
 
 router = APIRouter()
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login")
 async def login(
     request: LoginRequest,
     auth_service: AuthService = Depends(AuthService)
-):
-    return await auth_service.login_user(request.username, request.password)
+) -> TokenResponse | LoginCodeSentResponse:
+    return await auth_service.login_user(request.username, request.password, request.code)
 
 @router.post("/login/2fa", response_model=TokenResponse)
 async def login_2fa(

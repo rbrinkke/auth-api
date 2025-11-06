@@ -1,148 +1,111 @@
-// Login Form Component
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Alert } from '@/components/ui/Alert';
-import { useAuth } from '@/hooks/useAuth';
-import { validateEmail } from '@/utils/validation';
-import { Mail, Lock } from 'lucide-react';
+// frontend/src/components/auth/LoginForm.tsx
+import React, { useState } from 'react';
+import { useAuth } from '../../hooks/useAuth';
+import { Input } from '../ui/Input';
+import { Button } from '../ui/Button';
+import { Alert } from '../ui/Alert';
 
-export function LoginForm() {
-  const navigate = useNavigate();
-  const { login } = useAuth();
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [apiError, setApiError] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
+const LoginForm: React.FC = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [code, setCode] = useState(''); // TOEGEVOEGD
+  const [localError, setLocalError] = useState<string | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear field error when user types
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
-    }
-    // Clear API error
-    if (apiError) {
-      setApiError('');
-    }
-  };
-
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    // Email validation
-    const emailResult = validateEmail(formData.email);
-    if (!emailResult.isValid) {
-      newErrors.email = emailResult.errors[0];
-    }
-
-    // Password validation
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  const { handleLogin, setAuthMode, isLoading, error: authError, clearError } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setApiError('');
+    setLocalError(null);
+    clearError();
 
-    if (!validateForm()) {
+    if (!email || !password || !code) { // TOEGEVOEGD
+      setLocalError('Alle velden (email, wachtwoord en code) zijn verplicht.');
       return;
     }
 
-    setIsLoading(true);
-
     try {
-      await login(formData.email, formData.password);
-      navigate('/dashboard');
+      // Pass email, password, and code
+      await handleLogin({ email, password, code }); // AANGEPAST
+      // Success is handled by useAuth (e.g., switching to 2FA or setting authenticated)
     } catch (error: any) {
-      if (error.message === '2FA_REQUIRED') {
-        // Handle 2FA required case
-        navigate('/2fa-setup', {
-          state: { requires2FA: true, email: formData.email },
-        });
-      } else {
-        setApiError(
-          error.response?.data?.detail || 'Login failed. Please check your credentials.'
-        );
-      }
-    } finally {
-      setIsLoading(false);
+      // Error is already set in useAuth, but we catch to prevent unhandled promise rejection
+      // The authError will be displayed by the Alert component
     }
   };
 
-  return (
-    <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-lg">
-      <h2 className="text-3xl font-bold text-gray-900 mb-6 text-center">
-        Sign In
-      </h2>
+  const displayError = localError || authError;
 
-      {apiError && (
-        <Alert type="error" message={apiError} onClose={() => setApiError('')} />
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <h2 className="text-2xl font-semibold text-center">Inloggen</h2>
+      
+      {displayError && (
+        <Alert type="error" message={displayError} onClose={localError ? () => setLocalError(null) : clearError} />
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Input
-          label="Email Address"
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={handleChange}
-          error={errors.email}
-          placeholder="you@example.com"
-          autoComplete="email"
-          required
-        />
+      <Input
+        id="login-email"
+        label="Email"
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        disabled={isLoading}
+        required
+      />
+      
+      <Input
+        id="login-password"
+        label="Wachtwoord"
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        disabled={isLoading}
+        required
+      />
 
-        <Input
-          label="Password"
-          name="password"
-          type="password"
-          value={formData.password}
-          onChange={handleChange}
-          error={errors.password}
-          placeholder="••••••••"
-          autoComplete="current-password"
-          required
-        />
+      {/* --- NIEUW VELD --- */}
+      <Input
+        id="login-code"
+        label="Code"
+        type="text"
+        value={code}
+        onChange={(e) => setCode(e.target.value)}
+        disabled={isLoading}
+        required
+        autoComplete="one-time-code"
+      />
+      {/* --- EINDE NIEUW VELD --- */}
 
-        <div className="flex items-center justify-between">
-          <label className="flex items-center">
-            <input type="checkbox" className="rounded text-primary-600 focus:ring-primary-500" />
-            <span className="ml-2 text-sm text-gray-600">Remember me</span>
-          </label>
+      <Button type="submit" disabled={isLoading} className="w-full">
+        {isLoading ? 'Bezig...' : 'Inloggen'}
+      </Button>
+
+      <div className="text-sm text-center">
+        <button
+          type="button"
+          onClick={() => setAuthMode('passwordReset')}
+          className="font-medium text-indigo-600 hover:text-indigo-500"
+          disabled={isLoading}
+        >
+          Wachtwoord vergeten?
+        </button>
+      </div>
+
+      <div className="text-sm text-center">
+        <p className="text-gray-600">
+          Nog geen account?{' '}
           <button
             type="button"
-            onClick={() => navigate('/forgot-password')}
-            className="text-sm text-primary-600 hover:text-primary-700"
+            onClick={() => setAuthMode('register')}
+            className="font-medium text-indigo-600 hover:text-indigo-500"
+            disabled={isLoading}
           >
-            Forgot password?
-          </button>
-        </div>
-
-        <Button type="submit" variant="primary" size="lg" isLoading={isLoading} className="w-full">
-          Sign In
-        </Button>
-
-        <p className="text-center text-sm text-gray-600">
-          Don't have an account?{' '}
-          <button
-            type="button"
-            onClick={() => navigate('/register')}
-            className="text-primary-600 hover:text-primary-700 font-medium"
-          >
-            Sign up
+            Registreer hier
           </button>
         </p>
-      </form>
-    </div>
+      </div>
+    </form>
   );
-}
+};
+
+export default LoginForm;
