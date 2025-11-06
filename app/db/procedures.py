@@ -85,7 +85,7 @@ async def sp_save_refresh_token(
 
     # Calculate expiration with explicit timezone awareness
     now_utc = datetime.now(timezone.utc)
-    expires_at = now_utc + expires_delta
+    expires_at = (now_utc + expires_delta).replace(tzinfo=None)
 
     result = await conn.fetchval(
         "SELECT activity.sp_save_refresh_token($1, $2, $3, $4)",
