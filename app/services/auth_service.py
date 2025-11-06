@@ -2,6 +2,7 @@ from fastapi import Depends
 import asyncpg
 import redis
 import uuid
+from uuid import UUID
 import logging
 from app.db.connection import get_db_connection
 from app.core.redis_client import get_redis_client
@@ -90,14 +91,14 @@ class AuthService:
         try:
             payload = self.token_service.token_helper.decode_token(refresh_token)
             if payload.get("type") == "refresh":
-                user_id = int(payload.get("sub"))
+                user_id = UUID(payload.get("sub"))
                 await procedures.sp_revoke_refresh_token(self.db, user_id, refresh_token)
         except Exception:
             pass
 
         return {"message": "Logged out successfully"}
 
-    async def _grant_full_tokens(self, user_id: str) -> TokenResponse:
+    async def _grant_full_tokens(self, user_id: UUID) -> TokenResponse:
         trace_id = str(uuid.uuid4())
 
         logger.debug(f"[{trace_id}] _GRANT_TOKENS_START user_id={user_id}")

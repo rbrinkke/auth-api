@@ -2,6 +2,7 @@ import pyotp
 import qrcode
 import qrcode.image.svg
 from io import BytesIO
+from uuid import UUID
 from fastapi import Depends
 import asyncpg
 from app.db.connection import get_db_connection
@@ -35,7 +36,7 @@ class TwoFactorService:
         totp = pyotp.TOTP(secret)
         return totp.verify(code)
 
-    async def setup_2fa(self, user_id: int) -> dict:
+    async def setup_2fa(self, user_id: UUID) -> dict:
         user = await procedures.sp_get_user_by_id(self.db, user_id)
         if not user:
             raise UserNotFoundError()
@@ -51,7 +52,7 @@ class TwoFactorService:
 
         return {"qr_code_svg": qr_svg, "secret": secret}
 
-    async def verify_and_enable_2fa(self, user_id: int, code: str) -> dict:
+    async def verify_and_enable_2fa(self, user_id: UUID, code: str) -> dict:
         user = await procedures.sp_get_user_by_id(self.db, user_id)
         if not user or not user.two_factor_secret:
             raise TwoFactorSetupError("2FA setup not initiated or user not found.")
@@ -65,11 +66,11 @@ class TwoFactorService:
         else:
             raise TwoFactorVerificationError("Invalid 2FA code.")
 
-    async def disable_2fa(self, user_id: int) -> dict:
+    async def disable_2fa(self, user_id: UUID) -> dict:
         await procedures.sp_disable_2fa(self.db, user_id)
         return {"message": "2FA disabled successfully."}
 
-    async def validate_2fa_challenge(self, user_id: int, code: str):
+    async def validate_2fa_challenge(self, user_id: UUID, code: str):
         user = await procedures.sp_get_user_by_id(self.db, user_id)
         if not user or not user.is_2fa_enabled or not user.two_factor_secret:
             raise TwoFactorVerificationError("2FA not enabled for this user.")

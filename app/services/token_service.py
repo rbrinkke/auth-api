@@ -2,6 +2,7 @@ from datetime import timedelta
 from fastapi import Depends
 import asyncpg
 import uuid
+from uuid import UUID
 from app.db.connection import get_db_connection
 from app.db import procedures
 from app.config import Settings, get_settings
@@ -20,14 +21,14 @@ class TokenService:
         self.token_helper = token_helper
         self.db = db
 
-    def create_access_token(self, user_id: str) -> str:
+    def create_access_token(self, user_id: UUID) -> str:
         expires_delta = timedelta(minutes=self.settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         return self.token_helper.create_token(
             data={"sub": str(user_id), "type": "access"},
             expires_delta=expires_delta
         )
 
-    async def create_refresh_token(self, user_id: str) -> str:
+    async def create_refresh_token(self, user_id: UUID) -> str:
         expires_delta = timedelta(days=self.settings.REFRESH_TOKEN_EXPIRE_DAYS)
         jti = str(uuid.uuid4())
         token = self.token_helper.create_token(
@@ -37,7 +38,7 @@ class TokenService:
         await procedures.sp_save_refresh_token(self.db, user_id, token, expires_delta)
         return token
 
-    def create_verification_token(self, user_id: str) -> str:
+    def create_verification_token(self, user_id: UUID) -> str:
         expires_delta = timedelta(minutes=self.settings.VERIFICATION_TOKEN_EXPIRE_MINUTES)
         return self.token_helper.create_token(
             data={"sub": str(user_id), "type": "verification"},
@@ -51,7 +52,7 @@ class TokenService:
             expires_delta=expires_delta
         )
 
-    def create_2fa_token(self, user_id: int) -> str:
+    def create_2fa_token(self, user_id: UUID) -> str:
         expires_delta = timedelta(minutes=5)
         return self.token_helper.create_token(
             data={"sub": str(user_id), "type": "2fa_pre_auth"},
@@ -80,14 +81,14 @@ class TokenService:
             token_type="bearer"
         )
 
-    def get_user_id_from_token(self, token: str, expected_type: str) -> int:
+    def get_user_id_from_token(self, token: str, expected_type: str) -> UUID:
         payload = self.token_helper.decode_token(token)
 
         if payload.get("type") != expected_type:
             raise InvalidTokenError(f"Invalid token type, expected '{expected_type}'")
 
         try:
-            user_id = int(payload.get("sub"))
+            user_id = UUID(payload.get("sub"))
             return user_id
         except (ValueError, TypeError):
             raise InvalidTokenError("Invalid subject in token")

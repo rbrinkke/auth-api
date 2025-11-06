@@ -49,7 +49,7 @@ async def sp_get_user_by_email(
 
 async def sp_get_user_by_id(
     conn: asyncpg.Connection,
-    user_id: str
+    user_id: UUID
 ) -> Optional[UserRecord]:
     result = await conn.fetchrow(
         "SELECT * FROM activity.sp_get_user_by_id($1)",
@@ -73,7 +73,7 @@ async def sp_verify_user_email(
 
 async def sp_verify_user(
     conn: asyncpg.Connection,
-    user_id: int
+    user_id: UUID
 ) -> None:
     await conn.execute(
         "UPDATE activity.users SET is_verified = TRUE, verified_at = NOW() WHERE id = $1",
@@ -83,7 +83,7 @@ async def sp_verify_user(
 
 async def sp_save_refresh_token(
     conn: asyncpg.Connection,
-    user_id: str,
+    user_id: UUID,
     token: str,
     expires_delta: timedelta
 ) -> bool:
@@ -107,7 +107,7 @@ async def sp_save_refresh_token(
 
 async def sp_validate_refresh_token(
     conn: asyncpg.Connection,
-    user_id: str,
+    user_id: UUID,
     token: str
 ) -> bool:
     result = await conn.fetchval(
@@ -120,7 +120,7 @@ async def sp_validate_refresh_token(
 
 async def sp_revoke_refresh_token(
     conn: asyncpg.Connection,
-    user_id: str,
+    user_id: UUID,
     token: str
 ) -> None:
     await conn.execute(
@@ -132,7 +132,7 @@ async def sp_revoke_refresh_token(
 
 async def sp_revoke_all_refresh_tokens(
     conn: asyncpg.Connection,
-    user_id: str
+    user_id: UUID
 ) -> None:
     await conn.execute(
         "UPDATE activity.refresh_tokens SET revoked = TRUE WHERE user_id = $1",
@@ -142,7 +142,7 @@ async def sp_revoke_all_refresh_tokens(
 
 async def sp_update_password(
     conn: asyncpg.Connection,
-    user_id: str,
+    user_id: UUID,
     hashed_password: str
 ) -> bool:
     result = await conn.fetchval(
@@ -155,7 +155,7 @@ async def sp_update_password(
 
 async def sp_set_2fa_secret(
     conn: asyncpg.Connection,
-    user_id: str,
+    user_id: UUID,
     secret: str,
     is_verified: bool
 ) -> None:
@@ -169,7 +169,7 @@ async def sp_set_2fa_secret(
 
 async def sp_disable_2fa(
     conn: asyncpg.Connection,
-    user_id: str
+    user_id: UUID
 ) -> None:
     await conn.execute(
         "UPDATE activity.users SET two_factor_secret = NULL, is_2fa_enabled = FALSE WHERE id = $1",
