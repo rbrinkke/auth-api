@@ -80,17 +80,11 @@ class ApiService {
   }
 
   async verifyCode(userId: string, code: string) {
-    console.log('[API-SERVICE] verifyCode called with:', { userId, code });
     const payload = { user_id: userId, code };
-    console.log('[API-SERVICE] Sending POST to /auth/verify-code with payload:', payload);
 
     return this.api.post('/auth/verify-code', payload).then(response => {
-      console.log('[API-SERVICE] verifyCode SUCCESS:', response);
       return response;
     }).catch(error => {
-      console.log('[API-SERVICE] verifyCode ERROR:', error.message);
-      console.log('[API-SERVICE] Error details:', error.response?.data);
-      console.log('[API-SERVICE] Error status:', error.response?.status);
       throw error;
     });
   }

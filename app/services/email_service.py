@@ -1,7 +1,10 @@
 import httpx
 import asyncio
+import logging
 from fastapi import Depends
 from app.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 class EmailService:
     def __init__(self, settings = Depends(get_settings)):
@@ -22,7 +25,7 @@ class EmailService:
                 response.raise_for_status()
                 return response.json()
             except Exception as e:
-                print(f"Failed to send email: {e}")
+                logger.error(f"Failed to send email: {e}")
                 return {"status": "error", "message": str(e)}
 
     async def send_verification_email(self, email: str, code: str):
