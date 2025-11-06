@@ -32,9 +32,9 @@ class Database:
             user=settings.postgres_user,
             password=settings.postgres_password,
             database=settings.postgres_db,
-            min_size=5,
-            max_size=20,
-            command_timeout=60,
+            min_size=settings.postgres_pool_min_size,
+            max_size=settings.postgres_pool_max_size,
+            command_timeout=settings.postgres_pool_command_timeout,
             # Set search_path to use the activity schema by default
             server_settings={
                 'search_path': settings.postgres_schema

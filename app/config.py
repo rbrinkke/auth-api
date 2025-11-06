@@ -31,7 +31,10 @@ class Settings(BaseSettings):
     postgres_user: str = Field(default="activity_user")
     postgres_password: str = Field(default="")
     postgres_schema: str = Field(default="activity")
-    
+    postgres_pool_min_size: int = Field(default=5)
+    postgres_pool_max_size: int = Field(default=20)
+    postgres_pool_command_timeout: int = Field(default=60)
+
     # Redis
     redis_host: str = Field(default="redis")
     redis_port: int = Field(default=6379)
