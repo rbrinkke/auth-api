@@ -8,6 +8,7 @@ from app.core.logging_config import setup_logging
 from app.core.rate_limiting import init_limiter
 from app.middleware.correlation import correlation_id_middleware
 from app.middleware.security import add_security_headers
+from app.middleware.request_size_limit import RequestSizeLimitMiddleware
 from app.db import db
 from app.config import get_settings
 from app.core.exceptions import (
@@ -18,7 +19,8 @@ from app.core.exceptions import (
     TokenExpiredError,
     InvalidTokenError,
     TwoFactorRequiredError,
-    TwoFactorVerificationError
+    TwoFactorVerificationError,
+    RequestEntityTooLargeError
 )
 from app.services.password_validation_service import PasswordValidationError
 
@@ -50,6 +52,9 @@ async def shutdown_event():
     logger.info("Database disconnected")
 
 settings = get_settings()
+
+# Add request size limit middleware (must be first to protect all routes)
+app.add_middleware(RequestSizeLimitMiddleware, settings=settings)
 
 cors_origins = [
     origin.strip()
@@ -126,6 +131,13 @@ async def password_validation_handler(request: Request, exc: PasswordValidationE
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
         content={"detail": str(exc)},
+    )
+
+@app.exception_handler(RequestEntityTooLargeError)
+async def request_entity_too_large_handler(request: Request, exc: RequestEntityTooLargeError):
+    return JSONResponse(
+        status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+        content={"detail": exc.detail},
     )
 
 @app.exception_handler(TokenExpiredError)

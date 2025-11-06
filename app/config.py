@@ -36,6 +36,15 @@ class Settings(BaseSettings):
     RATE_LIMIT_RESEND_VERIFICATION_PER_5MIN: int = 1
     RATE_LIMIT_PASSWORD_RESET_PER_5MIN: int = 1
 
+    # Request Size Limits (bytes)
+    REQUEST_SIZE_LIMIT_DEFAULT: int = 10240  # 10 KB
+    REQUEST_SIZE_LIMIT_GLOBAL_MAX: int = 1048576  # 1 MB
+    REQUEST_SIZE_LIMIT_REGISTER: int = 10240  # 10 KB
+    REQUEST_SIZE_LIMIT_LOGIN: int = 10240  # 10 KB
+    REQUEST_SIZE_LIMIT_PASSWORD_RESET: int = 5120  # 5 KB
+    REQUEST_SIZE_LIMIT_TOKEN_REFRESH: int = 5120  # 5 KB
+    REQUEST_SIZE_LIMIT_2FA: int = 5120  # 5 KB
+
     DEBUG: bool = True
     HOST: str = "0.0.0.0"
     PORT: int = 8000
@@ -70,6 +79,20 @@ class Settings(BaseSettings):
         """
         if len(v) < 32:
             raise ValueError("ENCRYPTION_KEY must be at least 32 characters")
+        return v
+
+    @field_validator("REQUEST_SIZE_LIMIT_GLOBAL_MAX", mode="after")
+    @classmethod
+    def validate_request_size_limit_global_max(cls, v: int) -> int:
+        """Validate global request size limit.
+
+        Must be between 1 KB and 100 MB to prevent misconfiguration.
+        """
+        if v < 1024 or v > 104857600:  # 1 KB - 100 MB
+            raise ValueError(
+                "REQUEST_SIZE_LIMIT_GLOBAL_MAX must be between 1024 (1 KB) "
+                "and 104857600 (100 MB) bytes"
+            )
         return v
 
     model_config = SettingsConfigDict(

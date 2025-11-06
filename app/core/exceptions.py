@@ -43,3 +43,7 @@ class TwoFactorSetupError(AuthException):
 class TwoFactorVerificationError(AuthException):
     def __init__(self, detail: str = "Invalid 2FA code"):
         super().__init__(detail)
+
+class RequestEntityTooLargeError(AuthException):
+    def __init__(self, detail: str = "Request body too large"):
+        super().__init__(detail)
