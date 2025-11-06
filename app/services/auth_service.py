@@ -1,10 +1,10 @@
 from fastapi import Depends
 import asyncpg
 import redis
-import random
 from uuid import UUID
 
 from app.db.connection import get_db_connection
+from app.core.utils import generate_verification_code
 from app.core.redis_client import get_redis_client
 from app.core.logging_config import get_logger
 from app.middleware.correlation import correlation_id_var
@@ -45,9 +45,6 @@ class AuthService:
         self.email_service = email_service
         self.settings = settings
 
-    def _generate_6_digit_code(self) -> str:
-        return str(random.randint(100000, 999999))
-
     async def login_user(self, email: str, password: str, code: str | None = None) -> dict:
         correlation_id = correlation_id_var.get()
 
@@ -71,7 +68,7 @@ class AuthService:
 
         # Step 1: If no code provided, generate and send login code
         if code is None:
-            login_code = self._generate_6_digit_code()
+            login_code = generate_verification_code()
             redis_key = f"2FA:{user.id}:login"
             self.redis_client.setex(redis_key, 600, login_code)
 

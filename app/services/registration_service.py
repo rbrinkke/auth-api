@@ -1,12 +1,12 @@
 from fastapi import Depends
 import asyncpg
-import random
 import secrets
 from datetime import timedelta
 from uuid import UUID
 from app.db.connection import get_db_connection
 from app.db import procedures
 from app.core.exceptions import UserAlreadyExistsError
+from app.core.utils import generate_verification_code
 from app.services.password_service import PasswordService
 from app.services.email_service import EmailService
 from app.core.redis_client import get_redis_client
@@ -30,9 +30,6 @@ class RegistrationService:
         self.email_service = email_service
         self.redis_client = redis_client
 
-    def _generate_6_digit_code(self) -> str:
-        return str(random.randint(100000, 999999))
-
     def _generate_verification_token(self) -> str:
         """Generate cryptographically secure opaque verification token."""
         return secrets.token_hex(16)  # 32-character hex token
@@ -54,7 +51,7 @@ class RegistrationService:
                    user_id=str(new_user.id),
                    email=new_user.email)
 
-        verification_code = self._generate_6_digit_code()
+        verification_code = generate_verification_code()
         verification_token = self._generate_verification_token()
 
         # Store verification token → {user_id}:{code} mapping in Redis
