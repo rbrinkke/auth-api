@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.logging_config import setup_logging
 from app.db import db
+from app.config import get_settings
 from app.core.exceptions import (
     AuthException,
     InvalidCredentialsError,
@@ -38,12 +39,20 @@ async def shutdown_event():
     await db.disconnect()
     logger.info("Database disconnected")
 
+settings = get_settings()
+
+cors_origins = [
+    origin.strip()
+    for origin in settings.CORS_ORIGINS.split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 @app.middleware("http")

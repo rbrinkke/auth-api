@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     EMAIL_SERVICE_TIMEOUT: int = 10
 
     FRONTEND_URL: str = "http://localhost:3000"
+    CORS_ORIGINS: str = "http://localhost:3000"
 
     RATE_LIMIT_REQUESTS: int = 5
     RATE_LIMIT_TIMEFRAME: int = 60
