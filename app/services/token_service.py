@@ -92,20 +92,21 @@ class TokenService:
             logger.warning("token_refresh_failed", reason="invalid_token_type", expected="refresh", got=payload.get("type"))
             raise InvalidTokenError("Invalid token type")
 
-        user_id = payload.get("sub")
+        user_id_str = payload.get("sub")
+        user_id = UUID(user_id_str)
         old_jti = payload.get("jti")
 
         if not await procedures.sp_validate_refresh_token(self.db, user_id, refresh_token):
-            logger.warning("token_refresh_failed", reason="token_not_found_or_revoked", user_id=user_id, jti=old_jti)
+            logger.warning("token_refresh_failed", reason="token_not_found_or_revoked", user_id=str(user_id), jti=old_jti)
             raise InvalidTokenError("Token not found or revoked")
 
         await procedures.sp_revoke_refresh_token(self.db, user_id, refresh_token)
-        logger.info("old_refresh_token_revoked", user_id=user_id, old_jti=old_jti)
+        logger.info("old_refresh_token_revoked", user_id=str(user_id), old_jti=old_jti)
 
         new_access_token = self.create_access_token(user_id)
         new_refresh_token = await self.create_refresh_token(user_id)
 
-        logger.info("token_refresh_complete", user_id=user_id)
+        logger.info("token_refresh_complete", user_id=str(user_id))
 
         return TokenResponse(
             access_token=new_access_token,
