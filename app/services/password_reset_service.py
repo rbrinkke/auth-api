@@ -1,6 +1,7 @@
 from fastapi import Depends
 import asyncpg
 import random
+import secrets
 import redis
 from uuid import UUID
 from app.db.connection import get_db_connection
@@ -31,22 +32,28 @@ class PasswordResetService:
     def _generate_6_digit_code(self) -> str:
         return str(random.randint(100000, 999999))
 
+    def _generate_reset_token(self) -> str:
+        """Generate cryptographically secure opaque reset token."""
+        return secrets.token_hex(16)  # 32-character hex token
+
     async def request_password_reset(self, request: RequestPasswordResetRequest) -> dict:
         logger.info("password_reset_request_start", email=request.email)
 
         user = await procedures.sp_get_user_by_email(self.db, request.email)
         if user:
             reset_code = self._generate_6_digit_code()
+            reset_token = self._generate_reset_token()
 
-            self.redis_client.setex(
-                f"2FA:{user.id}:reset",
-                600,
-                reset_code
-            )
+            # Store reset token → {user_id}:{code} mapping in Redis
+            # This prevents account takeover by guessing user_ids
+            redis_key = f"reset_token:{reset_token}"
+            redis_value = f"{str(user.id)}:{reset_code}"
+            self.redis_client.setex(redis_key, 600, redis_value)
 
             logger.info("password_reset_code_generated",
                        user_id=str(user.id),
                        email=user.email,
+                       reset_token=reset_token,
                        expires_in_seconds=600)
 
             await self.email_service.send_password_reset_email(user.email, reset_code)
@@ -57,19 +64,29 @@ class PasswordResetService:
         return {"message": "If an account with this email exists, a password reset code has been sent."}
 
     async def confirm_password_reset(self, request: ResetPasswordRequest) -> dict:
-        user_id = UUID(request.user_id)
-        redis_key = f"2FA:{user_id}:reset"
+        logger.info("password_reset_confirm_start", reset_token=request.reset_token)
 
-        logger.info("password_reset_confirm_start", user_id=str(user_id))
+        # Lookup reset token → extract user_id and stored code
+        redis_key = f"reset_token:{request.reset_token}"
+        stored_token_data = self.redis_client.get(redis_key)
 
-        stored_code = self.redis_client.get(redis_key)
-
-        if not stored_code:
-            logger.warning("password_reset_code_expired", user_id=str(user_id))
+        if not stored_token_data:
+            logger.warning("password_reset_failed", reason="invalid_or_expired_token")
             raise InvalidTokenError("Reset code expired or not found")
 
-        stored_code_str = stored_code.decode('utf-8') if isinstance(stored_code, bytes) else stored_code
-        if stored_code_str != request.code:
+        # Extract user_id and stored_code from Redis value
+        token_data_str = stored_token_data.decode('utf-8') if isinstance(stored_token_data, bytes) else stored_token_data
+        try:
+            stored_user_id_str, stored_code = token_data_str.split(':')
+            user_id = UUID(stored_user_id_str)
+        except (ValueError, IndexError):
+            logger.error("password_reset_failed",
+                        reason="malformed_token_data",
+                        token_data=token_data_str)
+            raise InvalidTokenError("Invalid reset code")
+
+        # Validate code matches
+        if stored_code != request.code:
             logger.warning("password_reset_code_invalid", user_id=str(user_id))
             raise InvalidTokenError("Invalid reset code")
 

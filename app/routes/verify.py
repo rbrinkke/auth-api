@@ -9,5 +9,5 @@ async def verify_code(
     request: VerifyEmailRequest,
     reg_service: RegistrationService = Depends(RegistrationService)
 ):
-    return await reg_service.verify_account_by_code(request.user_id, request.code)
+    return await reg_service.verify_account_by_code(request.verification_token, request.code)
 

@@ -1,6 +1,7 @@
 from fastapi import Depends
 import asyncpg
 import random
+import secrets
 from datetime import timedelta
 from uuid import UUID
 from app.db.connection import get_db_connection
@@ -32,6 +33,10 @@ class RegistrationService:
     def _generate_6_digit_code(self) -> str:
         return str(random.randint(100000, 999999))
 
+    def _generate_verification_token(self) -> str:
+        """Generate cryptographically secure opaque verification token."""
+        return secrets.token_hex(16)  # 32-character hex token
+
     async def register_user(self, user: UserCreate) -> dict:
         logger.info("user_registration_start", email=user.email)
 
@@ -50,14 +55,17 @@ class RegistrationService:
                    email=new_user.email)
 
         verification_code = self._generate_6_digit_code()
+        verification_token = self._generate_verification_token()
 
-        self.redis_client.setex(
-            f"2FA:{new_user.id}:verify",
-            600,
-            verification_code
-        )
+        # Store verification token → {user_id}:{code} mapping in Redis
+        # This prevents account takeover by guessing user_ids
+        redis_key = f"verify_token:{verification_token}"
+        redis_value = f"{str(new_user.id)}:{verification_code}"
+        self.redis_client.setex(redis_key, 600, redis_value)
+
         logger.info("verification_code_generated",
                    user_id=str(new_user.id),
+                   verification_token=verification_token,
                    expires_in_seconds=600)
 
         await self.email_service.send_verification_email(new_user.email, verification_code)
@@ -72,30 +80,42 @@ class RegistrationService:
         return {
             "message": "User registered successfully",
             "email": new_user.email,
-            "user_id": str(new_user.id)
+            "user_id": str(new_user.id),
+            "verification_token": verification_token
         }
 
-    async def verify_account_by_code(self, user_id: UUID, code: str) -> dict:
-        logger.info("account_verification_start", user_id=str(user_id))
+    async def verify_account_by_code(self, verification_token: str, code: str) -> dict:
+        logger.info("account_verification_start", verification_token=verification_token)
 
-        redis_key = f"2FA:{user_id}:verify"
-        stored_code = self.redis_client.get(redis_key)
+        # Lookup verification token → extract user_id and stored code
+        redis_key = f"verify_token:{verification_token}"
+        stored_token_data = self.redis_client.get(redis_key)
 
-        if not stored_code:
+        if not stored_token_data:
             logger.warning("account_verification_failed",
-                          user_id=str(user_id),
-                          reason="code_expired_or_not_found")
+                          reason="invalid_or_expired_token")
             return {"message": "Invalid or expired verification code."}
 
-        stored_code_str = stored_code.decode('utf-8') if isinstance(stored_code, bytes) else stored_code
+        # Extract user_id and stored_code from Redis value
+        token_data_str = stored_token_data.decode('utf-8') if isinstance(stored_token_data, bytes) else stored_token_data
+        try:
+            stored_user_id_str, stored_code = token_data_str.split(':')
+            user_id = UUID(stored_user_id_str)
+        except (ValueError, IndexError):
+            logger.error("account_verification_failed",
+                        reason="malformed_token_data",
+                        token_data=token_data_str)
+            return {"message": "Invalid or expired verification code."}
 
-        if stored_code_str != code:
+        # Validate code matches
+        if stored_code != code:
             logger.warning("account_verification_failed",
                           user_id=str(user_id),
                           reason="invalid_code")
             return {"message": "Invalid or expired verification code."}
 
-        await procedures.sp_verify_user_email(self.db, UUID(user_id))
+        # Verify user email in database
+        await procedures.sp_verify_user_email(self.db, user_id)
         self.redis_client.delete(redis_key)
 
         logger.info("account_verification_success", user_id=str(user_id))

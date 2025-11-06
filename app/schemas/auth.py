@@ -49,8 +49,8 @@ class LoginCodeSentResponse(BaseModel):
 
 
 class VerifyEmailRequest(BaseModel):
-    user_id: str = Field(..., min_length=1)
-    code: str = Field(..., min_length=6, max_length=6)
+    verification_token: str = Field(..., min_length=32, description="Opaque verification token from email")
+    code: str = Field(..., min_length=6, max_length=6, description="6-digit verification code")
 
 
 class VerifyEmailResponse(BaseModel):
@@ -106,7 +106,7 @@ class RequestPasswordResetResponse(BaseModel):
 
 
 class ResetPasswordRequest(BaseModel):
-    user_id: str = Field(..., min_length=1, description="User ID")
+    reset_token: str = Field(..., min_length=32, description="Opaque reset token from email")
     code: str = Field(..., min_length=6, max_length=6, description="6-digit password reset code")
     new_password: str = Field(
         ...,
