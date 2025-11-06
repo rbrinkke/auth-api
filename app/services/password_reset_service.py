@@ -32,6 +32,7 @@ class PasswordResetService:
     async def request_password_reset(self, request: RequestPasswordResetRequest) -> dict:
         logger.info("password_reset_request_start", email=request.email)
 
+        reset_token = None
         user = await procedures.sp_get_user_by_email(self.db, request.email)
         if user:
             reset_code = generate_verification_code()
@@ -56,7 +57,10 @@ class PasswordResetService:
         else:
             logger.warning("password_reset_request_user_not_found", email=request.email)
 
-        return {"message": "If an account with this email exists, a password reset code has been sent."}
+        result = {"message": "If an account with this email exists, a password reset code has been sent."}
+        if reset_token:
+            result["reset_token"] = reset_token
+        return result
 
     async def confirm_password_reset(self, request: ResetPasswordRequest) -> dict:
         logger.info("password_reset_confirm_start", reset_token=request.reset_token)
