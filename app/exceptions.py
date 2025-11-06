@@ -1,4 +1,5 @@
-"""Centralized exception handling for the application."""
+# app/exceptions.py
+"""Centralized exception handling."""
 import logging
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def register_exception_handlers(app: FastAPI) -> None:
-    """Register all exception handlers with the FastAPI app."""
+    """Register all exception handlers."""
     
     @app.exception_handler(RateLimitExceeded)
     async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
@@ -56,7 +57,6 @@ def register_exception_handlers(app: FastAPI) -> None:
     
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):
-        """Handle unexpected errors without leaking sensitive information."""
         logger.error(
             "Unhandled exception",
             exc_info=exc,

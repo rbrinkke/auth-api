@@ -1,29 +1,25 @@
-# app/middleware/security.py
-"""Security middleware for adding HTTP security headers."""
-from fastapi import Request, Response
+# app/routes/__init__.py
+"""Unified authentication routes."""
+from fastapi import APIRouter
 
-from app.config import settings
+from app.routes.register import router as register_router
+from app.routes.verify import router as verify_router
+from app.routes.login import router as login_router
+from app.routes.refresh import router as refresh_router
+from app.routes.logout import router as logout_router
+from app.routes.password_reset import router as password_reset_router
+from app.routes.twofa import router as twofa_router
 
+# Create main auth router
+auth_router = APIRouter()
 
-async def add_security_headers(request: Request, call_next) -> Response:
-    """Add security headers to all responses."""
-    response = await call_next(request)
-    
-    # Security headers
-    headers = {
-        "X-Content-Type-Options": "nosniff",
-        "X-XSS-Protection": "1; mode=block",
-        "X-Frame-Options": "DENY",
-        "Referrer-Policy": "strict-origin-when-cross-origin",
-        "Content-Security-Policy": "default-src 'self'",
-        "Server": "",  # Hide server details
-    }
-    
-    # HSTS only in production
-    if not settings.debug:
-        headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-    
-    for header, value in headers.items():
-        response.headers[header] = value
-    
-    return response
+# Include all sub-routers
+auth_router.include_router(register_router)
+auth_router.include_router(verify_router)
+auth_router.include_router(login_router)
+auth_router.include_router(refresh_router)
+auth_router.include_router(logout_router)
+auth_router.include_router(password_reset_router)
+auth_router.include_router(twofa_router)
+
+__all__ = ["auth_router"]

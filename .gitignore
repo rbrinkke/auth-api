@@ -15,6 +15,7 @@ venv.bak/
 .coverage
 htmlcov/
 *.cover
+.playwright-mcp/
 
 # IDE
 .vscode/
