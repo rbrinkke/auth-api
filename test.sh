@@ -32,7 +32,8 @@ echo "      ✓ Registered: $EMAIL"
 echo ""
 
 # DB PROOF 1
-echo "[3/21] DATABASE PROOF 1: User exists"
+echo "[3/21] DATABASE PROOF 1: User exists (full record)"
+docker compose exec postgres psql -U activity_user -d activitydb -c "SELECT * FROM activity.users WHERE email='$EMAIL';" 2>/dev/null
 USER_ID=$(docker compose exec postgres psql -U activity_user -d activitydb -t -c "SELECT id FROM activity.users WHERE email='$EMAIL';" 2>/dev/null | xargs)
 [ -z "$USER_ID" ] && exit 1
 echo "      ✓ User in database: ${USER_ID:0:20}..."
@@ -56,7 +57,8 @@ echo "      ✓ Email verified"
 echo ""
 
 # DB PROOF 2
-echo "[6/21] DATABASE PROOF 2: Verified status"
+echo "[6/21] DATABASE PROOF 2: Verified status (full record)"
+docker compose exec postgres psql -U activity_user -d activitydb -c "SELECT * FROM activity.users WHERE email='$EMAIL';" 2>/dev/null
 VERIFIED=$(docker compose exec postgres psql -U activity_user -d activitydb -t -c "SELECT is_verified FROM activity.users WHERE id='$USER_ID';" 2>/dev/null | xargs)
 [ "$VERIFIED" = "t" ] || exit 1
 echo "      ✓ is_verified = $VERIFIED"
@@ -122,7 +124,8 @@ echo "      ✓ Password updated"
 echo ""
 
 # DB PROOF 3 - FIXED LOGIC
-echo "[12/21] DATABASE PROOF 3: Password hash changed (FIXED)"
+echo "[12/21] DATABASE PROOF 3: Password hash changed (full record)"
+docker compose exec postgres psql -U activity_user -d activitydb -c "SELECT * FROM activity.users WHERE email='$EMAIL';" 2>/dev/null
 HASH_NEW=$(docker compose exec postgres psql -U activity_user -d activitydb -t -c "SELECT LEFT(hashed_password, 50) FROM activity.users WHERE id='$USER_ID';" 2>/dev/null | xargs)
 echo "      Old hash: ${HASH_OLD:0:30}..."
 echo "      New hash: ${HASH_NEW:0:30}..."
@@ -232,9 +235,13 @@ done
 echo ""
 
 # CLEANUP
-echo "[21/21] CLEANUP"
-rm -f ./*.json
+echo "[21/21] FINAL DATABASE CHECK + CLEANUP"
+echo "      Full record before delete:"
+docker compose exec postgres psql -U activity_user -d activitydb -c "SELECT * FROM activity.users WHERE email='$EMAIL';" 2>/dev/null
+echo ""
+echo "      Deleting test user..."
 docker compose exec postgres psql -U activity_user -d activitydb -c "DELETE FROM activity.users WHERE email='$EMAIL';" 2>/dev/null || true
+rm -f ./*.json
 echo "      ✓ Files cleaned + Test user removed"
 echo ""
 

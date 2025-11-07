@@ -26,24 +26,32 @@ class TokenService:
         self.db = db
 
     def create_access_token(self, user_id: UUID) -> str:
+        logger.debug("token_creating_access_token", user_id=str(user_id))
         expires_delta = timedelta(minutes=self.settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
+        logger.debug("token_access_expires_delta_set", expires_minutes=self.settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
         token = self.token_helper.create_token(
             data={"sub": str(user_id), "type": "access"},
             expires_delta=expires_delta
         )
+        logger.debug("token_access_token_generated", user_id=str(user_id), token_length=len(token))
         logger.info("access_token_created",
                    user_id=str(user_id),
                    expires_minutes=self.settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
         return token
 
     async def create_refresh_token(self, user_id: UUID) -> str:
+        logger.debug("token_creating_refresh_token", user_id=str(user_id))
         expires_delta = timedelta(days=self.settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
         jti = str(uuid.uuid4())
+        logger.debug("token_refresh_jti_generated", user_id=str(user_id), jti=jti)
         token = self.token_helper.create_token(
             data={"sub": str(user_id), "type": "refresh", "jti": jti},
             expires_delta=expires_delta
         )
+        logger.debug("token_refresh_token_generated", user_id=str(user_id), token_length=len(token))
+        logger.debug("token_saving_refresh_token_to_db", user_id=str(user_id), jti=jti)
         await procedures.sp_save_refresh_token(self.db, user_id, token, expires_delta)
+        logger.debug("token_refresh_token_saved_to_db", user_id=str(user_id), jti=jti)
         logger.info("refresh_token_created",
                    user_id=str(user_id),
                    jti=jti,

@@ -18,6 +18,7 @@ class EmailService:
                    to_email=to_email,
                    template=template,
                    subject=subject)
+        logger.debug("email_constructing_payload", to_email=to_email, template=template, data_keys=list(data.keys()))
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             payload = {
@@ -26,10 +27,14 @@ class EmailService:
                 "subject": subject,
                 "data": data
             }
+            logger.debug("email_payload_constructed", to_email=to_email, payload_size=len(str(payload)))
+            logger.debug("email_sending_http_request", url=f"{self.email_service_url}/send", timeout=self.timeout)
             try:
                 response = await client.post(f"{self.email_service_url}/send", json=payload)
+                logger.debug("email_http_response_received", status_code=response.status_code, to_email=to_email)
                 response.raise_for_status()
                 result = response.json()
+                logger.debug("email_response_parsed", to_email=to_email, result_keys=list(result.keys()) if isinstance(result, dict) else "non-dict")
 
                 logger.info("email_send_success",
                            to_email=to_email,
@@ -54,6 +59,7 @@ class EmailService:
                 return {"status": "error", "message": str(e)}
 
     async def send_verification_email(self, email: str, code: str):
+        logger.debug("email_preparing_verification", email=email, code_length=len(code))
         subject = "Verify Your Account"
         data = {
             "code": code,
@@ -61,6 +67,7 @@ class EmailService:
             "expires_minutes": 10
         }
         logger.info("verification_email_prepare", email=email, purpose="email_verification")
+        logger.debug("email_calling_send_email", email=email, template="2fa_code")
         return await self.send_email(email, "2fa_code", subject, data)
 
     async def send_password_reset_email(self, email: str, code: str):

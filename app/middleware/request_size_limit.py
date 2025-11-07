@@ -9,8 +9,9 @@ import re
 from typing import Callable, Dict, Pattern
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from app.config import Settings
+from app.core.logging_config import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class RequestSizeLimitMiddleware:
@@ -71,6 +72,7 @@ class RequestSizeLimitMiddleware:
         # Get size limit for this route
         path = scope.get("path", "")
         size_limit = self._get_size_limit_for_path(path)
+        logger.debug("size_limit_middleware_checking_request", path=path, size_limit=size_limit)
 
         # Track body size during streaming
         body_size = 0
@@ -95,6 +97,7 @@ class RequestSizeLimitMiddleware:
 
                 # Check if we've exceeded the limit
                 if body_size > size_limit:
+                    logger.debug("size_limit_middleware_limit_exceeded", path=path, body_size=body_size, limit=size_limit)
                     logger.warning(
                         "request_body_too_large",
                         path=path,

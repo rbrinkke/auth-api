@@ -49,6 +49,7 @@ class AuthService:
         correlation_id = correlation_id_var.get()
 
         logger.info("login_attempt_start", email=email, has_code=(code is not None))
+        logger.debug("login_fetching_user_from_db", email=email)
 
         user = await procedures.sp_get_user_by_email(self.db, email)
 
@@ -56,11 +57,16 @@ class AuthService:
             logger.warning("login_failed_user_not_found", email=email)
             raise InvalidCredentialsError()
 
+        logger.debug("login_user_found", user_id=str(user.id), email=email)
+        logger.debug("login_verifying_password", user_id=str(user.id))
         password_ok = await self.password_service.verify_password(password, user.hashed_password)
 
         if not password_ok:
             logger.warning("login_failed_invalid_password", user_id=str(user.id), email=email)
             raise InvalidCredentialsError()
+
+        logger.debug("login_password_verified", user_id=str(user.id))
+        logger.debug("login_checking_verification_status", user_id=str(user.id), is_verified=user.is_verified)
 
         if not user.is_verified:
             logger.warning("login_failed_account_not_verified", user_id=str(user.id), email=email)

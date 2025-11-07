@@ -31,6 +31,7 @@ class RegistrationService:
 
     async def register_user(self, user: UserCreate) -> dict:
         logger.info("user_registration_start", email=user.email)
+        logger.debug("registration_password_validation_start", email=user.email)
 
         existing_user = await procedures.sp_get_user_by_email(self.db, user.email)
         if existing_user:
@@ -39,16 +40,22 @@ class RegistrationService:
                           reason="duplicate_email")
             raise UserAlreadyExistsError()
 
+        logger.debug("registration_hashing_password", email=user.email)
         hashed_password = await self.password_service.get_password_hash(user.password)
+        logger.debug("registration_password_hashed", email=user.email, hash_length=len(hashed_password))
 
+        logger.debug("registration_creating_user_in_db", email=user.email)
         new_user = await procedures.sp_create_user(self.db, user.email, hashed_password)
         logger.info("user_created",
                    user_id=str(new_user.id),
                    email=new_user.email)
+        logger.debug("registration_user_created_db", user_id=str(new_user.id))
 
         verification_code = generate_verification_code()
+        logger.debug("registration_verification_code_generated", user_id=str(new_user.id))
 
         # Store code with opaque token (prevents UUID enumeration)
+        logger.debug("registration_storing_code_redis", user_id=str(new_user.id))
         verification_token = store_code_with_token(
             self.redis_client,
             new_user.id,
@@ -56,6 +63,7 @@ class RegistrationService:
             key_prefix="verify_token",
             ttl=600
         )
+        logger.debug("registration_code_stored_redis", user_id=str(new_user.id), token_length=len(verification_token))
 
         logger.info("verification_code_generated",
                    user_id=str(new_user.id),

@@ -38,6 +38,7 @@ COPY --from=builder /root/.local /home/authuser/.local
 
 # Copy application code (this changes frequently, so it's last)
 COPY --chown=authuser:authuser ./app ./app
+COPY --chown=authuser:authuser ./config ./config
 
 # Switch to non-root user (security best practice)
 USER authuser

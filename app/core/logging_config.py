@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 import structlog
+import yaml
 from structlog.typing import EventDict, Processor
 
 LOGS_DIR = Path("/app/logs")
@@ -53,6 +54,21 @@ def json_filter(logger: logging.Logger, name: str, event_dict: EventDict) -> Eve
 def setup_logging() -> None:
     log_level = get_log_level()
 
+    # Load dictConfig from YAML file
+    config_path = Path("/app/config/logging.yaml")
+    if config_path.exists():
+        with open(config_path, "r") as f:
+            config = yaml.safe_load(f)
+            logging.config.dictConfig(config)
+    else:
+        # Fallback to basicConfig if YAML not found
+        logging.basicConfig(
+            format="%(message)s",
+            stream=sys.stdout,
+            level=log_level,
+        )
+
+    # Configure structlog
     structlog.configure(
         processors=[
             add_correlation_id,
@@ -64,24 +80,6 @@ def setup_logging() -> None:
         context_class=dict,
         logger_factory=structlog.WriteLoggerFactory(),
     )
-
-    logging.basicConfig(
-        format="%(message)s",
-        stream=sys.stdout,
-        level=log_level,
-    )
-
-    uvicorn_access_logger = logging.getLogger("uvicorn.access")
-    uvicorn_access_logger.addHandler(logging.StreamHandler(sys.stdout))
-    uvicorn_access_logger.setLevel(log_level)
-
-    uvicorn_error_logger = logging.getLogger("uvicorn.error")
-    uvicorn_error_logger.addHandler(logging.StreamHandler(sys.stdout))
-    uvicorn_error_logger.setLevel(log_level)
-
-    slowapi_logger = logging.getLogger("slowapi")
-    slowapi_logger.addHandler(logging.StreamHandler(sys.stdout))
-    slowapi_logger.setLevel(log_level)
 
 
 def get_logger(name: str) -> structlog.BoundLogger:

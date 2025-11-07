@@ -31,13 +31,18 @@ class PasswordResetService:
 
     async def request_password_reset(self, request: RequestPasswordResetRequest) -> dict:
         logger.info("password_reset_request_start", email=request.email)
+        logger.debug("password_reset_fetching_user", email=request.email)
 
         reset_token = None
         user = await procedures.sp_get_user_by_email(self.db, request.email)
         if user:
+            logger.debug("password_reset_user_found", user_id=str(user.id), email=user.email)
+            logger.debug("password_reset_generating_code", user_id=str(user.id))
             reset_code = generate_verification_code()
+            logger.debug("password_reset_code_generated_local", user_id=str(user.id), code_length=len(reset_code))
 
             # Store code with opaque token (prevents UUID enumeration)
+            logger.debug("password_reset_storing_code_redis", user_id=str(user.id), ttl=600)
             reset_token = store_code_with_token(
                 self.redis_client,
                 user.id,
@@ -45,6 +50,7 @@ class PasswordResetService:
                 key_prefix="reset_token",
                 ttl=600
             )
+            logger.debug("password_reset_token_stored", user_id=str(user.id), token_length=len(reset_token))
 
             logger.info("password_reset_code_generated",
                        user_id=str(user.id),
@@ -52,6 +58,7 @@ class PasswordResetService:
                        reset_token=reset_token,
                        expires_in_seconds=600)
 
+            logger.debug("password_reset_sending_email", user_id=str(user.id), email=user.email)
             await self.email_service.send_password_reset_email(user.email, reset_code)
             logger.info("password_reset_email_sent", user_id=str(user.id), email=user.email)
         else:
@@ -64,6 +71,7 @@ class PasswordResetService:
 
     async def confirm_password_reset(self, request: ResetPasswordRequest) -> dict:
         logger.info("password_reset_confirm_start", reset_token=request.reset_token)
+        logger.debug("password_reset_verifying_code", reset_token=request.reset_token, code_length=len(request.code))
 
         # Verify code using helper (handles constant-time comparison, UUID parsing, etc.)
         user_id = retrieve_and_verify_code(
@@ -79,19 +87,29 @@ class PasswordResetService:
             raise InvalidTokenError("Reset code expired or not found")
 
         logger.info("password_reset_code_validated", user_id=str(user_id))
+        logger.debug("password_reset_validating_new_password", user_id=str(user_id), password_length=len(request.new_password))
 
         await self.password_service.validate_password_strength(request.new_password)
+        logger.debug("password_reset_password_validated", user_id=str(user_id))
 
+        logger.debug("password_reset_hashing_new_password", user_id=str(user_id))
         hashed_password = await self.password_service.get_password_hash(request.new_password)
+        logger.debug("password_reset_password_hashed", user_id=str(user_id), hash_length=len(hashed_password))
 
+        logger.debug("password_reset_updating_db", user_id=str(user_id))
         success = await procedures.sp_update_password(self.db, user_id, hashed_password)
         if not success:
             logger.error("password_reset_update_failed", user_id=str(user_id), reason="user_not_found")
             raise UserNotFoundError()
+        logger.debug("password_reset_db_updated", user_id=str(user_id))
 
+        logger.debug("password_reset_deleting_code", user_id=str(user_id))
         delete_code(self.redis_client, request.reset_token, key_prefix="reset_token")
+        logger.debug("password_reset_code_deleted", user_id=str(user_id))
 
+        logger.debug("password_reset_revoking_tokens", user_id=str(user_id))
         await procedures.sp_revoke_all_refresh_tokens(self.db, user_id)
+        logger.debug("password_reset_tokens_revoked", user_id=str(user_id))
 
         logger.info("password_reset_complete", user_id=str(user_id))
 
