@@ -1,6 +1,7 @@
 from fastapi import Depends
 import asyncpg
 import redis
+import secrets
 from uuid import UUID
 
 from app.db.connection import get_db_connection
@@ -23,6 +24,7 @@ from app.services.token_service import TokenService
 from app.services.two_factor_service import TwoFactorService
 from app.services.email_service import EmailService
 from app.schemas.auth import TokenResponse, TwoFactorLoginRequest
+from app.core.metrics import track_login, track_token_operation
 
 logger = get_logger(__name__)
 
@@ -55,6 +57,7 @@ class AuthService:
 
         if not user:
             logger.warning("login_failed_user_not_found", email=email)
+            track_login("failed_credentials")
             raise InvalidCredentialsError()
 
         logger.debug("login_user_found", user_id=str(user.id), email=email)
@@ -63,6 +66,7 @@ class AuthService:
 
         if not password_ok:
             logger.warning("login_failed_invalid_password", user_id=str(user.id), email=email)
+            track_login("failed_credentials")
             raise InvalidCredentialsError()
 
         logger.debug("login_password_verified", user_id=str(user.id))
@@ -70,6 +74,7 @@ class AuthService:
 
         if not user.is_verified:
             logger.warning("login_failed_account_not_verified", user_id=str(user.id), email=email)
+            track_login("failed_not_verified")
             raise AccountNotVerifiedError()
 
         # Step 1: If no code provided, generate and send login code
@@ -101,7 +106,8 @@ class AuthService:
             logger.warning("login_failed_code_expired", user_id=str(user.id), email=email)
             raise InvalidTokenError("Login code expired or not found")
 
-        if stored_code != code:
+        # Use constant-time comparison to prevent timing attacks
+        if not secrets.compare_digest(stored_code, code):
             logger.warning("login_failed_invalid_code", user_id=str(user.id), email=email)
             raise InvalidTokenError("Invalid login code")
 
@@ -115,10 +121,12 @@ class AuthService:
             if user_totp_enabled == "true":
                 pre_auth_token = self.token_service.create_2fa_token(user.id)
                 logger.info("login_requires_2fa", user_id=str(user.id), email=email)
+                track_login("failed_2fa_required")
                 raise TwoFactorRequiredError(detail=pre_auth_token)
 
         result = await self._grant_full_tokens(user.id)
         logger.info("login_success", user_id=str(user.id), email=email)
+        track_login("success")
 
         return result
 
@@ -149,9 +157,11 @@ class AuthService:
 
         access_token = self.token_service.create_access_token(user_id)
         logger.info("access_token_created", user_id=str(user_id), token_length=len(access_token))
+        track_token_operation("create_access", "success")
 
         refresh_token = await self.token_service.create_refresh_token(user_id)
         logger.info("refresh_token_created", user_id=str(user_id), token_length=len(refresh_token))
+        track_token_operation("create_refresh", "success")
 
         response = TokenResponse(
             access_token=access_token,

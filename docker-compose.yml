@@ -30,6 +30,7 @@ services:
       - RATE_LIMIT_RESEND_VERIFICATION_PER_5MIN=1000
       - RATE_LIMIT_PASSWORD_RESET_PER_5MIN=1000
       - LOG_LEVEL=DEBUG
+      - ENABLE_METRICS=true
     depends_on:
       postgres:
         condition: service_healthy
@@ -79,7 +80,16 @@ services:
     networks:
       - activity-network
     restart: unless-stopped
-    command: redis-server --appendonly yes
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --stop-writes-on-bgsave-error yes
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -142,6 +152,58 @@ services:
       retries: 3
       start_period: 10s
 
+  # ========== Prometheus - Metrics Collection ==========
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: auth-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    networks:
+      - activity-network
+    restart: unless-stopped
+    depends_on:
+      - auth-api
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ========== Grafana - Metrics Visualization ==========
+  grafana:
+    image: grafana/grafana:latest
+    container_name: auth-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3001
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - activity-network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 networks:
   activity-network:
     name: activity-network
@@ -152,3 +214,7 @@ volumes:
     name: auth-postgres-data
   redis-data:
     name: auth-redis-data
+  prometheus-data:
+    name: auth-prometheus-data
+  grafana-data:
+    name: auth-grafana-data

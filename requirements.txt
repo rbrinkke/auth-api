@@ -38,3 +38,7 @@ python-dotenv==1.0.1
 # Production Features
 structlog==24.4.0
 python-json-logger==2.0.7
+
+# Metrics and Monitoring
+prometheus-client==0.20.0
+prometheus-fastapi-instrumentator==7.0.0
