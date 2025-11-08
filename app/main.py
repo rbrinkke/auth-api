@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from prometheus_fastapi_instrumentator import Instrumentator
 from app.core.logging_config import setup_logging
 from app.core.rate_limiting import init_limiter
 from app.middleware.correlation import correlation_id_middleware
@@ -180,3 +181,16 @@ app.include_router(twofa.router, prefix="/api/auth/2fa", tags=["2FA"])
 @app.get("/api/health", status_code=status.HTTP_200_OK, tags=["Health"])
 async def health_check():
     return {"status": "ok"}
+
+# Initialize Prometheus metrics
+# Exposes metrics at /metrics endpoint
+Instrumentator(
+    should_group_status_codes=True,
+    should_ignore_untemplated=False,
+    should_respect_env_var=True,
+    should_instrument_requests_inprogress=True,
+    excluded_handlers=["/metrics"],
+    env_var_name="ENABLE_METRICS",
+    inprogress_name="auth_api_requests_inprogress",
+    inprogress_labels=True,
+).instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
