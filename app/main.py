@@ -27,7 +27,7 @@ from app.services.password_validation_service import PasswordValidationError
 
 from app.routes import (
     login, register, logout, refresh,
-    verify, password_reset, twofa
+    verify, password_reset, twofa, dashboard
 )
 
 setup_logging()
@@ -177,6 +177,7 @@ app.include_router(refresh.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(verify.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(password_reset.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(twofa.router, prefix="/api/auth/2fa", tags=["2FA"])
+app.include_router(dashboard.router, tags=["Dashboard"])
 
 @app.get("/api/health", status_code=status.HTTP_200_OK, tags=["Health"])
 async def health_check():
