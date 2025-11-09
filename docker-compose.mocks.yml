@@ -1,0 +1,85 @@
+version: '3.8'
+
+# Docker Compose configuration for Mock Servers
+# Run with: docker-compose -f docker-compose.mocks.yml up
+
+services:
+  # ============================================================================
+  # Email Service Mock
+  # ============================================================================
+  email-mock:
+    build:
+      context: .
+      dockerfile: Dockerfile.mocks
+      args:
+        MOCK_SERVER: email_service_mock
+    container_name: auth-api-email-mock
+    ports:
+      - "9000:9000"
+    environment:
+      - LOG_LEVEL=INFO
+      - PYTHONUNBUFFERED=1
+    networks:
+      - mock-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  # ============================================================================
+  # HIBP API Mock
+  # ============================================================================
+  hibp-mock:
+    build:
+      context: .
+      dockerfile: Dockerfile.mocks
+      args:
+        MOCK_SERVER: hibp_mock
+    container_name: auth-api-hibp-mock
+    ports:
+      - "9001:9001"
+    environment:
+      - LOG_LEVEL=INFO
+      - PYTHONUNBUFFERED=1
+    networks:
+      - mock-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  # ============================================================================
+  # Redis Mock
+  # ============================================================================
+  redis-mock:
+    build:
+      context: .
+      dockerfile: Dockerfile.mocks
+      args:
+        MOCK_SERVER: redis_mock
+    container_name: auth-api-redis-mock
+    ports:
+      - "9002:9002"
+    environment:
+      - LOG_LEVEL=INFO
+      - PYTHONUNBUFFERED=1
+    networks:
+      - mock-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9002/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+networks:
+  mock-network:
+    driver: bridge
+    name: auth-api-mock-network
