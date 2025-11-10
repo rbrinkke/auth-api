@@ -9,7 +9,7 @@ from app.services.password_validation_service import (
 )
 from app.core.exceptions import InvalidPasswordError
 from app.core.logging_config import get_logger
-from app.middleware.correlation import correlation_id_var
+from app.middleware.correlation import trace_id_var
 
 logger = get_logger(__name__)
 
@@ -45,10 +45,9 @@ class PasswordService:
         return hashed
 
     async def verify_password(self, plain_password: str, hashed_password: str) -> bool:
-        trace_id = str(uuid.uuid4())
+        trace_id = trace_id_var.get() or str(uuid.uuid4())
 
         logger.info("password_verification_start",
-                   trace_id=trace_id,
                    password_length=len(plain_password),
                    hash_length=len(hashed_password))
         logger.debug("password_service_calling_password_manager_verify", trace_id=trace_id, timeout=5.0)

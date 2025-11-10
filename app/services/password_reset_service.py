@@ -12,7 +12,7 @@ from app.services.email_service import EmailService
 from app.core.redis_client import get_redis_client
 from app.schemas.auth import RequestPasswordResetRequest, ResetPasswordRequest
 from app.core.logging_config import get_logger
-from app.middleware.correlation import correlation_id_var
+from app.middleware.correlation import trace_id_var
 
 logger = get_logger(__name__)
 
