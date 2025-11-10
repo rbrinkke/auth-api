@@ -61,14 +61,6 @@ Our authentication service implements enterprise-grade password security using i
 - Personal information (name, birthday, etc.)
 - Short passwords (< 12 characters)
 
-### User Experience
-
-The frontend registration form displays these requirements clearly, with:
-- Real-time feedback on password length
-- Helpful suggestions for strong passwords
-- Pro tips for creating memorable passphrases
-- Clear error messages if validation fails
-
 ## 🏗️ Architecture
 
 ```
@@ -101,23 +93,37 @@ cp .env.example .env
 # Generate with: python -c "import secrets; print(secrets.token_urlsafe(64))"
 ```
 
-### 2. Start Services
+### 2. Configure Database Connection
+
+**IMPORTANT**: This Auth API connects to a central PostgreSQL database.
+
+Update `.env` with your central database connection details:
+```bash
+POSTGRES_HOST=postgres-db
+POSTGRES_PORT=5432
+POSTGRES_DB=activitydb
+POSTGRES_USER=auth_api_user
+POSTGRES_PASSWORD=your_secure_password
+POSTGRES_SCHEMA=activity
+```
+
+### 3. Create Stored Procedures
+
+**IMPORTANT**: The Auth API expects these stored procedures to exist in your central database.
+
+See the "Required Stored Procedures" section below for complete specifications.
+
+### 4. Start Services
 
 ```bash
-# Start PostgreSQL + Redis + Auth API
+# Start Redis + Auth API + Monitoring
 docker-compose up -d
 
 # View logs
 docker-compose logs -f auth-api
 ```
 
-### 3. Create Stored Procedures
-
-**IMPORTANT**: The Auth API expects these stored procedures to exist in your database.
-
-See the "Required Stored Procedures" section below for complete specifications.
-
-### 4. Test the API
+### 5. Test the API
 
 ```bash
 # Health check
@@ -419,17 +425,20 @@ POST /send
 }
 ```
 
-For development, you can use MailHog (included in docker-compose, commented out).
+For development, MailHog is included in docker-compose for viewing test emails at http://localhost:8025.
 
 ## 🐛 Troubleshooting
 
 **Database connection errors:**
 ```bash
-# Check if PostgreSQL is running
-docker-compose ps postgres
+# Check Auth API logs
+docker-compose logs auth-api
 
-# Check logs
-docker-compose logs postgres
+# Verify database connection settings in .env
+# Ensure POSTGRES_HOST, POSTGRES_PORT, POSTGRES_DB are correct
+
+# Test connection to central PostgreSQL database
+psql -h postgres-db -U auth_api_user -d activitydb
 ```
 
 **Redis connection errors:**
@@ -439,15 +448,21 @@ docker-compose ps redis
 
 # Test Redis connection
 docker exec auth-redis redis-cli ping
+
+# Check Redis logs
+docker-compose logs redis
 ```
 
 **Stored procedure not found:**
 ```bash
-# Connect to PostgreSQL
-docker exec -it auth-postgres psql -U activity_user -d activity_db
+# Connect to your central PostgreSQL database
+psql -h postgres-db -U auth_api_user -d activitydb
 
 # List functions in schema
 \df activity.*
+
+# Ensure all required stored procedures exist
+# See "Required Stored Procedures" section above
 ```
 
 ## 📄 License
