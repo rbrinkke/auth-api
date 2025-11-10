@@ -67,17 +67,18 @@ from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 import structlog
 from fastapi import HTTPException
+import redis
 
 from app.config import get_settings
-from app.db.connection import DatabaseConnectionManager
-from app.core.redis_client import RedisConnectionManager
+from app.db.connection import db
+from app.core.redis_client import init_redis_pool
 from app.core.metrics import (
     http_requests_total,
     login_attempts_total,
     registrations_total,
     email_verifications_total,
     password_resets_total,
-    two_fa_operations_total,
+    twofa_operations_total,
     token_operations_total,
     rate_limit_hits_total,
     invalid_credentials_total,
@@ -88,7 +89,7 @@ from app.core.metrics import (
     redis_operations_total,
     active_users_total,
     active_sessions_total,
-    two_fa_enabled_users_total,
+    twofa_enabled_users_total,
     email_operations_total,
 )
 
@@ -134,8 +135,7 @@ class DashboardService:
         Sets up connections to configuration, database, and Redis for metrics collection.
         """
         self.settings = get_settings()
-        self.db_manager = DatabaseConnectionManager()
-        self.redis_manager = RedisConnectionManager()
+        self.db_manager = db
 
     async def get_system_health(self) -> Dict[str, Any]:
         """
@@ -236,16 +236,17 @@ class DashboardService:
     async def _check_redis_health(self) -> Dict[str, Any]:
         """Check Redis cache health."""
         try:
-            redis = await self.redis_manager.get_client()
+            pool = init_redis_pool(self.settings)
+            redis_client = redis.Redis(connection_pool=pool)
 
             # Test ping
-            pong = await redis.ping()
+            pong = redis_client.ping()
 
             # Get Redis info
-            info = await redis.info()
+            info = redis_client.info()
 
             # Get key count estimate
-            dbsize = await redis.dbsize()
+            dbsize = redis_client.dbsize()
 
             return {
                 "status": "healthy" if pong else "unhealthy",
@@ -429,7 +430,7 @@ class DashboardService:
                     "registrations": self._get_metric_value(registrations_total),
                     "email_verifications": self._get_metric_value(email_verifications_total),
                     "password_resets": self._get_metric_value(password_resets_total),
-                    "two_fa_operations": self._get_metric_value(two_fa_operations_total),
+                    "two_fa_operations": self._get_metric_value(twofa_operations_total),
                     "token_operations": self._get_metric_value(token_operations_total),
                 },
                 "security": {
@@ -448,7 +449,7 @@ class DashboardService:
                 "business": {
                     "active_users": self._get_gauge_value(active_users_total),
                     "active_sessions": self._get_gauge_value(active_sessions_total),
-                    "two_fa_enabled_users": self._get_gauge_value(two_fa_enabled_users_total),
+                    "two_fa_enabled_users": self._get_gauge_value(twofa_enabled_users_total),
                     "email_operations": self._get_metric_value(email_operations_total),
                 },
             }

@@ -11,11 +11,11 @@ services:
       - "8000:8000"
     environment:
       - DEBUG=true
-      - POSTGRES_HOST=postgres
+      - POSTGRES_HOST=postgres-db
       - POSTGRES_PORT=5432
       - POSTGRES_DB=activitydb
-      - POSTGRES_USER=activity_user
-      - POSTGRES_PASSWORD=dev_password_change_in_prod
+      - POSTGRES_USER=auth_api_user
+      - POSTGRES_PASSWORD=auth_api_secure_password_change_in_prod
       - POSTGRES_SCHEMA=activity
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -32,8 +32,6 @@ services:
       - LOG_LEVEL=DEBUG
       - ENABLE_METRICS=true
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
@@ -45,29 +43,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-
-  # ========== PostgreSQL ==========
-  postgres:
-    image: postgres:16-alpine
-    container_name: auth-postgres
-    environment:
-      - POSTGRES_DB=activitydb
-      - POSTGRES_USER=activity_user
-      - POSTGRES_PASSWORD=dev_password_change_in_prod
-    ports:
-      - "5433:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ./init-db.sh:/docker-entrypoint-initdb.d/01-init-schema.sh
-      - ./init-procedures.sh:/docker-entrypoint-initdb.d/02-init-procedures.sh
-    networks:
-      - activity-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U activity_user -d activitydb"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   # ========== Redis ==========
   redis:
@@ -210,8 +185,6 @@ networks:
     driver: bridge
 
 volumes:
-  postgres-data:
-    name: auth-postgres-data
   redis-data:
     name: auth-redis-data
   prometheus-data:
