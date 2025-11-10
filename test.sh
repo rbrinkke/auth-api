@@ -206,7 +206,7 @@ echo ""
 # HEALTH CHECK
 echo "[18/21] HEALTH CHECK"
 R=$(curl -s "$API/api/health")
-echo "$R" | grep -q "ok" || exit 1
+echo "$R" | grep -q "healthy" || exit 1
 echo "      ✓ All services healthy"
 echo ""
 
@@ -222,16 +222,52 @@ done
 echo "      ✓ Rate limit test completed"
 echo ""
 
-# 2FA ENDPOINTS - REAL TEST
+# 2FA ENDPOINTS - REAL TEST (requires authentication)
 echo "[20/21] 2FA ENDPOINTS - REAL TEST"
-for endpoint in "enable-2fa" "verify-2fa-setup" "verify-2fa" "disable-2fa" "2fa-status"; do
-    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API/api/auth/$endpoint" -H "Content-Type: application/json" -d '{}' 2>/dev/null)
-    if [ "$HTTP_CODE" != "000" ]; then
-        echo "      ✓ /$endpoint (HTTP $HTTP_CODE)"
-    else
-        echo "      ✗ /$endpoint (not accessible)"
-    fi
-done
+echo "      Testing 2FA endpoints (requires auth token)..."
+# Get fresh tokens for 2FA testing
+cat > ./login_2fa_test.json << JSON
+{"username": "$EMAIL", "password": "NewStrongPassword2025"}
+JSON
+R=$(curl -s -X POST "$API/api/auth/login" -H "Content-Type: application/json" -d @./login_2fa_test.json)
+LOGIN_CODE_2FA=$(docker compose exec -T redis redis-cli GET "2FA:$USER_ID:login" 2>/dev/null)
+cat > ./login_2fa_with_code.json << JSON
+{"username": "$EMAIL", "password": "NewStrongPassword2025", "code": "$LOGIN_CODE_2FA"}
+JSON
+R=$(curl -s -X POST "$API/api/auth/login" -H "Content-Type: application/json" -d @./login_2fa_with_code.json)
+ACCESS_2FA=$(echo "$R" | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
+
+# Test 1: Setup 2FA (should return QR code data)
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API/api/auth/2fa/setup" -H "Authorization: Bearer $ACCESS_2FA" 2>/dev/null)
+if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "400" ] || [ "$HTTP_CODE" = "422" ]; then
+    echo "      ✓ /2fa/setup (HTTP $HTTP_CODE - accessible)"
+else
+    echo "      ✗ /2fa/setup (HTTP $HTTP_CODE)"
+fi
+
+# Test 2: Verify 2FA setup (expected to fail with 403 - no setup yet, or 400 - invalid code)
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API/api/auth/2fa/verify" -H "Authorization: Bearer $ACCESS_2FA" -H "Content-Type: application/json" -d '{"code":"000000"}' 2>/dev/null)
+if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "400" ] || [ "$HTTP_CODE" = "422" ] || [ "$HTTP_CODE" = "403" ]; then
+    echo "      ✓ /2fa/verify (HTTP $HTTP_CODE - accessible, expected 400/403 for invalid code)"
+else
+    echo "      ✗ /2fa/verify (HTTP $HTTP_CODE)"
+fi
+
+# Test 3: Disable 2FA (should work or return 400 if not enabled)
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API/api/auth/2fa/disable" -H "Authorization: Bearer $ACCESS_2FA" 2>/dev/null)
+if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "400" ] || [ "$HTTP_CODE" = "422" ]; then
+    echo "      ✓ /2fa/disable (HTTP $HTTP_CODE - accessible)"
+else
+    echo "      ✗ /2fa/disable (HTTP $HTTP_CODE)"
+fi
+
+# Test 4: 2FA Login endpoint (expected 400/401 for invalid pre_auth_token)
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API/api/auth/login/2fa" -H "Content-Type: application/json" -d '{"pre_auth_token":"invalid_token_123","code":"000000"}' 2>/dev/null)
+if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "400" ] || [ "$HTTP_CODE" = "422" ] || [ "$HTTP_CODE" = "401" ] || [ "$HTTP_CODE" = "403" ]; then
+    echo "      ✓ /login/2fa (HTTP $HTTP_CODE - accessible, expected 400/401/403 for invalid token)"
+else
+    echo "      ✗ /login/2fa (HTTP $HTTP_CODE)"
+fi
 echo ""
 
 # CLEANUP

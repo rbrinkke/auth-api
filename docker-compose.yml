@@ -11,18 +11,19 @@ services:
       - "8000:8000"
     environment:
       - DEBUG=true
-      - POSTGRES_HOST=postgres-db
+      - POSTGRES_HOST=activity-postgres-db
       - POSTGRES_PORT=5432
       - POSTGRES_DB=activitydb
       - POSTGRES_USER=auth_api_user
       - POSTGRES_PASSWORD=auth_api_secure_password_change_in_prod
       - POSTGRES_SCHEMA=activity
-      - REDIS_HOST=redis
+      - REDIS_HOST=auth-redis
       - REDIS_PORT=6379
       - REDIS_DB=0
       - JWT_SECRET_KEY=dev_secret_key_change_in_production_min_32_chars_required
       - ENCRYPTION_KEY=nI5MM1gTgRo2ZyNGMGkBreRJwVd-y7jq9fXhfPZnDE8=
-      - EMAIL_SERVICE_URL=http://dummy-email:9000
+      - EMAIL_SERVICE_URL=http://email-api:8010
+      - SERVICE_AUTH_TOKEN=st_dev_5555555555555555555555555555555555555555
       - FRONTEND_URL=http://localhost:3000
       - CORS_ORIGINS=http://localhost:3000
       - RATE_LIMIT_REGISTER_PER_HOUR=1000
@@ -47,7 +48,7 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - default
+      - activity-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
@@ -61,11 +62,11 @@ services:
     image: redis:7-alpine
     container_name: auth-redis
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis-data:/data
     networks:
-      - default
+      - activity-network
     restart: unless-stopped
     command: >
       redis-server
@@ -90,13 +91,13 @@ services:
       dockerfile: Dockerfile.email
     container_name: dummy-email-service
     ports:
-      - "9000:9000"
+      - "9001:9000"
     environment:
-      - SMTP_HOST=mailhog
+      - SMTP_HOST=activity-mailhog
       - SMTP_PORT=1025
       - FROM_ADDRESS=noreply@activity-app.local
     networks:
-      - default
+      - activity-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/"]
@@ -105,21 +106,9 @@ services:
       retries: 3
       start_period: 10s
 
-  # ========== MailHog - View Emails in Web UI ==========
-  mailhog:
-    image: mailhog/mailhog:latest
-    container_name: mailhog
-    ports:
-      - "8025:8025"  # Web UI
-      - "1025:1025"  # SMTP
-    networks:
-      - default
-    restart: unless-stopped
-
 networks:
-  default:
+  activity-network:
     external: true
-    name: activity-observability
 
 volumes:
   redis-data:

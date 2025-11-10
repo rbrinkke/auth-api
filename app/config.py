@@ -23,8 +23,9 @@ class Settings(BaseSettings):
     VERIFICATION_TOKEN_EXPIRE_MINUTES: int = 1440
     RESET_TOKEN_EXPIRE_MINUTES: int = 60
 
-    EMAIL_SERVICE_URL: str = "http://dummy-email:9000"
+    EMAIL_SERVICE_URL: str = "http://email-api:8010"
     EMAIL_SERVICE_TIMEOUT: int = 10
+    SERVICE_AUTH_TOKEN: str = "st_dev_5555555555555555555555555555555555555555"
 
     FRONTEND_URL: str = "http://localhost:3000"
     CORS_ORIGINS: str = "http://localhost:3000"

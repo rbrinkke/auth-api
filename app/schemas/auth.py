@@ -140,7 +140,7 @@ class TwoFactorVerifyRequest(BaseModel):
 
 
 class TwoFactorLoginRequest(BaseModel):
-    user_id: str = Field(..., min_length=1, description="User ID")
+    pre_auth_token: str = Field(..., min_length=1, description="Pre-authentication token received from initial login")
     code: str = Field(..., min_length=6, max_length=6, description="6-digit TOTP code")
 
 

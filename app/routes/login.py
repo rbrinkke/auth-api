@@ -27,7 +27,7 @@ async def login_2fa(
     twofa_request: TwoFactorLoginRequest,
     auth_service: AuthService = Depends(AuthService)
 ):
-    logger.debug("route_login_2fa_endpoint_hit", email=twofa_request.email)
+    logger.debug("route_login_2fa_endpoint_hit", token_length=len(twofa_request.pre_auth_token), code_length=len(twofa_request.code))
     result = await auth_service.login_2fa_challenge(twofa_request)
-    logger.debug("route_login_2fa_service_complete", email=twofa_request.email)
+    logger.debug("route_login_2fa_service_complete", pre_auth_token_present=bool(twofa_request.pre_auth_token))
     return result
