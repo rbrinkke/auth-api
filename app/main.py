@@ -7,7 +7,7 @@ from slowapi.errors import RateLimitExceeded
 from prometheus_fastapi_instrumentator import Instrumentator
 from app.core.logging_config import setup_logging
 from app.core.rate_limiting import init_limiter
-from app.middleware.correlation import correlation_id_middleware
+from app.middleware.correlation import trace_id_middleware
 from app.middleware.security import add_security_headers
 from app.middleware.request_size_limit import RequestSizeLimitMiddleware
 from app.db import db
@@ -76,8 +76,8 @@ async def security_headers_middleware(request: Request, call_next):
     return await add_security_headers(request, call_next)
 
 @app.middleware("http")
-async def correlation_middleware(request: Request, call_next):
-    return await correlation_id_middleware(request, call_next)
+async def trace_middleware(request: Request, call_next):
+    return await trace_id_middleware(request, call_next)
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
@@ -179,9 +179,24 @@ app.include_router(password_reset.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(twofa.router, prefix="/api/auth/2fa", tags=["2FA"])
 app.include_router(dashboard.router, tags=["Dashboard"])
 
-@app.get("/api/health", status_code=status.HTTP_200_OK, tags=["Health"])
+@app.get("/health", status_code=status.HTTP_200_OK, tags=["Health"])
 async def health_check():
-    return {"status": "ok"}
+    from datetime import datetime, timezone
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "service": "auth-api"
+    }
+
+@app.get("/api/health", status_code=status.HTTP_200_OK, tags=["Health"])
+async def api_health_check():
+    """Legacy health endpoint for backward compatibility"""
+    from datetime import datetime, timezone
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "service": "auth-api"
+    }
 
 # Initialize Prometheus metrics
 # Exposes metrics at /metrics endpoint

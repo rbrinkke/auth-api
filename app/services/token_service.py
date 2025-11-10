@@ -10,7 +10,7 @@ from app.core.tokens import TokenHelper
 from app.core.exceptions import UserNotFoundError, InvalidTokenError, TokenExpiredError
 from app.schemas.auth import TokenResponse
 from app.core.logging_config import get_logger
-from app.middleware.correlation import correlation_id_var
+from app.middleware.correlation import trace_id_var
 
 logger = get_logger(__name__)
 

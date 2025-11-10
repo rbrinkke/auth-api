@@ -8,7 +8,7 @@ from app.db.connection import get_db_connection
 from app.core.utils import generate_verification_code
 from app.core.redis_client import get_redis_client
 from app.core.logging_config import get_logger
-from app.middleware.correlation import correlation_id_var
+from app.middleware.correlation import trace_id_var
 from app.config import get_settings
 from app.db import procedures
 from app.core.exceptions import (
@@ -48,7 +48,7 @@ class AuthService:
         self.settings = settings
 
     async def login_user(self, email: str, password: str, code: str | None = None) -> dict:
-        correlation_id = correlation_id_var.get()
+        trace_id = trace_id_var.get()
 
         logger.info("login_attempt_start", email=email, has_code=(code is not None))
         logger.debug("login_fetching_user_from_db", email=email)

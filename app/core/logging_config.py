@@ -24,11 +24,11 @@ def get_log_level() -> int:
     return log_level_map.get(level_str, logging.INFO)
 
 
-def add_correlation_id(logger: logging.Logger, method_name: str, event_dict: EventDict) -> EventDict:
-    from app.middleware.correlation import correlation_id_var
+def add_trace_id(logger: logging.Logger, method_name: str, event_dict: EventDict) -> EventDict:
+    from app.middleware.correlation import trace_id_var
 
-    correlation_id = correlation_id_var.get()
-    event_dict["correlation_id"] = correlation_id if correlation_id else "-"
+    trace_id = trace_id_var.get()
+    event_dict["trace_id"] = trace_id if trace_id else None
 
     return event_dict
 
@@ -40,10 +40,10 @@ def add_service_info(logger: logging.Logger, method_name: str, event_dict: Event
     return event_dict
 
 
-def json_filter(logger: logging.Logger, name: str, event_dict: EventDict) -> EventDict:
+def add_timestamp(logger: logging.Logger, method_name: str, event_dict: EventDict) -> EventDict:
     if "timestamp" not in event_dict:
-        import time
-        event_dict["timestamp"] = time.time()
+        from datetime import datetime, timezone
+        event_dict["timestamp"] = datetime.now(timezone.utc).isoformat()
 
     if "level" not in event_dict:
         event_dict["level"] = method_name.upper()
@@ -71,7 +71,8 @@ def setup_logging() -> None:
     # Configure structlog
     structlog.configure(
         processors=[
-            add_correlation_id,
+            add_timestamp,
+            add_trace_id,
             add_service_info,
             structlog.processors.JSONRenderer()
         ],

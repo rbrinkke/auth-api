@@ -3,7 +3,7 @@ import asyncio
 from fastapi import Depends
 from app.config import get_settings
 from app.core.logging_config import get_logger
-from app.middleware.correlation import correlation_id_var
+from app.middleware.correlation import trace_id_var
 
 logger = get_logger(__name__)
 
