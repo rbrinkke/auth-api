@@ -1,4 +1,5 @@
 from datetime import timedelta
+from typing import List, Optional
 from fastapi import Depends
 import asyncpg
 import uuid
@@ -9,6 +10,7 @@ from app.config import Settings, get_settings
 from app.core.tokens import TokenHelper
 from app.core.exceptions import UserNotFoundError, InvalidTokenError, TokenExpiredError
 from app.schemas.auth import TokenResponse
+from app.schemas.oauth import TokenResponse as OAuthTokenResponse
 from app.core.logging_config import get_logger
 from app.middleware.correlation import trace_id_var
 
@@ -229,3 +231,196 @@ class TokenService:
                         error=str(e),
                         exc_info=True)
             raise
+
+    # ========================================================================
+    # OAUTH 2.0 TOKEN METHODS
+    # ========================================================================
+
+    def create_oauth_access_token(
+        self,
+        user_id: UUID,
+        client_id: str,
+        scopes: List[str],
+        org_id: Optional[UUID] = None,
+        audience: Optional[List[str]] = None
+    ) -> str:
+        """
+        Create OAuth 2.0 access token with enhanced claims.
+
+        OAuth claims (RFC 8693, RFC 9068):
+        - iss: Issuer (Authorization Server)
+        - sub: Subject (User ID)
+        - aud: Audience (Resource Servers)
+        - exp: Expiration Time
+        - iat: Issued At
+        - jti: JWT ID (for revocation)
+        - scope: Granted scopes (space-separated)
+        - client_id: Client identifier
+        - azp: Authorized Party (same as client_id)
+
+        Args:
+            user_id: User ID
+            client_id: OAuth client identifier
+            scopes: Granted scopes
+            org_id: Optional organization ID
+            audience: Optional audience (resource servers)
+
+        Returns:
+            JWT access token with OAuth claims
+        """
+        logger.debug("oauth_access_token_creating",
+                    user_id=str(user_id),
+                    client_id=client_id,
+                    scopes_count=len(scopes))
+
+        expires_delta = timedelta(minutes=self.settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
+        jti = str(uuid.uuid4())
+
+        # Build OAuth claims
+        data = {
+            # Standard JWT claims
+            "iss": self.settings.FRONTEND_URL.rstrip('/'),  # Issuer
+            "sub": str(user_id),  # Subject
+            "aud": audience or ["https://api.activity.com"],  # Audience
+            "jti": jti,  # JWT ID (for revocation)
+
+            # OAuth 2.0 claims
+            "scope": " ".join(scopes),  # Space-separated scopes
+            "client_id": client_id,  # Client identifier
+            "azp": client_id,  # Authorized Party
+
+            # Custom claims
+            "type": "access",
+        }
+
+        # Add org_id if present
+        if org_id:
+            data["org_id"] = str(org_id)
+
+        token = self.token_helper.create_token(
+            data=data,
+            expires_delta=expires_delta
+        )
+
+        logger.info("oauth_access_token_created",
+                   user_id=str(user_id),
+                   client_id=client_id,
+                   org_id=str(org_id) if org_id else None,
+                   scopes=scopes,
+                   jti=jti,
+                   expires_minutes=self.settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
+
+        return token
+
+    async def create_oauth_refresh_token(
+        self,
+        user_id: UUID,
+        client_id: str,
+        scopes: List[str],
+        org_id: Optional[UUID] = None
+    ) -> str:
+        """
+        Create OAuth 2.0 refresh token.
+
+        Stores client_id with refresh token for validation during refresh flow.
+
+        Args:
+            user_id: User ID
+            client_id: OAuth client identifier
+            scopes: Granted scopes
+            org_id: Optional organization ID
+
+        Returns:
+            JWT refresh token
+        """
+        logger.debug("oauth_refresh_token_creating",
+                    user_id=str(user_id),
+                    client_id=client_id)
+
+        expires_delta = timedelta(days=self.settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
+        jti = str(uuid.uuid4())
+
+        data = {
+            "sub": str(user_id),
+            "type": "refresh",
+            "jti": jti,
+            "client_id": client_id,
+            "scope": " ".join(scopes),  # Store scopes for downscoping
+        }
+
+        if org_id:
+            data["org_id"] = str(org_id)
+
+        token = self.token_helper.create_token(
+            data=data,
+            expires_delta=expires_delta
+        )
+
+        # Save to database
+        await procedures.sp_save_refresh_token(self.db, user_id, token, expires_delta)
+
+        logger.info("oauth_refresh_token_created",
+                   user_id=str(user_id),
+                   client_id=client_id,
+                   org_id=str(org_id) if org_id else None,
+                   jti=jti,
+                   expires_days=self.settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
+
+        return token
+
+    async def create_oauth_token_response(
+        self,
+        user_id: UUID,
+        client_id: str,
+        scopes: List[str],
+        org_id: Optional[UUID] = None,
+        audience: Optional[List[str]] = None
+    ) -> OAuthTokenResponse:
+        """
+        Create complete OAuth token response (access + refresh).
+
+        Args:
+            user_id: User ID
+            client_id: OAuth client identifier
+            scopes: Granted scopes
+            org_id: Optional organization ID
+            audience: Optional audience
+
+        Returns:
+            OAuthTokenResponse with access_token, refresh_token, scope, etc.
+        """
+        logger.info("oauth_token_response_creating",
+                   user_id=str(user_id),
+                   client_id=client_id)
+
+        # Create tokens
+        access_token = self.create_oauth_access_token(
+            user_id=user_id,
+            client_id=client_id,
+            scopes=scopes,
+            org_id=org_id,
+            audience=audience
+        )
+
+        refresh_token = await self.create_oauth_refresh_token(
+            user_id=user_id,
+            client_id=client_id,
+            scopes=scopes,
+            org_id=org_id
+        )
+
+        # Build response
+        response = OAuthTokenResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type="bearer",
+            expires_in=self.settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # Seconds
+            scope=" ".join(scopes),
+            org_id=org_id
+        )
+
+        logger.info("oauth_token_response_created",
+                   user_id=str(user_id),
+                   client_id=client_id)
+
+        return response

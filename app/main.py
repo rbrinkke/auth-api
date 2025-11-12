@@ -46,7 +46,9 @@ from app.routes import (
     login, register, logout, refresh,
     verify, password_reset, twofa, dashboard,
     organizations,
-    groups, permissions, authorization
+    groups, permissions, authorization,
+    # OAuth 2.0 routes
+    oauth_authorize, oauth_token, oauth_revoke, oauth_discovery
 )
 
 setup_logging()
@@ -321,6 +323,12 @@ app.include_router(groups.router, prefix="/api/auth", tags=["RBAC - Groups"])
 app.include_router(permissions.router, prefix="/api/auth", tags=["RBAC - Permissions"])
 app.include_router(authorization.router, prefix="/api/v1/authorization", tags=["Authorization"])  # Image-API compatible endpoint
 app.include_router(dashboard.router, tags=["Dashboard"])
+
+# OAuth 2.0 endpoints
+app.include_router(oauth_authorize.router, tags=["OAuth 2.0"])
+app.include_router(oauth_token.router, tags=["OAuth 2.0"])
+app.include_router(oauth_revoke.router, tags=["OAuth 2.0"])
+app.include_router(oauth_discovery.router, tags=["OAuth 2.0 Discovery"])
 
 @app.get("/health", status_code=status.HTTP_200_OK, tags=["Health"])
 async def health_check():
