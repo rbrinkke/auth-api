@@ -21,13 +21,32 @@ from app.core.exceptions import (
     InvalidTokenError,
     TwoFactorRequiredError,
     TwoFactorVerificationError,
-    RequestEntityTooLargeError
+    RequestEntityTooLargeError,
+    OrganizationNotFoundError,
+    OrganizationSlugExistsError,
+    UserNotOrganizationMemberError,
+    InsufficientOrganizationPermissionError,
+    OrganizationMemberAlreadyExistsError,
+    LastOwnerRemovalError,
+    # RBAC Exceptions
+    GroupNotFoundError,
+    DuplicateGroupNameError,
+    NotGroupMemberError,
+    GroupMemberAlreadyExistsError,
+    PermissionNotFoundError,
+    DuplicatePermissionError,
+    GroupPermissionAlreadyGrantedError,
+    GroupPermissionNotGrantedError,
+    InsufficientPermissionError,
+    PermissionDeniedError
 )
 from app.services.password_validation_service import PasswordValidationError
 
 from app.routes import (
     login, register, logout, refresh,
-    verify, password_reset, twofa, dashboard
+    verify, password_reset, twofa, dashboard,
+    organizations,
+    groups, permissions
 )
 
 setup_logging()
@@ -155,6 +174,126 @@ async def invalid_token_handler(request: Request, exc: InvalidTokenError):
         content={"detail": exc.detail},
     )
 
+@app.exception_handler(OrganizationNotFoundError)
+async def organization_not_found_handler(request: Request, exc: OrganizationNotFoundError):
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={"detail": exc.detail},
+    )
+
+@app.exception_handler(OrganizationSlugExistsError)
+async def organization_slug_exists_handler(request: Request, exc: OrganizationSlugExistsError):
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
+        content={"detail": exc.detail},
+    )
+
+@app.exception_handler(UserNotOrganizationMemberError)
+async def user_not_member_handler(request: Request, exc: UserNotOrganizationMemberError):
+    return JSONResponse(
+        status_code=status.HTTP_403_FORBIDDEN,
+        content={"detail": exc.detail},
+    )
+
+@app.exception_handler(InsufficientOrganizationPermissionError)
+async def insufficient_permission_handler(request: Request, exc: InsufficientOrganizationPermissionError):
+    return JSONResponse(
+        status_code=status.HTTP_403_FORBIDDEN,
+        content={"detail": exc.detail},
+    )
+
+@app.exception_handler(OrganizationMemberAlreadyExistsError)
+async def member_already_exists_handler(request: Request, exc: OrganizationMemberAlreadyExistsError):
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
+        content={"detail": exc.detail},
+    )
+
+@app.exception_handler(LastOwnerRemovalError)
+async def last_owner_removal_handler(request: Request, exc: LastOwnerRemovalError):
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"detail": exc.detail},
+    )
+
+# ============================================================================
+# RBAC Exception Handlers (Groups & Permissions)
+# ============================================================================
+
+@app.exception_handler(GroupNotFoundError)
+async def group_not_found_handler(request: Request, exc: GroupNotFoundError):
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={"detail": exc.detail},
+    )
+
+@app.exception_handler(DuplicateGroupNameError)
+async def duplicate_group_name_handler(request: Request, exc: DuplicateGroupNameError):
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
+        content={"detail": exc.detail},
+    )
+
+@app.exception_handler(NotGroupMemberError)
+async def not_group_member_handler(request: Request, exc: NotGroupMemberError):
+    return JSONResponse(
+        status_code=status.HTTP_403_FORBIDDEN,
+        content={"detail": exc.detail},
+    )
+
+@app.exception_handler(GroupMemberAlreadyExistsError)
+async def group_member_already_exists_handler(request: Request, exc: GroupMemberAlreadyExistsError):
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
+        content={"detail": exc.detail},
+    )
+
+@app.exception_handler(PermissionNotFoundError)
+async def permission_not_found_handler(request: Request, exc: PermissionNotFoundError):
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={"detail": exc.detail},
+    )
+
+@app.exception_handler(DuplicatePermissionError)
+async def duplicate_permission_handler(request: Request, exc: DuplicatePermissionError):
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
+        content={"detail": exc.detail},
+    )
+
+@app.exception_handler(GroupPermissionAlreadyGrantedError)
+async def group_permission_already_granted_handler(request: Request, exc: GroupPermissionAlreadyGrantedError):
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
+        content={"detail": exc.detail},
+    )
+
+@app.exception_handler(GroupPermissionNotGrantedError)
+async def group_permission_not_granted_handler(request: Request, exc: GroupPermissionNotGrantedError):
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={"detail": exc.detail},
+    )
+
+@app.exception_handler(InsufficientPermissionError)
+async def insufficient_permission_rbac_handler(request: Request, exc: InsufficientPermissionError):
+    return JSONResponse(
+        status_code=status.HTTP_403_FORBIDDEN,
+        content={"detail": exc.detail},
+    )
+
+@app.exception_handler(PermissionDeniedError)
+async def permission_denied_handler(request: Request, exc: PermissionDeniedError):
+    return JSONResponse(
+        status_code=status.HTTP_403_FORBIDDEN,
+        content={"detail": exc.detail},
+    )
+
+# ============================================================================
+# Generic Exception Handlers
+# ============================================================================
+
 @app.exception_handler(AuthException)
 async def generic_auth_handler(request: Request, exc: AuthException):
     return JSONResponse(
@@ -177,6 +316,9 @@ app.include_router(refresh.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(verify.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(password_reset.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(twofa.router, prefix="/api/auth/2fa", tags=["2FA"])
+app.include_router(organizations.router, prefix="/api/auth", tags=["Organizations"])
+app.include_router(groups.router, prefix="/api/auth", tags=["RBAC - Groups"])
+app.include_router(permissions.router, prefix="/api/auth", tags=["RBAC - Permissions"])
 app.include_router(dashboard.router, tags=["Dashboard"])
 
 @app.get("/health", status_code=status.HTTP_200_OK, tags=["Health"])

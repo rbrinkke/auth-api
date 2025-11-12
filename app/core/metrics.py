@@ -174,6 +174,78 @@ twofa_enabled_users_total = Gauge(
     'Total number of users with 2FA enabled'
 )
 
+# ========== RBAC Authorization Metrics (Sprint 2) ==========
+
+# Authorization checks (THE CORE - Policy Decision Point)
+authz_checks_total = Counter(
+    'auth_api_authz_checks_total',
+    'Total authorization checks via THE CORE /authorize endpoint',
+    ['result', 'resource', 'action']  # result: granted, denied_not_member, denied_no_permission
+)
+
+authz_check_duration_seconds = Histogram(
+    'auth_api_authz_check_duration_seconds',
+    'Authorization check latency (p50/p95/p99 - target: p95 < 50ms)',
+    ['resource', 'action'],
+    buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0)
+)
+
+# Permission lookup operations (get user permissions)
+permission_lookups_total = Counter(
+    'auth_api_permission_lookups_total',
+    'Total permission lookup operations',
+    ['status']  # success, failed
+)
+
+# Group operations
+group_operations_total = Counter(
+    'auth_api_group_operations_total',
+    'Total group management operations',
+    ['operation', 'status']  # operation: create, update, delete, add_member, remove_member; status: success, failed
+)
+
+# Permission management operations
+permission_operations_total = Counter(
+    'auth_api_permission_operations_total',
+    'Total permission management operations',
+    ['operation', 'status']  # operation: grant, revoke, create; status: success, failed
+)
+
+# Permission grants by type (analytics)
+permission_grants_by_type = Counter(
+    'auth_api_permission_grants_by_type_total',
+    'Permission grants breakdown by resource:action',
+    ['resource', 'action']
+)
+
+# Permission revocations by type (analytics)
+permission_revocations_by_type = Counter(
+    'auth_api_permission_revocations_by_type_total',
+    'Permission revocations breakdown by resource:action',
+    ['resource', 'action']
+)
+
+# RBAC business metrics
+total_groups = Gauge(
+    'auth_api_total_groups',
+    'Total number of groups across all organizations'
+)
+
+total_permissions = Gauge(
+    'auth_api_total_permissions',
+    'Total number of system-wide permissions'
+)
+
+total_group_memberships = Gauge(
+    'auth_api_total_group_memberships',
+    'Total number of user-group memberships'
+)
+
+total_permission_grants = Gauge(
+    'auth_api_total_permission_grants',
+    'Total number of group-permission grants'
+)
+
 
 # ========== Helper Functions ==========
 
@@ -255,3 +327,89 @@ def track_redis_operation(operation: str, status: str):
 def track_email_operation(email_type: str, status: str):
     """Track email operation."""
     email_operations_total.labels(type=email_type, status=status).inc()
+
+
+# ========== RBAC Helper Functions (Sprint 2) ==========
+
+def track_authz_check(result: str, resource: str, action: str):
+    """
+    Track authorization check via THE CORE /authorize endpoint.
+
+    Args:
+        result: 'granted', 'denied_not_member', or 'denied_no_permission'
+        resource: Resource being accessed (e.g., 'activity', 'user')
+        action: Action being performed (e.g., 'create', 'read', 'update', 'delete')
+
+    Example:
+        track_authz_check('granted', 'activity', 'create')
+        track_authz_check('denied_no_permission', 'activity', 'delete')
+    """
+    authz_checks_total.labels(result=result, resource=resource, action=action).inc()
+
+
+def track_permission_lookup(status: str):
+    """
+    Track permission lookup operation (get user permissions).
+
+    Args:
+        status: 'success' or 'failed'
+    """
+    permission_lookups_total.labels(status=status).inc()
+
+
+def track_group_operation(operation: str, status: str):
+    """
+    Track group management operation.
+
+    Args:
+        operation: 'create', 'update', 'delete', 'add_member', 'remove_member'
+        status: 'success' or 'failed'
+
+    Example:
+        track_group_operation('create', 'success')
+        track_group_operation('add_member', 'failed')
+    """
+    group_operations_total.labels(operation=operation, status=status).inc()
+
+
+def track_permission_operation(operation: str, status: str):
+    """
+    Track permission management operation.
+
+    Args:
+        operation: 'grant', 'revoke', 'create'
+        status: 'success' or 'failed'
+
+    Example:
+        track_permission_operation('grant', 'success')
+        track_permission_operation('revoke', 'success')
+    """
+    permission_operations_total.labels(operation=operation, status=status).inc()
+
+
+def track_permission_grant(resource: str, action: str):
+    """
+    Track permission grant by type (for analytics).
+
+    Args:
+        resource: Resource (e.g., 'activity', 'user')
+        action: Action (e.g., 'create', 'read')
+
+    Example:
+        track_permission_grant('activity', 'create')
+    """
+    permission_grants_by_type.labels(resource=resource, action=action).inc()
+
+
+def track_permission_revocation(resource: str, action: str):
+    """
+    Track permission revocation by type (for analytics).
+
+    Args:
+        resource: Resource (e.g., 'activity', 'user')
+        action: Action (e.g., 'create', 'read')
+
+    Example:
+        track_permission_revocation('activity', 'delete')
+    """
+    permission_revocations_by_type.labels(resource=resource, action=action).inc()
