@@ -27,7 +27,8 @@ from app.schemas.auth import (
     TokenResponse,
     TwoFactorLoginRequest,
     OrganizationOption,
-    OrganizationSelectionResponse
+    OrganizationSelectionResponse,
+    LoginCodeSentResponse
 )
 from app.models.organization import sp_get_user_organizations
 from app.core.metrics import track_login, track_token_operation
@@ -35,6 +36,28 @@ from app.core.metrics import track_login, track_token_operation
 logger = get_logger(__name__)
 
 class AuthService:
+    """
+    Core authentication service handling user login, token management, and organization selection.
+
+    This service orchestrates the complete authentication flow including:
+    - Password verification with Argon2id hashing
+    - Email-based login code verification (6-digit codes)
+    - Two-factor authentication (2FA/TOTP) when enabled
+    - Organization-scoped token issuance for multi-org users
+    - Token refresh and logout operations
+
+    Security Features:
+    - Constant-time code comparison to prevent timing attacks
+    - Redis-backed login code storage with 10-minute expiry
+    - Comprehensive logging with trace ID correlation
+    - Prometheus metrics tracking for all operations
+
+    Dependencies:
+    - PostgreSQL via stored procedures (user data, organization membership)
+    - Redis (login codes, token blacklist)
+    - Email service (2FA code delivery)
+    - Token service (JWT generation/validation)
+    """
     def __init__(
         self,
         db: asyncpg.Connection = Depends(get_db_connection),
@@ -53,7 +76,41 @@ class AuthService:
         self.email_service = email_service
         self.settings = settings
 
-    async def login_user(self, email: str, password: str, code: str | None = None, org_id: UUID | None = None) -> dict:
+    async def login_user(self, email: str, password: str, code: str | None = None, org_id: UUID | None = None) -> TokenResponse | OrganizationSelectionResponse | LoginCodeSentResponse:
+        """
+        Authenticate user with email/password and optional verification code.
+
+        This method implements a multi-step authentication flow:
+        1. Verify email + password credentials
+        2. If no code provided: Generate and send 6-digit login code → LoginCodeSentResponse
+        3. If code provided: Verify code and check 2FA requirements
+        4. If user has multiple orgs and no org_id: Return organization selection → OrganizationSelectionResponse
+        5. Otherwise: Issue JWT tokens → TokenResponse
+
+        Args:
+            email: User's email address (case-insensitive)
+            password: User's password (will be verified against Argon2id hash)
+            code: Optional 6-digit login verification code
+            org_id: Optional organization ID for org-scoped token
+
+        Returns:
+            LoginCodeSentResponse: When login code is sent to user's email
+            OrganizationSelectionResponse: When user must select an organization
+            TokenResponse: When authentication is complete (access + refresh tokens)
+
+        Raises:
+            InvalidCredentialsError: Email not found or password incorrect
+            AccountNotVerifiedError: User's email has not been verified
+            InvalidTokenError: Login code expired or invalid
+            TwoFactorRequiredError: 2FA enabled but not provided (legacy)
+            TwoFactorVerificationError: 2FA code invalid (legacy)
+
+        Security Notes:
+            - Uses constant-time comparison for code verification
+            - Login codes expire after 10 minutes
+            - All authentication attempts are logged and metered
+            - Generic error messages prevent user enumeration
+        """
         trace_id = trace_id_var.get()
 
         logger.info("login_attempt_start", email=email, has_code=(code is not None))
@@ -96,13 +153,13 @@ class AuthService:
             )
 
             logger.info("login_code_sent", user_id=str(user.id), email=user.email)
-            return {
-                "message": "Login code sent to your email",
-                "email": user.email,
-                "user_id": str(user.id),
-                "requires_code": True,
-                "expires_in": 600
-            }
+            return LoginCodeSentResponse(
+                message="Login code sent to your email",
+                email=user.email,
+                user_id=str(user.id),
+                requires_code=True,
+                expires_in=600
+            )
 
         # Step 2: Verify provided code
         redis_key = f"2FA:{user.id}:login"
