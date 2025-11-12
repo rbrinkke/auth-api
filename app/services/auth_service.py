@@ -23,7 +23,13 @@ from app.services.password_service import PasswordService
 from app.services.token_service import TokenService
 from app.services.two_factor_service import TwoFactorService
 from app.services.email_service import EmailService
-from app.schemas.auth import TokenResponse, TwoFactorLoginRequest
+from app.schemas.auth import (
+    TokenResponse,
+    TwoFactorLoginRequest,
+    OrganizationOption,
+    OrganizationSelectionResponse
+)
+from app.models.organization import sp_get_user_organizations
 from app.core.metrics import track_login, track_token_operation
 
 logger = get_logger(__name__)
@@ -47,7 +53,7 @@ class AuthService:
         self.email_service = email_service
         self.settings = settings
 
-    async def login_user(self, email: str, password: str, code: str | None = None) -> dict:
+    async def login_user(self, email: str, password: str, code: str | None = None, org_id: UUID | None = None) -> dict:
         trace_id = trace_id_var.get()
 
         logger.info("login_attempt_start", email=email, has_code=(code is not None))
@@ -124,7 +130,8 @@ class AuthService:
                 track_login("failed_2fa_required")
                 raise TwoFactorRequiredError(detail=pre_auth_token)
 
-        result = await self._grant_full_tokens(user.id)
+        # Step 4: Handle organization selection
+        result = await self._handle_organization_selection(user.id, email, org_id)
         logger.info("login_success", user_id=str(user.id), email=email)
         track_login("success")
 
@@ -152,23 +159,131 @@ class AuthService:
 
         return {"message": "Logged out successfully"}
 
-    async def _grant_full_tokens(self, user_id: UUID) -> TokenResponse:
-        logger.info("token_grant_start", user_id=str(user_id))
+    async def _handle_organization_selection(
+        self,
+        user_id: UUID,
+        email: str,
+        org_id: UUID | None
+    ) -> dict:
+        """
+        Handle organization selection during login.
 
-        access_token = self.token_service.create_access_token(user_id)
+        Flow:
+        1. Get user's organizations
+        2. If no orgs → return user-level token
+        3. If 1 org → auto-select, return org token
+        4. If multiple orgs + org_id provided → validate & return org token
+        5. If multiple orgs + no org_id → return org list + user token
+
+        Args:
+            user_id: User ID
+            email: User email (for logging)
+            org_id: Optional organization ID from login request
+
+        Returns:
+            TokenResponse or OrganizationSelectionResponse
+        """
+        logger.info("organization_selection_start",
+                   user_id=str(user_id),
+                   org_id_provided=org_id is not None)
+
+        # Get user's organizations
+        user_orgs = await sp_get_user_organizations(self.db, user_id)
+        org_count = len(user_orgs)
+
+        logger.info("user_organizations_retrieved",
+                   user_id=str(user_id),
+                   org_count=org_count)
+
+        # Case 1: No organizations → user-level token
+        if org_count == 0:
+            logger.info("login_no_organizations",
+                       user_id=str(user_id))
+            return await self._grant_tokens(user_id, None)
+
+        # Case 2: Single organization → auto-select
+        if org_count == 1:
+            selected_org_id = user_orgs[0].id
+            logger.info("login_auto_select_organization",
+                       user_id=str(user_id),
+                       org_id=str(selected_org_id))
+            return await self._grant_tokens(user_id, selected_org_id)
+
+        # Case 3: Multiple organizations + org_id provided → validate & use
+        if org_id:
+            # Validate user is member of requested org
+            is_member = any(org.id == org_id for org in user_orgs)
+            if not is_member:
+                logger.warning("login_invalid_org_selection",
+                              user_id=str(user_id),
+                              org_id=str(org_id))
+                from app.core.exceptions import InvalidCredentialsError
+                raise InvalidCredentialsError("Invalid organization selection")
+
+            logger.info("login_explicit_org_selection",
+                       user_id=str(user_id),
+                       org_id=str(org_id))
+            return await self._grant_tokens(user_id, org_id)
+
+        # Case 4: Multiple organizations + no org_id → return selection prompt
+        logger.info("login_org_selection_required",
+                   user_id=str(user_id),
+                   org_count=org_count)
+
+        # Generate user-level token for org selection
+        user_token = self.token_service.create_access_token(user_id, None)
+
+        # Convert to org options
+        org_options = [
+            OrganizationOption(
+                id=org.id,
+                name=org.name,
+                slug=org.slug,
+                role=org.role,
+                member_count=org.member_count
+            )
+            for org in user_orgs
+        ]
+
+        return OrganizationSelectionResponse(
+            message="Please select an organization to continue",
+            organizations=org_options,
+            user_token=user_token,
+            expires_in=900  # 15 minutes to select
+        )
+
+    async def _grant_tokens(self, user_id: UUID, org_id: UUID | None) -> TokenResponse:
+        """
+        Generate access and refresh tokens.
+
+        Args:
+            user_id: User ID
+            org_id: Optional organization ID for org-scoped tokens
+
+        Returns:
+            TokenResponse with tokens
+        """
+        logger.info("token_grant_start",
+                   user_id=str(user_id),
+                   org_id=str(org_id) if org_id else None)
+
+        access_token = self.token_service.create_access_token(user_id, org_id)
         logger.info("access_token_created", user_id=str(user_id), token_length=len(access_token))
         track_token_operation("create_access", "success")
 
-        refresh_token = await self.token_service.create_refresh_token(user_id)
+        refresh_token = await self.token_service.create_refresh_token(user_id, org_id)
         logger.info("refresh_token_created", user_id=str(user_id), token_length=len(refresh_token))
         track_token_operation("create_refresh", "success")
 
         response = TokenResponse(
             access_token=access_token,
             refresh_token=refresh_token,
-            token_type="bearer"
+            token_type="bearer",
+            org_id=org_id
         )
 
-        logger.info("token_grant_complete", user_id=str(user_id))
+        logger.info("token_grant_complete",
+                   user_id=str(user_id),
+                   org_id=str(org_id) if org_id else None)
         return response
 

@@ -1,4 +1,6 @@
-from typing import Any
+from typing import Any, Optional, List
+from uuid import UUID
+from datetime import datetime
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
@@ -27,6 +29,7 @@ class LoginRequest(BaseModel):
     username: EmailStr = Field(..., description="User's email address")
     password: str
     code: str | None = Field(None, min_length=6, max_length=6, description="Optional 6-digit login verification code")
+    org_id: UUID | None = Field(None, description="Optional organization ID for org-scoped token")
 
     @field_validator("username")
     @classmethod
@@ -38,6 +41,24 @@ class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+    org_id: UUID | None = Field(None, description="Organization ID if org-scoped token")
+
+
+class OrganizationOption(BaseModel):
+    """Organization option for selection during login."""
+    id: UUID
+    name: str
+    slug: str
+    role: str
+    member_count: int
+
+
+class OrganizationSelectionResponse(BaseModel):
+    """Response when user needs to select an organization."""
+    message: str
+    organizations: List[OrganizationOption]
+    user_token: str = Field(..., description="User-level token for selecting organization")
+    expires_in: int = 900  # 15 minutes
 
 
 class LoginCodeSentResponse(BaseModel):

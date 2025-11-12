@@ -25,27 +25,62 @@ class TokenService:
         self.token_helper = token_helper
         self.db = db
 
-    def create_access_token(self, user_id: UUID) -> str:
-        logger.debug("token_creating_access_token", user_id=str(user_id))
+    def create_access_token(self, user_id: UUID, org_id: UUID | None = None) -> str:
+        """
+        Create access token.
+
+        Args:
+            user_id: User ID
+            org_id: Optional organization ID for org-scoped token
+
+        Returns:
+            JWT access token string
+        """
+        logger.debug("token_creating_access_token",
+                    user_id=str(user_id),
+                    org_id=str(org_id) if org_id else None)
         expires_delta = timedelta(minutes=self.settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
         logger.debug("token_access_expires_delta_set", expires_minutes=self.settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
+
+        data = {"sub": str(user_id), "type": "access"}
+        if org_id:
+            data["org_id"] = str(org_id)
+
         token = self.token_helper.create_token(
-            data={"sub": str(user_id), "type": "access"},
+            data=data,
             expires_delta=expires_delta
         )
         logger.debug("token_access_token_generated", user_id=str(user_id), token_length=len(token))
         logger.info("access_token_created",
                    user_id=str(user_id),
+                   org_id=str(org_id) if org_id else None,
                    expires_minutes=self.settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
         return token
 
-    async def create_refresh_token(self, user_id: UUID) -> str:
-        logger.debug("token_creating_refresh_token", user_id=str(user_id))
+    async def create_refresh_token(self, user_id: UUID, org_id: UUID | None = None) -> str:
+        """
+        Create refresh token.
+
+        Args:
+            user_id: User ID
+            org_id: Optional organization ID for org-scoped token
+
+        Returns:
+            JWT refresh token string
+        """
+        logger.debug("token_creating_refresh_token",
+                    user_id=str(user_id),
+                    org_id=str(org_id) if org_id else None)
         expires_delta = timedelta(days=self.settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
         jti = str(uuid.uuid4())
         logger.debug("token_refresh_jti_generated", user_id=str(user_id), jti=jti)
+
+        data = {"sub": str(user_id), "type": "refresh", "jti": jti}
+        if org_id:
+            data["org_id"] = str(org_id)
+
         token = self.token_helper.create_token(
-            data={"sub": str(user_id), "type": "refresh", "jti": jti},
+            data=data,
             expires_delta=expires_delta
         )
         logger.debug("token_refresh_token_generated", user_id=str(user_id), token_length=len(token))
@@ -54,6 +89,7 @@ class TokenService:
         logger.debug("token_refresh_token_saved_to_db", user_id=str(user_id), jti=jti)
         logger.info("refresh_token_created",
                    user_id=str(user_id),
+                   org_id=str(org_id) if org_id else None,
                    jti=jti,
                    expires_days=self.settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
         return token
@@ -92,6 +128,20 @@ class TokenService:
         return token
 
     async def refresh_access_token(self, refresh_token: str) -> TokenResponse:
+        """
+        Refresh access token using refresh token.
+
+        Preserves org_id from original token if present.
+
+        Args:
+            refresh_token: Current refresh token
+
+        Returns:
+            TokenResponse with new tokens
+
+        Raises:
+            InvalidTokenError: If token is invalid or revoked
+        """
         logger.info("token_refresh_start")
 
         payload = self.token_helper.decode_token(refresh_token)
@@ -104,6 +154,9 @@ class TokenService:
         user_id = UUID(user_id_str)
         old_jti = payload.get("jti")
 
+        # Preserve org_id if present in original token
+        org_id = UUID(payload["org_id"]) if payload.get("org_id") else None
+
         if not await procedures.sp_validate_refresh_token(self.db, user_id, refresh_token):
             logger.warning("token_refresh_failed", reason="token_not_found_or_revoked", user_id=str(user_id), jti=old_jti)
             raise InvalidTokenError("Token not found or revoked")
@@ -111,10 +164,12 @@ class TokenService:
         await procedures.sp_revoke_refresh_token(self.db, user_id, refresh_token)
         logger.info("old_refresh_token_revoked", user_id=str(user_id), old_jti=old_jti)
 
-        new_access_token = self.create_access_token(user_id)
-        new_refresh_token = await self.create_refresh_token(user_id)
+        new_access_token = self.create_access_token(user_id, org_id)
+        new_refresh_token = await self.create_refresh_token(user_id, org_id)
 
-        logger.info("token_refresh_complete", user_id=str(user_id))
+        logger.info("token_refresh_complete",
+                   user_id=str(user_id),
+                   org_id=str(org_id) if org_id else None)
 
         return TokenResponse(
             access_token=new_access_token,
