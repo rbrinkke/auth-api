@@ -13,6 +13,12 @@ from app.routes import groups
 from app.routes import permissions
 from app.routes import authorization
 
+# OAuth 2.0 routes
+from app.routes import oauth_authorize
+from app.routes import oauth_token
+from app.routes import oauth_revoke
+from app.routes import oauth_discovery
+
 auth_router = APIRouter()
 
 auth_router.include_router(register_router)
@@ -23,4 +29,14 @@ auth_router.include_router(logout_router)
 auth_router.include_router(password_reset_router)
 auth_router.include_router(twofa_router)
 
-__all__ = ["auth_router", "groups", "permissions", "authorization"]
+__all__ = [
+    "auth_router",
+    "groups",
+    "permissions",
+    "authorization",
+    # OAuth 2.0
+    "oauth_authorize",
+    "oauth_token",
+    "oauth_revoke",
+    "oauth_discovery"
+]
