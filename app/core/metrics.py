@@ -99,7 +99,7 @@ password_validation_failures_total = Counter(
 
 # ========== Database & Redis Metrics ==========
 
-# Database queries
+# Database queries (legacy - kept for backward compatibility)
 db_queries_total = Counter(
     'auth_api_db_queries_total',
     'Total database queries',
@@ -111,6 +111,26 @@ db_query_duration_seconds = Histogram(
     'Database query latency',
     ['operation'],
     buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0)
+)
+
+# Stored procedure metrics (new - used by database logging decorator)
+db_query_duration_histogram = Histogram(
+    'auth_api_db_stored_procedure_duration_seconds',
+    'Stored procedure execution duration',
+    ['operation', 'status'],  # operation: sp_create_user, sp_get_user_by_email, etc.; status: success, error
+    buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0)
+)
+
+db_query_total_counter = Counter(
+    'auth_api_db_stored_procedure_total',
+    'Total stored procedure executions',
+    ['operation', 'status']  # operation: sp_create_user, etc.; status: success, error
+)
+
+db_slow_query_counter = Counter(
+    'auth_api_db_slow_queries_total',
+    'Total slow database queries (>1s)',
+    ['operation', 'severity']  # operation: sp_name; severity: slow (>1s), very_slow (>5s)
 )
 
 # Redis operations

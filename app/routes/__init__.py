@@ -11,6 +11,7 @@ from app.routes.twofa import router as twofa_router
 # Sprint 2: RBAC routes
 from app.routes import groups
 from app.routes import permissions
+from app.routes import authorization
 
 auth_router = APIRouter()
 
@@ -22,4 +23,4 @@ auth_router.include_router(logout_router)
 auth_router.include_router(password_reset_router)
 auth_router.include_router(twofa_router)
 
-__all__ = ["auth_router", "groups", "permissions"]
+__all__ = ["auth_router", "groups", "permissions", "authorization"]
