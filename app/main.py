@@ -46,7 +46,7 @@ from app.routes import (
     login, register, logout, refresh,
     verify, password_reset, twofa, dashboard,
     organizations,
-    groups, permissions
+    groups, permissions, authorization
 )
 
 setup_logging()
@@ -319,6 +319,7 @@ app.include_router(twofa.router, prefix="/api/auth/2fa", tags=["2FA"])
 app.include_router(organizations.router, prefix="/api/auth", tags=["Organizations"])
 app.include_router(groups.router, prefix="/api/auth", tags=["RBAC - Groups"])
 app.include_router(permissions.router, prefix="/api/auth", tags=["RBAC - Permissions"])
+app.include_router(authorization.router, prefix="/api/v1/authorization", tags=["Authorization"])  # Image-API compatible endpoint
 app.include_router(dashboard.router, tags=["Dashboard"])
 
 @app.get("/health", status_code=status.HTTP_200_OK, tags=["Health"])

@@ -5,6 +5,8 @@ from datetime import timedelta, datetime, timezone
 import asyncpg
 from jose import jwt
 
+from app.db.logging import log_stored_procedure
+
 
 class UserRecord:
     def __init__(self, record: asyncpg.Record):
@@ -18,6 +20,7 @@ class UserRecord:
         self.last_login_at = record.get("last_login_at")
 
 
+@log_stored_procedure
 async def sp_create_user(
     conn: asyncpg.Connection,
     email: str,
@@ -35,6 +38,7 @@ async def sp_create_user(
     return UserRecord(result)
 
 
+@log_stored_procedure
 async def sp_get_user_by_email(
     conn: asyncpg.Connection,
     email: str
@@ -47,6 +51,7 @@ async def sp_get_user_by_email(
     return UserRecord(result) if result else None
 
 
+@log_stored_procedure
 async def sp_get_user_by_id(
     conn: asyncpg.Connection,
     user_id: UUID
@@ -59,6 +64,7 @@ async def sp_get_user_by_id(
     return UserRecord(result) if result else None
 
 
+@log_stored_procedure
 async def sp_verify_user_email(
     conn: asyncpg.Connection,
     user_id: UUID
@@ -71,6 +77,7 @@ async def sp_verify_user_email(
     return bool(result)
 
 
+@log_stored_procedure
 async def sp_save_refresh_token(
     conn: asyncpg.Connection,
     user_id: UUID,
@@ -97,6 +104,7 @@ async def sp_save_refresh_token(
     return bool(result)
 
 
+@log_stored_procedure
 async def sp_validate_refresh_token(
     conn: asyncpg.Connection,
     user_id: UUID,
@@ -110,6 +118,7 @@ async def sp_validate_refresh_token(
     return result is not None
 
 
+@log_stored_procedure
 async def sp_revoke_refresh_token(
     conn: asyncpg.Connection,
     user_id: UUID,
@@ -122,6 +131,7 @@ async def sp_revoke_refresh_token(
     )
 
 
+@log_stored_procedure
 async def sp_revoke_all_refresh_tokens(
     conn: asyncpg.Connection,
     user_id: UUID
@@ -132,6 +142,7 @@ async def sp_revoke_all_refresh_tokens(
     )
 
 
+@log_stored_procedure
 async def sp_update_password(
     conn: asyncpg.Connection,
     user_id: UUID,
@@ -147,6 +158,7 @@ async def sp_update_password(
 
 
 
+@log_stored_procedure
 async def check_email_exists(
     conn: asyncpg.Connection,
     email: str
