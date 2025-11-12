@@ -81,7 +81,35 @@ async def authorize_get(
                has_pkce=bool(code_challenge))
 
     # ========================================================================
-    # STEP 1: VALIDATE REQUEST PARAMETERS
+    # STEP 1: VALIDATE CLIENT AND REDIRECT_URI FIRST (SECURITY CRITICAL!)
+    # ========================================================================
+    # RFC 6749 Section 3.1.2.4: Client MUST be validated BEFORE redirecting
+    # to prevent open redirect vulnerabilities
+
+    client = await client_service.get_client(client_id)
+
+    if not client:
+        logger.warning("oauth_authorize_invalid_client", client_id=client_id)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid client_id"
+        )
+
+    # Validate redirect_uri - MUST happen before any redirects!
+    if not client_service.validate_redirect_uri(client, redirect_uri):
+        logger.error("oauth_authorize_redirect_uri_mismatch",
+                    client_id=client_id,
+                    redirect_uri=redirect_uri,
+                    allowed_uris=client.redirect_uris)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid redirect_uri - must match registered redirect_uri exactly"
+        )
+
+    logger.debug("oauth_client_and_redirect_validated", client_id=client_id)
+
+    # ========================================================================
+    # STEP 2: VALIDATE REQUEST PARAMETERS (safe to redirect now)
     # ========================================================================
 
     # Validate response_type
@@ -125,29 +153,6 @@ async def authorize_get(
             state=state
         )
         return RedirectResponse(url=error_uri, status_code=302)
-
-    # ========================================================================
-    # STEP 2: VALIDATE CLIENT
-    # ========================================================================
-
-    client = await client_service.get_client(client_id)
-
-    if not client:
-        logger.warning("oauth_authorize_invalid_client", client_id=client_id)
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid client_id"
-        )
-
-    # Validate redirect_uri
-    if not client_service.validate_redirect_uri(client, redirect_uri):
-        logger.error("oauth_authorize_redirect_uri_mismatch",
-                    client_id=client_id,
-                    redirect_uri=redirect_uri)
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid redirect_uri"
-        )
 
     # Validate PKCE requirement
     if client.require_pkce and not code_challenge:
