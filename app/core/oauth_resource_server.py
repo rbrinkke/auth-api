@@ -308,6 +308,111 @@ class OAuth2ResourceServer:
 
 
 # ============================================================================
+# DEPENDENCY FOR AUTH-API GROUP ENDPOINTS
+# ============================================================================
+
+async def get_current_principal(
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security)
+) -> dict:
+    """
+    OAuth Bearer token validator for Auth-API internal use.
+
+    Used by group endpoints to accept OAuth Bearer tokens from services like Chat-API.
+
+    Returns:
+        dict: {
+            "type": "service" | "user",
+            "client_id": str | None,
+            "user_id": str | None,
+            "scopes": List[str],
+            "org_id": str | None
+        }
+
+    Raises:
+        HTTPException 401: Invalid/missing token
+    """
+    if not credentials:
+        logger.warning("oauth_no_bearer_token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    from app.config import get_settings
+    from app.core.tokens import TokenHelper
+
+    settings = get_settings()
+    token_helper = TokenHelper(settings)
+
+    try:
+        # Decode and validate JWT
+        payload = token_helper.decode_token(credentials.credentials)
+
+        # Verify token type
+        if payload.get("type") != "access":
+            logger.warning("oauth_invalid_token_type",
+                          expected="access",
+                          got=payload.get("type"))
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token type",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+
+        # Extract claims
+        from uuid import UUID
+        sub = payload.get("sub")
+        scope_str = payload.get("scope", "")
+        scopes = scope_str.split() if scope_str else []
+        org_id = payload.get("org_id")
+
+        # Determine principal type by trying to parse sub as UUID
+        # - If sub is a UUID → USER token (user authentication)
+        # - If sub is NOT a UUID → SERVICE token (client_credentials with sub=client_id)
+        try:
+            user_uuid = UUID(sub)
+            # This is a USER token
+            principal = {
+                "type": "user",
+                "user_id": str(user_uuid),
+                "client_id": None,
+                "org_id": org_id,
+                "scopes": scopes
+            }
+            logger.info("oauth_user_authenticated",
+                       user_id=str(user_uuid),
+                       org_id=org_id,
+                       scopes=scopes)
+        except (ValueError, TypeError):
+            # sub is NOT a UUID → SERVICE token (OAuth2 Client Credentials)
+            # In Client Credentials flow, sub = client_id
+            client_id = sub
+            principal = {
+                "type": "service",
+                "client_id": client_id,
+                "user_id": None,
+                "org_id": None,
+                "scopes": scopes
+            }
+            logger.info("oauth_service_authenticated",
+                       client_id=client_id,
+                       scopes=scopes)
+
+        return principal
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning("oauth_token_validation_failed", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+
+# ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
 

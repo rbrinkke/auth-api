@@ -58,18 +58,20 @@ async def token_endpoint(
     """
     OAuth 2.0 Token Endpoint.
 
-    Supports two grant types:
+    Supports three grant types:
     1. authorization_code: Exchange authorization code for tokens (with PKCE validation)
     2. refresh_token: Refresh access token using refresh token
+    3. client_credentials: Machine-to-machine authentication (service accounts)
 
     Security:
     - Client authentication (public: PKCE only, confidential: client_secret + PKCE)
     - PKCE validation (prevents code interception)
     - Single-use authorization codes
     - Token rotation (refresh tokens)
+    - Scope validation (client_credentials limited to allowed_scopes)
 
     Returns:
-        TokenResponse with access_token, refresh_token, expires_in, scope
+        TokenResponse with access_token, refresh_token (except client_credentials), expires_in, scope
     """
     logger.info("oauth_token_request",
                grant_type=grant_type,
@@ -116,6 +118,14 @@ async def token_endpoint(
         elif grant_type == "refresh_token":
             return await _handle_refresh_token_grant(
                 refresh_token=refresh_token,
+                scope=scope,
+                client=client,
+                scope_service=scope_service,
+                db=db
+            )
+
+        elif grant_type == "client_credentials":
+            return await _handle_client_credentials_grant(
                 scope=scope,
                 client=client,
                 scope_service=scope_service,
@@ -435,3 +445,104 @@ async def _handle_refresh_token_grant(
                 "error_description": "Invalid refresh token"
             }
         )
+
+
+async def _handle_client_credentials_grant(
+    scope: Optional[str],
+    client,
+    scope_service: ScopeService,
+    db: asyncpg.Connection
+) -> JSONResponse:
+    """
+    Handle client_credentials grant type (RFC 6749 Section 4.4).
+
+    Machine-to-machine authentication for service accounts.
+    No user context - tokens represent the client itself.
+
+    Flow:
+    1. Client is already authenticated (done in token_endpoint)
+    2. Parse requested scopes
+    3. Validate scopes against client's allowed_scopes
+    4. Generate access token (no refresh token per RFC 6749)
+
+    Security:
+    - No user_id in token (client acts on its own behalf)
+    - Scopes limited to client's allowed_scopes
+    - Shorter token lifetime recommended for service tokens
+    """
+    logger.info("oauth_token_client_credentials_grant", client_id=client.client_id)
+
+    # Parse requested scopes
+    requested_scopes = []
+    if scope:
+        requested_scopes = scope_service.parse_scope_string(scope)
+    else:
+        # If no scopes requested, use all allowed scopes
+        requested_scopes = client.allowed_scopes
+
+    logger.debug("oauth_token_requested_scopes",
+                client_id=client.client_id,
+                requested_scopes=requested_scopes,
+                allowed_scopes=client.allowed_scopes)
+
+    # Validate requested scopes against client's allowed scopes
+    invalid_scopes = [s for s in requested_scopes if s not in client.allowed_scopes]
+
+    if invalid_scopes:
+        logger.warning("oauth_token_invalid_scopes",
+                      client_id=client.client_id,
+                      invalid_scopes=invalid_scopes,
+                      allowed_scopes=client.allowed_scopes)
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "error": "invalid_scope",
+                "error_description": f"Requested scopes not allowed: {', '.join(invalid_scopes)}"
+            }
+        )
+
+    # Generate access token (no user_id for client_credentials)
+    from app.services.token_service import TokenService
+    from app.config import get_settings
+    from app.core.tokens import TokenHelper
+
+    settings = get_settings()
+    token_helper = TokenHelper(settings)
+
+    # Create token payload for client credentials
+    # Note: No user_id (sub) - client acts on its own behalf
+    from datetime import datetime, timedelta
+
+    # Convert minutes to seconds for token expiration
+    expires_seconds = settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60
+
+    access_token_payload = {
+        "sub": client.client_id,  # OAuth2 RFC 6749: sub is REQUIRED, for client_credentials sub = client_id
+        "client_id": client.client_id,
+        "scope": " ".join(requested_scopes),
+        "type": "access",
+        "aud": ["https://api.activity.com"],
+        "iat": datetime.utcnow().timestamp(),
+        "exp": (datetime.utcnow() + timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)).timestamp()
+    }
+
+    access_token = token_helper.create_token(
+        data=access_token_payload,
+        expires_delta=timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
+
+    logger.info("oauth_token_client_credentials_issued",
+               client_id=client.client_id,
+               scopes=requested_scopes,
+               expires_in=expires_seconds)
+
+    # Return token response (no refresh_token for client_credentials per RFC 6749 Section 4.4.3)
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={
+            "access_token": access_token,
+            "token_type": "Bearer",
+            "expires_in": expires_seconds,
+            "scope": " ".join(requested_scopes)
+        }
+    )

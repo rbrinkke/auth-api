@@ -26,12 +26,12 @@ class RegisterResponse(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    username: EmailStr = Field(..., description="User's email address")
+    email: EmailStr = Field(..., description="User's email address")
     password: str
     code: str | None = Field(None, min_length=6, max_length=6, description="Optional 6-digit login verification code")
     org_id: UUID | None = Field(None, description="Optional organization ID for org-scoped token")
 
-    @field_validator("username")
+    @field_validator("email")
     @classmethod
     def email_to_lowercase(cls, v: str) -> str:
         return v.lower()

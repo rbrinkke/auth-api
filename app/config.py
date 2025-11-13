@@ -54,8 +54,14 @@ class Settings(BaseSettings):
 
     TWO_FACTOR_ENABLED: bool = False
 
+    # Development: Skip email login code for faster testing
+    # WARNING: Only use in development! Always False in production
+    SKIP_LOGIN_CODE: bool = False
+
     VERIFICATION_TOKEN_TTL: int = 86400
     RESET_TOKEN_TTL: int = 3600
+
+    LOGIN_CODE_EXPIRE_SECONDS: int = 600  # 10 minutes
 
     LOG_LEVEL: str = "INFO"
 

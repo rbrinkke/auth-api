@@ -140,43 +140,48 @@ class AuthService:
             track_login("failed_not_verified")
             raise AccountNotVerifiedError()
 
-        # Step 1: If no code provided, generate and send login code
-        if code is None:
-            login_code = generate_verification_code()
+        # Development: Skip login code if SKIP_LOGIN_CODE=true
+        if self.settings.SKIP_LOGIN_CODE:
+            logger.warning("login_code_skipped_dev_mode", user_id=str(user.id), email=email)
+            # Skip directly to organization selection (Step 4)
+        else:
+            # Step 1: If no code provided, generate and send login code
+            if code is None:
+                login_code = generate_verification_code()
+                redis_key = f"2FA:{user.id}:login"
+                self.redis_client.setex(redis_key, 600, login_code)
+
+                await self.email_service.send_2fa_code(
+                    user.email,
+                    login_code,
+                    purpose="login verification"
+                )
+
+                logger.info("login_code_sent", user_id=str(user.id), email=user.email)
+                return LoginCodeSentResponse(
+                    message="Login code sent to your email",
+                    email=user.email,
+                    user_id=str(user.id),
+                    requires_code=True,
+                    expires_in=600
+                )
+
+            # Step 2: Verify provided code
             redis_key = f"2FA:{user.id}:login"
-            self.redis_client.setex(redis_key, 600, login_code)
+            stored_code = self.redis_client.get(redis_key)
 
-            await self.email_service.send_2fa_code(
-                user.email,
-                login_code,
-                purpose="login verification"
-            )
+            if not stored_code:
+                logger.warning("login_failed_code_expired", user_id=str(user.id), email=email)
+                raise InvalidTokenError("Login code expired or not found")
 
-            logger.info("login_code_sent", user_id=str(user.id), email=user.email)
-            return LoginCodeSentResponse(
-                message="Login code sent to your email",
-                email=user.email,
-                user_id=str(user.id),
-                requires_code=True,
-                expires_in=600
-            )
+            # Use constant-time comparison to prevent timing attacks
+            if not secrets.compare_digest(stored_code, code):
+                logger.warning("login_failed_invalid_code", user_id=str(user.id), email=email)
+                raise InvalidTokenError("Invalid login code")
 
-        # Step 2: Verify provided code
-        redis_key = f"2FA:{user.id}:login"
-        stored_code = self.redis_client.get(redis_key)
-
-        if not stored_code:
-            logger.warning("login_failed_code_expired", user_id=str(user.id), email=email)
-            raise InvalidTokenError("Login code expired or not found")
-
-        # Use constant-time comparison to prevent timing attacks
-        if not secrets.compare_digest(stored_code, code):
-            logger.warning("login_failed_invalid_code", user_id=str(user.id), email=email)
-            raise InvalidTokenError("Invalid login code")
-
-        # Delete used code
-        self.redis_client.delete(redis_key)
-        logger.info("login_code_verified", user_id=str(user.id), email=email)
+            # Delete used code
+            self.redis_client.delete(redis_key)
+            logger.info("login_code_verified", user_id=str(user.id), email=email)
 
         # Step 3: Check 2FA (existing logic)
         if self.settings.TWO_FACTOR_ENABLED:

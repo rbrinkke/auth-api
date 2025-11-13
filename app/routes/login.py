@@ -38,19 +38,19 @@ async def login(
     - TokenResponse: If login successful with tokens
     """
     logger.debug("route_login_endpoint_hit",
-                username=login_request.username,
+                email=login_request.email,
                 has_code=login_request.code is not None,
                 has_org_id=login_request.org_id is not None)
 
     result = await auth_service.login_user(
-        login_request.username,
+        login_request.email,
         login_request.password,
         login_request.code,
         login_request.org_id
     )
 
     logger.debug("route_login_service_complete",
-                username=login_request.username,
+                email=login_request.email,
                 result_type=type(result).__name__)
 
     return result

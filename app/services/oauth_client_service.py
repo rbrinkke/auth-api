@@ -212,6 +212,13 @@ class OAuthClientService:
 async def get_oauth_client_service(
     db: asyncpg.Connection = Depends(get_db_connection)
 ) -> OAuthClientService:
-    """Get OAuthClientService instance"""
-    password_service = PasswordService()
+    """Get OAuthClientService instance with properly resolved dependencies"""
+    from app.core.security import PasswordManager
+    from app.services.password_validation_service import get_password_validation_service
+
+    # Properly instantiate dependencies (not Depends objects!)
+    password_manager = PasswordManager()
+    validation_service = get_password_validation_service()
+    password_service = PasswordService(password_manager, validation_service)
+
     return OAuthClientService(db, password_service)

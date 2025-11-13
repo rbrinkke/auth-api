@@ -170,34 +170,36 @@ class GroupService:
     async def get_organization_groups(
         self,
         org_id: UUID,
-        user_id: UUID
+        user_id: Optional[UUID]
     ) -> List[GroupResponse]:
         """
         Get all groups in organization.
 
-        Security: Requires organization membership.
+        Security: Requires organization membership (or service token with proper scope).
 
         Args:
             org_id: Organization ID
-            user_id: Requesting user ID (for auth check)
+            user_id: Requesting user ID (for auth check), None for service tokens
 
         Returns:
             List of GroupResponse
 
         Raises:
-            UserNotOrganizationMemberError: If not member
+            UserNotOrganizationMemberError: If not member (user tokens only)
         """
         logger.debug("get_organization_groups",
                     org_id=str(org_id),
-                    user_id=str(user_id))
+                    user_id=str(user_id) if user_id else "service_token")
 
-        # Check membership
-        is_member = await sp_is_organization_member(self.db, user_id, org_id)
-        if not is_member:
-            logger.warning("get_groups_forbidden",
-                          org_id=str(org_id),
-                          user_id=str(user_id))
-            raise UserNotOrganizationMemberError()
+        # Service tokens (user_id=None) bypass membership check - scope validated in route
+        if user_id is not None:
+            # Check membership for user tokens
+            is_member = await sp_is_organization_member(self.db, user_id, org_id)
+            if not is_member:
+                logger.warning("get_groups_forbidden",
+                              org_id=str(org_id),
+                              user_id=str(user_id))
+                raise UserNotOrganizationMemberError()
 
         group_records = await sp_list_organization_groups(self.db, org_id)
 
@@ -218,41 +220,45 @@ class GroupService:
     async def get_group(
         self,
         group_id: UUID,
-        user_id: UUID
+        user_id: Optional[UUID]
     ) -> GroupResponse:
         """
         Get group by ID.
 
-        Security: Requires membership in group's organization.
+        Security: Requires membership in group's organization (or service token with proper scope).
 
         Args:
             group_id: Group ID
-            user_id: Requesting user ID (for auth check)
+            user_id: Requesting user ID (for auth check), None for service tokens
 
         Returns:
             GroupResponse
 
         Raises:
             GroupNotFoundError: If group doesn't exist
-            UserNotOrganizationMemberError: If not member
+            UserNotOrganizationMemberError: If not member (user tokens only)
         """
-        logger.debug("get_group", group_id=str(group_id), user_id=str(user_id))
+        logger.debug("get_group",
+                    group_id=str(group_id),
+                    user_id=str(user_id) if user_id else "service_token")
 
         group_record = await sp_get_group_by_id(self.db, group_id)
         if not group_record:
             raise GroupNotFoundError()
 
-        # Check membership in group's organization
-        is_member = await sp_is_organization_member(
-            self.db,
-            user_id,
-            group_record.organization_id
-        )
-        if not is_member:
-            logger.warning("get_group_forbidden",
-                          group_id=str(group_id),
-                          user_id=str(user_id))
-            raise UserNotOrganizationMemberError()
+        # Service tokens (user_id=None) bypass membership check - scope validated in route
+        if user_id is not None:
+            # Check membership in group's organization for user tokens
+            is_member = await sp_is_organization_member(
+                self.db,
+                user_id,
+                group_record.organization_id
+            )
+            if not is_member:
+                logger.warning("get_group_forbidden",
+                              group_id=str(group_id),
+                              user_id=str(user_id))
+                raise UserNotOrganizationMemberError()
 
         return GroupResponse(
             id=group_record.id,
@@ -587,41 +593,43 @@ class GroupService:
     async def get_group_members(
         self,
         group_id: UUID,
-        user_id: UUID
+        user_id: Optional[UUID]
     ) -> List[GroupMemberResponse]:
         """
         Get members of a group.
 
-        Security: Requires membership in group's organization.
+        Security: Requires membership in group's organization (or service token with proper scope).
 
         Args:
             group_id: Group ID
-            user_id: Requesting user ID (for auth check)
+            user_id: Requesting user ID (for auth check), None for service tokens
 
         Returns:
             List of GroupMemberResponse
 
         Raises:
             GroupNotFoundError: If group doesn't exist
-            UserNotOrganizationMemberError: If not org member
+            UserNotOrganizationMemberError: If not org member (user tokens only)
         """
         logger.debug("get_group_members",
                     group_id=str(group_id),
-                    user_id=str(user_id))
+                    user_id=str(user_id) if user_id else "service_token")
 
         # Get group
         group_record = await sp_get_group_by_id(self.db, group_id)
         if not group_record:
             raise GroupNotFoundError()
 
-        # Check membership
-        is_member = await sp_is_organization_member(
-            self.db,
-            user_id,
-            group_record.organization_id
-        )
-        if not is_member:
-            raise UserNotOrganizationMemberError()
+        # Service tokens (user_id=None) bypass membership check - scope validated in route
+        if user_id is not None:
+            # Check membership for user tokens
+            is_member = await sp_is_organization_member(
+                self.db,
+                user_id,
+                group_record.organization_id
+            )
+            if not is_member:
+                raise UserNotOrganizationMemberError()
 
         member_records = await sp_list_group_members(self.db, group_id)
 
@@ -823,41 +831,43 @@ class GroupService:
     async def get_group_permissions(
         self,
         group_id: UUID,
-        user_id: UUID
+        user_id: Optional[UUID]
     ) -> List[GroupPermissionResponse]:
         """
         Get permissions granted to a group.
 
-        Security: Requires membership in group's organization.
+        Security: Requires membership in group's organization (or service token with proper scope).
 
         Args:
             group_id: Group ID
-            user_id: Requesting user ID (for auth check)
+            user_id: Requesting user ID (for auth check), None for service tokens
 
         Returns:
             List of GroupPermissionResponse
 
         Raises:
             GroupNotFoundError: If group doesn't exist
-            UserNotOrganizationMemberError: If not org member
+            UserNotOrganizationMemberError: If not org member (user tokens only)
         """
         logger.debug("get_group_permissions",
                     group_id=str(group_id),
-                    user_id=str(user_id))
+                    user_id=str(user_id) if user_id else "service_token")
 
         # Get group
         group_record = await sp_get_group_by_id(self.db, group_id)
         if not group_record:
             raise GroupNotFoundError()
 
-        # Check membership
-        is_member = await sp_is_organization_member(
-            self.db,
-            user_id,
-            group_record.organization_id
-        )
-        if not is_member:
-            raise UserNotOrganizationMemberError()
+        # Service tokens (user_id=None) bypass membership check - scope validated in route
+        if user_id is not None:
+            # Check membership for user tokens
+            is_member = await sp_is_organization_member(
+                self.db,
+                user_id,
+                group_record.organization_id
+            )
+            if not is_member:
+                raise UserNotOrganizationMemberError()
 
         permission_records = await sp_list_group_permissions(self.db, group_id)
 

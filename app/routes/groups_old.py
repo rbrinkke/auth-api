@@ -7,9 +7,9 @@ Endpoints for group and permission management within organizations.
 Thin routing layer - delegates to GroupService for business logic.
 
 Security:
-- All endpoints support OAuth Bearer tokens OR session auth
-- Service tokens validated by scope (groups:read, groups:write, etc.)
-- User tokens validated by organization membership
+- All endpoints require authentication (get_current_user_id dependency)
+- Group operations require organization membership
+- Management operations require admin/owner role (enforced in service layer)
 """
 
 from typing import List
@@ -18,6 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 import asyncpg
 
 from app.db.connection import get_db_connection
+from app.core.dependencies import get_current_user_id
 from app.core.oauth_resource_server import get_current_principal
 from app.services.group_service import GroupService
 from app.models.group import (
@@ -35,28 +36,6 @@ from app.models.group import (
 router = APIRouter()
 
 
-def extract_user_id(principal: dict) -> UUID | None:
-    """
-    Extract user_id from principal for service layer.
-
-    Service tokens return None (bypass membership checks).
-    User tokens return UUID (normal flow).
-    """
-    if principal["type"] == "service":
-        return None
-    return UUID(principal["user_id"])
-
-
-def validate_scope(principal: dict, required_scope: str):
-    """Validate service token has required scope."""
-    if principal["type"] == "service":
-        if required_scope not in principal["scopes"]:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Insufficient scope: {required_scope} required"
-            )
-
-
 # ============================================================================
 # GROUP CRUD
 # ============================================================================
@@ -66,7 +45,7 @@ def validate_scope(principal: dict, required_scope: str):
     response_model=GroupResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create Group",
-    description="Create a new group in organization (OAuth: groups:write)"
+    description="Create a new group in organization (requires admin/owner role)"
 )
 async def create_group(
     org_id: UUID,
@@ -77,9 +56,7 @@ async def create_group(
     """
     Create a new group in organization.
 
-    **Security**:
-    - Service tokens: Require 'groups:write' scope
-    - User tokens: Require admin or owner role
+    **Security**: Requires admin or owner role.
 
     **Request Body**:
     - name: Group name (unique per organization)
@@ -87,26 +64,15 @@ async def create_group(
 
     **Returns**: Created group details
     """
-    validate_scope(principal, "groups:write")
-
-    # Service tokens need a user_id for creator (use first user as fallback)
-    if principal["type"] == "service":
-        # Service tokens can't create groups (no creator_user_id)
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Service tokens cannot create groups (no creator identity)"
-        )
-
-    user_id = UUID(principal["user_id"])
     service = GroupService(db)
-    return await service.create_group(org_id, group_data, user_id)
+    return await service.create_group(org_id, group_data, current_user_id)
 
 
 @router.get(
     "/organizations/{org_id}/groups",
     response_model=List[GroupResponse],
     summary="List Groups",
-    description="List all groups in organization (OAuth: groups:read)"
+    description="List all groups in organization (OAuth Bearer or session auth)"
 )
 async def list_organization_groups(
     org_id: UUID,
@@ -116,14 +82,25 @@ async def list_organization_groups(
     """
     List all groups in organization.
 
-    **Security**:
+    **Security**: OAuth Bearer token (scope: groups:read) or session cookie.
     - Service tokens: Require 'groups:read' scope
     - User tokens: Require organization membership
 
     **Returns**: List of groups with member counts
     """
-    validate_scope(principal, "groups:read")
-    user_id = extract_user_id(principal)
+    # Scope validation for service tokens
+    if principal["type"] == "service":
+        if "groups:read" not in principal["scopes"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient scope: groups:read required"
+            )
+        # Service tokens bypass org membership check
+        # They have global read access with proper scope
+        user_id = None
+    else:
+        # User tokens use normal flow
+        user_id = UUID(principal["user_id"])
 
     service = GroupService(db)
     return await service.get_organization_groups(org_id, user_id)
@@ -133,7 +110,7 @@ async def list_organization_groups(
     "/groups/{group_id}",
     response_model=GroupResponse,
     summary="Get Group",
-    description="Get group details (OAuth: groups:read)"
+    description="Get group details (OAuth Bearer or session auth)"
 )
 async def get_group(
     group_id: UUID,
@@ -143,14 +120,22 @@ async def get_group(
     """
     Get group details by ID.
 
-    **Security**:
+    **Security**: OAuth Bearer token (scope: groups:read) or session cookie.
     - Service tokens: Require 'groups:read' scope
     - User tokens: Require membership in group's organization
 
     **Returns**: Group details
     """
-    validate_scope(principal, "groups:read")
-    user_id = extract_user_id(principal)
+    # Scope validation for service tokens
+    if principal["type"] == "service":
+        if "groups:read" not in principal["scopes"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient scope: groups:read required"
+            )
+        user_id = None
+    else:
+        user_id = UUID(principal["user_id"])
 
     service = GroupService(db)
     return await service.get_group(group_id, user_id)
@@ -160,7 +145,7 @@ async def get_group(
     "/groups/{group_id}",
     response_model=GroupResponse,
     summary="Update Group",
-    description="Update group details (OAuth: groups:write)"
+    description="Update group details (requires admin/owner role)"
 )
 async def update_group(
     group_id: UUID,
@@ -171,9 +156,7 @@ async def update_group(
     """
     Update group details.
 
-    **Security**:
-    - Service tokens: Require 'groups:write' scope
-    - User tokens: Require admin or owner role in group's organization
+    **Security**: Requires admin or owner role in group's organization.
 
     **Request Body**:
     - name: Optional new name
@@ -181,54 +164,32 @@ async def update_group(
 
     **Returns**: Updated group details
     """
-    validate_scope(principal, "groups:write")
-
-    # Service tokens can't update (no updater identity)
-    if principal["type"] == "service":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Service tokens cannot update groups (no updater identity)"
-        )
-
-    user_id = UUID(principal["user_id"])
     service = GroupService(db)
-    return await service.update_group(group_id, group_data, user_id)
+    return await service.update_group(group_id, group_data, current_user_id)
 
 
 @router.delete(
     "/groups/{group_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete Group",
-    description="Delete group (OAuth: groups:write)"
+    description="Delete group (requires owner role)"
 )
 async def delete_group(
     group_id: UUID,
-    principal: dict = Depends(get_current_principal),
+    current_user_id: UUID = Depends(get_current_user_id),
     db: asyncpg.Connection = Depends(get_db_connection)
 ):
     """
     Delete group.
 
-    **Security**:
-    - Service tokens: Require 'groups:write' scope
-    - User tokens: Require owner role in group's organization
+    **Security**: Requires owner role in group's organization.
 
     **Note**: Cascades to group memberships and permissions.
 
     **Returns**: 204 No Content on success
     """
-    validate_scope(principal, "groups:write")
-
-    # Service tokens can't delete (no deleter identity)
-    if principal["type"] == "service":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Service tokens cannot delete groups (no deleter identity)"
-        )
-
-    user_id = UUID(principal["user_id"])
     service = GroupService(db)
-    await service.delete_group(group_id, user_id)
+    await service.delete_group(group_id, current_user_id)
 
 
 # ============================================================================
@@ -240,7 +201,7 @@ async def delete_group(
     response_model=GroupMemberResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Add Member",
-    description="Add user to group (OAuth: members:write)"
+    description="Add user to group (requires admin/owner role)"
 )
 async def add_group_member(
     group_id: UUID,
@@ -251,34 +212,22 @@ async def add_group_member(
     """
     Add user to group.
 
-    **Security**:
-    - Service tokens: Require 'members:write' scope
-    - User tokens: Require admin or owner role in group's organization
+    **Security**: Requires admin or owner role in group's organization.
 
     **Request Body**:
     - user_id: ID of user to add (must be organization member)
 
     **Returns**: Added member details
     """
-    validate_scope(principal, "members:write")
-
-    # Service tokens can't add members (no adder identity)
-    if principal["type"] == "service":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Service tokens cannot add members (no adder identity)"
-        )
-
-    user_id = UUID(principal["user_id"])
     service = GroupService(db)
-    return await service.add_member_to_group(group_id, member_data, user_id)
+    return await service.add_member_to_group(group_id, member_data, current_user_id)
 
 
 @router.delete(
     "/groups/{group_id}/members/{user_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Remove Member",
-    description="Remove user from group (OAuth: members:write)"
+    description="Remove user from group (requires admin/owner role)"
 )
 async def remove_group_member(
     group_id: UUID,
@@ -289,51 +238,34 @@ async def remove_group_member(
     """
     Remove user from group.
 
-    **Security**:
-    - Service tokens: Require 'members:write' scope
-    - User tokens: Require admin or owner role in group's organization
+    **Security**: Requires admin or owner role in group's organization.
 
     **Returns**: 204 No Content on success
     """
-    validate_scope(principal, "members:write")
-
-    # Service tokens can't remove members (no remover identity)
-    if principal["type"] == "service":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Service tokens cannot remove members (no remover identity)"
-        )
-
-    remover_id = UUID(principal["user_id"])
     service = GroupService(db)
-    await service.remove_member_from_group(group_id, user_id, remover_id)
+    await service.remove_member_from_group(group_id, user_id, current_user_id)
 
 
 @router.get(
     "/groups/{group_id}/members",
     response_model=List[GroupMemberResponse],
     summary="List Members",
-    description="List group members (OAuth: members:read)"
+    description="List group members (requires membership in group's organization)"
 )
 async def list_group_members(
     group_id: UUID,
-    principal: dict = Depends(get_current_principal),
+    current_user_id: UUID = Depends(get_current_user_id),
     db: asyncpg.Connection = Depends(get_db_connection)
 ):
     """
     List all members of a group.
 
-    **Security**:
-    - Service tokens: Require 'members:read' scope
-    - User tokens: Require membership in group's organization
+    **Security**: Requires membership in group's organization.
 
     **Returns**: List of group members with join dates
     """
-    validate_scope(principal, "members:read")
-    user_id = extract_user_id(principal)
-
     service = GroupService(db)
-    return await service.get_group_members(group_id, user_id)
+    return await service.get_group_members(group_id, current_user_id)
 
 
 # ============================================================================
@@ -345,7 +277,7 @@ async def list_group_members(
     response_model=GroupPermissionResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Grant Permission",
-    description="Grant permission to group (OAuth: permissions:write)"
+    description="Grant permission to group (requires owner role)"
 )
 async def grant_permission_to_group(
     group_id: UUID,
@@ -356,34 +288,22 @@ async def grant_permission_to_group(
     """
     Grant permission to group.
 
-    **Security**:
-    - Service tokens: Require 'permissions:write' scope
-    - User tokens: Require owner role in group's organization (most sensitive operation)
+    **Security**: Requires owner role in group's organization (most sensitive operation).
 
     **Request Body**:
     - permission_id: ID of permission to grant
 
     **Returns**: Granted permission details
     """
-    validate_scope(principal, "permissions:write")
-
-    # Service tokens can't grant permissions (no granter identity)
-    if principal["type"] == "service":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Service tokens cannot grant permissions (no granter identity)"
-        )
-
-    user_id = UUID(principal["user_id"])
     service = GroupService(db)
-    return await service.grant_permission(group_id, permission_data, user_id)
+    return await service.grant_permission(group_id, permission_data, current_user_id)
 
 
 @router.delete(
     "/groups/{group_id}/permissions/{permission_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Revoke Permission",
-    description="Revoke permission from group (OAuth: permissions:write)"
+    description="Revoke permission from group (requires owner role)"
 )
 async def revoke_permission_from_group(
     group_id: UUID,
@@ -394,51 +314,34 @@ async def revoke_permission_from_group(
     """
     Revoke permission from group.
 
-    **Security**:
-    - Service tokens: Require 'permissions:write' scope
-    - User tokens: Require owner role in group's organization
+    **Security**: Requires owner role in group's organization.
 
     **Returns**: 204 No Content on success
     """
-    validate_scope(principal, "permissions:write")
-
-    # Service tokens can't revoke permissions (no revoker identity)
-    if principal["type"] == "service":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Service tokens cannot revoke permissions (no revoker identity)"
-        )
-
-    user_id = UUID(principal["user_id"])
     service = GroupService(db)
-    await service.revoke_permission(group_id, permission_id, user_id)
+    await service.revoke_permission(group_id, permission_id, current_user_id)
 
 
 @router.get(
     "/groups/{group_id}/permissions",
     response_model=List[GroupPermissionResponse],
     summary="List Permissions",
-    description="List permissions granted to group (OAuth: permissions:read)"
+    description="List permissions granted to group (requires membership)"
 )
 async def list_group_permissions(
     group_id: UUID,
-    principal: dict = Depends(get_current_principal),
+    current_user_id: UUID = Depends(get_current_user_id),
     db: asyncpg.Connection = Depends(get_db_connection)
 ):
     """
     List all permissions granted to a group.
 
-    **Security**:
-    - Service tokens: Require 'permissions:read' scope
-    - User tokens: Require membership in group's organization
+    **Security**: Requires membership in group's organization.
 
     **Returns**: List of permissions with grant dates
     """
-    validate_scope(principal, "permissions:read")
-    user_id = extract_user_id(principal)
-
     service = GroupService(db)
-    return await service.get_group_permissions(group_id, user_id)
+    return await service.get_group_permissions(group_id, current_user_id)
 
 
 # ============================================================================
@@ -450,19 +353,18 @@ async def list_group_permissions(
     response_model=PermissionResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create Permission",
-    description="Create a new permission (OAuth: permissions:write)"
+    description="Create a new permission (admin-only operation)"
 )
 async def create_permission(
     permission_data: PermissionCreate,
-    principal: dict = Depends(get_current_principal),
+    current_user_id: UUID = Depends(get_current_user_id),
     db: asyncpg.Connection = Depends(get_db_connection)
 ):
     """
     Create a new permission.
 
-    **Security**:
-    - Service tokens: Require 'permissions:write' scope
-    - User tokens: Requires authentication (future: superadmin role)
+    **Security**: Requires authentication.
+    Future: Should require superadmin role.
 
     **Request Body**:
     - resource: Resource name (lowercase, underscores)
@@ -471,25 +373,15 @@ async def create_permission(
 
     **Returns**: Created permission details with resource:action string
     """
-    validate_scope(principal, "permissions:write")
-
-    # Service tokens can't create permissions (no creator identity)
-    if principal["type"] == "service":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Service tokens cannot create permissions (no creator identity)"
-        )
-
-    user_id = UUID(principal["user_id"])
     service = GroupService(db)
-    return await service.create_permission(permission_data, user_id)
+    return await service.create_permission(permission_data, current_user_id)
 
 
 @router.get(
     "/permissions",
     response_model=List[PermissionResponse],
     summary="List Permissions",
-    description="List all available permissions (public, no auth required)"
+    description="List all available permissions (public)"
 )
 async def list_permissions(
     db: asyncpg.Connection = Depends(get_db_connection)

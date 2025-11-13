@@ -3,14 +3,15 @@ Authentication Dependencies
 
 FastAPI dependencies for extracting and validating authentication context from JWT tokens.
 
-Provides two levels of authentication:
+Provides three levels of authentication:
 1. User-level: Just user_id (for cross-org operations like listing/creating orgs)
 2. Org-level: user_id + org_id (for org-scoped operations)
+3. Principal-level: Supports BOTH user AND service tokens (for OAuth2 service-to-service)
 """
 
-from typing import Optional
+from typing import Optional, Literal
 from uuid import UUID
-from fastapi import Depends, Header
+from fastapi import Depends, Header, HTTPException, status
 from pydantic import BaseModel
 
 from app.services.token_service import TokenService
@@ -27,6 +28,29 @@ class AuthContext(BaseModel):
     Contains user_id and optionally org_id for org-scoped operations.
     """
     user_id: UUID
+    org_id: Optional[UUID] = None
+
+
+class PrincipalContext(BaseModel):
+    """
+    Principal context supporting both user and service authentication.
+
+    For user tokens:
+        - principal_type = "user"
+        - user_id = UUID from token sub claim
+        - client_id = None
+        - scopes = []
+
+    For service tokens (OAuth2 Client Credentials):
+        - principal_type = "service"
+        - user_id = None
+        - client_id = client identifier from token sub claim
+        - scopes = list of granted scopes (e.g., ["groups:read", "members:read"])
+    """
+    principal_type: Literal["user", "service"]
+    user_id: Optional[UUID] = None
+    client_id: Optional[str] = None
+    scopes: list[str] = []
     org_id: Optional[UUID] = None
 
 
@@ -198,3 +222,122 @@ async def get_org_context(
                org_id=str(ctx.org_id))
 
     return ctx
+
+
+async def get_current_principal(
+    authorization: str = Header(..., alias="Authorization"),
+    token_service: TokenService = Depends(TokenService)
+) -> PrincipalContext:
+    """
+    Dependency to extract principal context supporting BOTH user and service tokens.
+
+    This dependency enables OAuth2 service-to-service authentication while maintaining
+    backward compatibility with user session tokens.
+
+    **User Token Flow**:
+    1. User logs in → gets access token with user_id in sub claim
+    2. Token sub can be parsed as UUID → recognized as user token
+    3. Returns PrincipalContext with principal_type="user" and user_id set
+
+    **Service Token Flow** (OAuth2 Client Credentials):
+    1. Service authenticates → gets access token with client_id in sub claim
+    2. Token sub CANNOT be parsed as UUID → recognized as service token
+    3. Returns PrincipalContext with principal_type="service" and client_id set
+    4. Scopes extracted from token for authorization checks
+
+    Args:
+        authorization: Authorization header with Bearer token
+        token_service: Token service for decoding
+
+    Returns:
+        PrincipalContext with principal_type, user_id/client_id, and scopes
+
+    Raises:
+        InvalidTokenError: If token is invalid or missing
+        HTTPException 403: If token is valid but lacks required scope
+
+    Example (User Token):
+        ```python
+        @router.get("/groups/{group_id}/members")
+        async def list_members(
+            group_id: UUID,
+            principal: PrincipalContext = Depends(get_current_principal)
+        ):
+            if principal.principal_type == "user":
+                # User must be org member
+                return await service.get_members(group_id, principal.user_id)
+            else:
+                # Service token: check scope
+                if "groups:read" not in principal.scopes:
+                    raise HTTPException(403, "Insufficient scope")
+                return await service.get_members_admin(group_id)
+        ```
+
+    Example (Service Token):
+        ```python
+        # Chat-API calls Auth-API:
+        GET /api/auth/groups/{id}/members
+        Authorization: Bearer eyJhbGc...  (service token with sub="chat-api-service")
+
+        # This dependency extracts:
+        # - principal_type: "service"
+        # - client_id: "chat-api-service"
+        # - scopes: ["groups:read"]
+        # - user_id: None
+        ```
+    """
+    token = extract_bearer_token(authorization)
+
+    logger.debug("auth_extracting_principal_from_token", token_length=len(token))
+
+    # Decode token to get payload
+    try:
+        payload = token_service.token_helper.decode_token(token)
+    except Exception as e:
+        logger.warning("auth_invalid_token", error=str(e))
+        raise InvalidTokenError("Invalid or expired token")
+
+    sub = payload.get("sub")
+    if not sub:
+        logger.warning("auth_missing_sub_claim")
+        raise InvalidTokenError("Token missing sub claim")
+
+    # Try parsing sub as UUID (user token)
+    try:
+        user_id = UUID(sub)
+
+        # This is a USER token
+        logger.info("auth_user_principal_authenticated",
+                   user_id=str(user_id),
+                   principal_type="user")
+
+        # Extract org_id if present
+        org_id_str = payload.get("org_id")
+        org_id = UUID(org_id_str) if org_id_str else None
+
+        return PrincipalContext(
+            principal_type="user",
+            user_id=user_id,
+            client_id=None,
+            scopes=[],
+            org_id=org_id
+        )
+
+    except (ValueError, TypeError):
+        # sub is NOT a UUID, this is a SERVICE token
+        client_id = sub
+        scope_str = payload.get("scope", "")
+        scopes = scope_str.split() if scope_str else []
+
+        logger.info("auth_service_principal_authenticated",
+                   client_id=client_id,
+                   scopes=scopes,
+                   principal_type="service")
+
+        return PrincipalContext(
+            principal_type="service",
+            user_id=None,
+            client_id=client_id,
+            scopes=scopes,
+            org_id=None
+        )

@@ -9,25 +9,25 @@ These test users are created for OAuth 2.0 Authorization Server testing. All use
 ## Test User Accounts
 
 ### 1. Alice Admin (Administrator)
-- **Email:** `alice.admin@activityapp.test`
+- **Email:** `alice.admin@example.com`
 - **Password:** `SecurePass123!Admin`
 - **Role:** Admin
 - **Use Case:** Full access testing, admin operations
 
 ### 2. Bob Developer (Developer)
-- **Email:** `bob.developer@activityapp.test`
+- **Email:** `bob.developer@example.com`
 - **Password:** `DevSecure2024!Bob`
 - **Role:** Developer
 - **Use Case:** API integration testing, development workflows
 
 ### 3. Carol Manager (Manager)
-- **Email:** `carol.manager@activityapp.test`
+- **Email:** `carol.manager@example.com`
 - **Password:** `Manager!Strong789`
 - **Role:** Manager
 - **Use Case:** Organization management, team permissions
 
 ### 4. David Tester (QA Tester)
-- **Email:** `david.tester@activityapp.test`
+- **Email:** `david.tester@example.com`
 - **Password:** `Testing!Secure456`
 - **Role:** Tester
 - **Use Case:** Quality assurance, validation testing
@@ -63,7 +63,7 @@ These test users are created for OAuth 2.0 Authorization Server testing. All use
 - **Use Case:** External partner integration, third-party access
 
 ### 10. Jack Demo (Demo Account)
-- **Email:** `jack.demo@activityapp.test`
+- **Email:** `jack.demo@example.com`
 - **Password:** `Demo!Account2024`
 - **Role:** Demo
 - **Use Case:** Presentations, demonstrations, public testing
@@ -74,16 +74,16 @@ These test users are created for OAuth 2.0 Authorization Server testing. All use
 
 | # | Name | Email | Password | Role |
 |---|------|-------|----------|------|
-| 1 | Alice Admin | alice.admin@activityapp.test | SecurePass123!Admin | admin |
-| 2 | Bob Developer | bob.developer@activityapp.test | DevSecure2024!Bob | developer |
-| 3 | Carol Manager | carol.manager@activityapp.test | Manager!Strong789 | manager |
-| 4 | David Tester | david.tester@activityapp.test | Testing!Secure456 | tester |
+| 1 | Alice Admin | alice.admin@example.com | SecurePass123!Admin | admin |
+| 2 | Bob Developer | bob.developer@example.com | DevSecure2024!Bob | developer |
+| 3 | Carol Manager | carol.manager@example.com | Manager!Strong789 | manager |
+| 4 | David Tester | david.tester@example.com | Testing!Secure456 | tester |
 | 5 | Emma User | emma.user@gmail.com | UserPass!2024Emma | regular |
 | 6 | Frank Power | frank.power@outlook.com | PowerUser!Frank99 | power_user |
 | 7 | Grace OAuth | grace.oauth@yahoo.com | OAuth!Testing321 | oauth_client |
 | 8 | Henry Mobile | henry.mobile@proton.me | Mobile!App2024Henry | mobile_user |
 | 9 | Iris External | iris.external@partner.com | Partner!Secure555 | partner |
-| 10 | Jack Demo | jack.demo@activityapp.test | Demo!Account2024 | demo |
+| 10 | Jack Demo | jack.demo@example.com | Demo!Account2024 | demo |
 
 ---
 
@@ -121,14 +121,21 @@ These test users are created for OAuth 2.0 Authorization Server testing. All use
 
 ```bash
 # Login with Alice Admin
-curl -X POST http://localhost:8000/auth/login \
+curl -X POST http://localhost:8000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "alice.admin@activityapp.test",
+    "email": "alice.admin@example.com",
     "password": "SecurePass123!Admin"
   }'
 
-# Response includes access_token and refresh_token
+# Response includes access_token, refresh_token, and token_type
+# Example response:
+# {
+#   "access_token": "eyJhbGci...",
+#   "refresh_token": "eyJhbGci...",
+#   "token_type": "bearer",
+#   "org_id": null
+# }
 ```
 
 ---
@@ -195,7 +202,7 @@ If you see "Email already registered", the user exists. Use `--reset-users` to r
 
 ### Login Failed
 1. Verify API is running: `docker compose ps auth-api`
-2. Check user is verified: `docker exec activity-postgres-db psql -U postgres -d activitydb -c "SELECT email, is_verified FROM activity.users WHERE email='grace.oauth@yahoo.com'"`
+2. Check user is verified: `docker exec activity-postgres-db psql -U postgres -d activitydb -c "SELECT email, is_verified FROM activity.users WHERE email='alice.admin@example.com'"`
 3. Verify password meets requirements
 
 ### OAuth Flow Issues
@@ -205,7 +212,33 @@ If you see "Email already registered", the user exists. Use `--reset-users` to r
 
 ---
 
+---
+
+## Verification
+
+All 10 test users have been verified in the database:
+
+```bash
+# Quick verification check
+docker exec activity-postgres-db psql -U postgres -d activitydb -c \
+  "SELECT email, is_verified, is_active, created_at FROM activity.users
+   WHERE email IN (
+     'alice.admin@example.com', 'bob.developer@example.com',
+     'carol.manager@example.com', 'david.tester@example.com',
+     'emma.user@gmail.com', 'frank.power@outlook.com',
+     'grace.oauth@yahoo.com', 'henry.mobile@proton.me',
+     'iris.external@partner.com', 'jack.demo@example.com'
+   ) ORDER BY created_at;"
+```
+
+**Database Status:** ✅ All 10 users exist and are verified
+**API Endpoint:** `/api/auth/login` (uses `email` field for authentication)
+**Authentication:** Working and tested with all 10 user accounts
+
+---
+
 **Created:** 2025-11-12
+**Last Updated:** 2025-11-12
 **Purpose:** OAuth 2.0 Authorization Server Testing
 **Maintained by:** Claude Code
-**Status:** ✅ Production-Ready Test Suite
+**Status:** ✅ Production-Ready Test Suite - Database Verified

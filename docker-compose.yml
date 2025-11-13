@@ -11,6 +11,7 @@ services:
       - "8000:8000"
     environment:
       - DEBUG=true
+      - SKIP_LOGIN_CODE=true
       - POSTGRES_HOST=activity-postgres-db
       - POSTGRES_PORT=5432
       - POSTGRES_DB=activitydb
@@ -83,28 +84,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  # ========== Dummy Email Service ==========
-  dummy-email:
-    build:
-      context: .
-      dockerfile: Dockerfile.email
-    container_name: dummy-email-service
-    ports:
-      - "9001:9000"
-    environment:
-      - SMTP_HOST=activity-mailhog
-      - SMTP_PORT=1025
-      - FROM_ADDRESS=noreply@activity-app.local
-    networks:
-      - activity-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
 
 networks:
   activity-network:

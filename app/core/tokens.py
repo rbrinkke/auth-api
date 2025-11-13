@@ -26,7 +26,13 @@ class TokenHelper:
     def decode_token(self, token: str) -> dict:
         logger.debug("token_helper_decoding_token", token_length=len(token))
         try:
-            payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
+            # Disable audience validation for OAuth tokens (they have aud claim but we don't validate it here)
+            payload = jwt.decode(
+                token,
+                self.SECRET_KEY,
+                algorithms=[self.ALGORITHM],
+                options={"verify_aud": False}
+            )
             logger.debug("token_helper_decode_success", payload_keys=list(payload.keys()))
             return payload
         except jwt.ExpiredSignatureError:
