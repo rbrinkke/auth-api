@@ -52,3 +52,5 @@ Thumbs.db
 .venv/
 node_modules/
 *.log
+node_modules/
+*.log

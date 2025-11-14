@@ -14,6 +14,12 @@ class Settings(BaseSettings):
 
     REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379
+    REDIS_DB: int = 0
+
+    # Authorization Caching (NEW! 🚀)
+    AUTHZ_CACHE_ENABLED: bool = True  # Enable Redis caching for authorization checks
+    AUTHZ_L2_CACHE_ENABLED: bool = True  # Enable L2 cache (ALL user permissions)
+    AUTHZ_CACHE_TTL: int = 300  # Cache TTL in seconds (5 minutes)
 
     JWT_SECRET_KEY: str = "dev_secret_key_change_in_production_min_32_chars_required"
     JWT_ALGORITHM: str = "HS256"

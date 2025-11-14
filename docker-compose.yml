@@ -20,6 +20,8 @@ services:
       - REDIS_HOST=auth-redis
       - REDIS_PORT=6379
       - REDIS_DB=0
+      - AUTHZ_CACHE_ENABLED=true
+      - AUTHZ_L2_CACHE_ENABLED=true
       - JWT_SECRET_KEY=dev_secret_key_change_in_production_min_32_chars_required
       - ENCRYPTION_KEY=nI5MM1gTgRo2ZyNGMGkBreRJwVd-y7jq9fXhfPZnDE8=
       - EMAIL_SERVICE_URL=http://email-api:8010
