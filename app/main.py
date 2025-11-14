@@ -108,12 +108,26 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 @app.on_event("startup")
 async def startup_event():
+    from app.services.audit_service import initialize_audit_logger
+
     logger.info("Connecting to database...")
     await db.connect()
     logger.info("Database connected successfully")
 
+    # Initialize audit logger (after database connection)
+    logger.info("Initializing authorization audit logger...")
+    await initialize_audit_logger(db_pool=db.pool, settings=settings)
+    logger.info("Authorization audit logger initialized")
+
 @app.on_event("shutdown")
 async def shutdown_event():
+    from app.services.audit_service import shutdown_audit_logger
+
+    # Shutdown audit logger (before database disconnection)
+    logger.info("Shutting down authorization audit logger...")
+    await shutdown_audit_logger()
+    logger.info("Authorization audit logger shutdown complete")
+
     logger.info("Disconnecting from database...")
     await db.disconnect()
     logger.info("Database disconnected")
@@ -410,6 +424,39 @@ async def api_health_check():
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "service": "auth-api"
     }
+
+@app.get("/audit/stats", status_code=status.HTTP_200_OK, tags=["Monitoring"])
+async def audit_stats():
+    """
+    Authorization audit logger statistics (for monitoring).
+
+    Returns:
+        - total_logged: Total entries logged (added to buffer)
+        - total_flushed: Total entries written to database
+        - total_errors: Total write errors encountered
+        - total_dropped: Total entries dropped (buffer overflow)
+        - buffer_size: Current buffer size
+        - buffer_max: Maximum buffer size
+        - running: Whether background flush task is running
+    """
+    from app.services.audit_service import get_audit_logger
+    from datetime import datetime, timezone
+
+    try:
+        audit_logger = get_audit_logger()
+        stats = audit_logger.get_stats()
+        return {
+            "status": "operational",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            **stats
+        }
+    except RuntimeError as e:
+        # Audit logger not initialized (startup not complete)
+        return {
+            "status": "not_initialized",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "error": str(e)
+        }
 
 # Initialize Prometheus metrics
 # Exposes metrics at /metrics endpoint

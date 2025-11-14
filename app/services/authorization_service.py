@@ -46,6 +46,71 @@ from app.core.metrics import (
 logger = get_logger(__name__)
 
 
+def _log_authorization_decision(
+    user_id: UUID,
+    organization_id: UUID,
+    permission: str,
+    authorized: bool,
+    reason: str,
+    matched_groups: Optional[List[str]],
+    cache_source: str,
+    request_id: Optional[UUID] = None,
+    resource_id: Optional[UUID] = None,
+    ip_address: Optional[str] = None,
+    user_agent: Optional[str] = None,
+    session_id: Optional[str] = None
+):
+    """
+    Fire-and-forget audit logging for authorization decisions.
+
+    This function is NON-BLOCKING - it schedules audit logging but returns immediately.
+    Audit logs are written asynchronously in batches for zero performance impact.
+
+    Args:
+        user_id: User making the request
+        organization_id: Organization context
+        permission: Full permission string (e.g., "activity:create")
+        authorized: Whether permission was granted
+        reason: Human-readable reason for decision
+        matched_groups: Groups that granted permission (if any)
+        cache_source: Where decision came from ("l2_cache", "l1_cache", "database")
+        request_id: Correlation ID for request tracing
+        resource_id: Specific resource being accessed (optional)
+        ip_address: Client IP address (optional)
+        user_agent: Client user agent (optional)
+        session_id: Session identifier (optional)
+    """
+    try:
+        from app.services.audit_service import get_audit_logger
+        import asyncio
+
+        audit_logger = get_audit_logger()
+
+        # Create task without awaiting (fire-and-forget)
+        asyncio.create_task(
+            audit_logger.log_authorization(
+                user_id=user_id,
+                organization_id=organization_id,
+                permission=permission,
+                authorized=authorized,
+                reason=reason,
+                matched_groups=matched_groups,
+                cache_source=cache_source,
+                request_id=request_id,
+                resource_id=resource_id,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                session_id=session_id
+            )
+        )
+    except Exception as e:
+        # Audit logging failure should NEVER break authorization
+        logger.error("audit_logging_failed",
+                    error=str(e),
+                    user_id=str(user_id),
+                    permission=permission)
+
+
 class AuthorizationService:
     """
     Centralized authorization service (Policy Decision Point).
@@ -157,6 +222,20 @@ class AuthorizationService:
                                 authorized=authorized,
                                 total_permissions=len(permissions_set))
                     track_authz_check("l2_cache_hit", resource, action)
+
+                    # Audit logging (fire-and-forget, NON-BLOCKING)
+                    _log_authorization_decision(
+                        user_id=request.user_id,
+                        organization_id=request.organization_id,
+                        permission=request.permission,
+                        authorized=authorized,
+                        reason="User has permission" if authorized else "Permission not found in user's permissions",
+                        matched_groups=None,  # Not cached in L2
+                        cache_source="l2_cache",
+                        request_id=request.request_id,
+                        resource_id=request.resource_id
+                    )
+
                     return AuthorizationResponse(
                         authorized=authorized,
                         reason="User has permission" if authorized else "Permission not found in user's permissions",
@@ -179,6 +258,19 @@ class AuthorizationService:
                                 user_id=str(request.user_id),
                                 permission=request.permission)
                     track_authz_check("l1_cache_hit", resource, action)
+
+                    # Audit logging (fire-and-forget, NON-BLOCKING)
+                    _log_authorization_decision(
+                        user_id=request.user_id,
+                        organization_id=request.organization_id,
+                        permission=request.permission,
+                        authorized=data["authorized"],
+                        reason=data["reason"],
+                        matched_groups=data.get("matched_groups"),
+                        cache_source="l1_cache",
+                        request_id=request.request_id,
+                        resource_id=request.resource_id
+                    )
 
                     return AuthorizationResponse(**data)
             except Exception as e:
@@ -282,6 +374,19 @@ class AuthorizationService:
             # Track denial due to non-membership
             track_authz_check("denied_not_member", resource, action)
 
+            # Audit logging (fire-and-forget, NON-BLOCKING)
+            _log_authorization_decision(
+                user_id=request.user_id,
+                organization_id=request.organization_id,
+                permission=request.permission,
+                authorized=False,
+                reason="Not a member of the organization",
+                matched_groups=None,
+                cache_source="database",
+                request_id=request.request_id,
+                resource_id=request.resource_id
+            )
+
             return AuthorizationResponse(
                 authorized=False,
                 reason="Not a member of the organization"
@@ -319,6 +424,19 @@ class AuthorizationService:
             # Track successful authorization
             track_authz_check("granted", resource, action)
 
+            # Audit logging (fire-and-forget, NON-BLOCKING)
+            _log_authorization_decision(
+                user_id=request.user_id,
+                organization_id=request.organization_id,
+                permission=request.permission,
+                authorized=True,
+                reason="User has permission via group membership",
+                matched_groups=matched_groups,
+                cache_source="database",
+                request_id=request.request_id,
+                resource_id=request.resource_id
+            )
+
             return AuthorizationResponse(
                 authorized=True,
                 reason="User has permission via group membership",
@@ -332,6 +450,19 @@ class AuthorizationService:
 
             # Track denial due to missing permission
             track_authz_check("denied_no_permission", resource, action)
+
+            # Audit logging (fire-and-forget, NON-BLOCKING)
+            _log_authorization_decision(
+                user_id=request.user_id,
+                organization_id=request.organization_id,
+                permission=request.permission,
+                authorized=False,
+                reason=f"No permission '{request.permission}' granted",
+                matched_groups=None,
+                cache_source="database",
+                request_id=request.request_id,
+                resource_id=request.resource_id
+            )
 
             return AuthorizationResponse(
                 authorized=False,

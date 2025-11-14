@@ -157,6 +157,7 @@ class AuthorizationRequest(BaseModel):
     permission: str = Field(..., pattern="^[a-z_]+:[a-z_]+$",
                            description="Permission string (resource:action)")
     resource_id: Optional[UUID] = Field(None, description="Optional specific resource ID")
+    request_id: Optional[UUID] = Field(None, description="Correlation ID for request tracing (X-Correlation-ID)")
 
     class Config:
         json_schema_extra = {
@@ -164,7 +165,8 @@ class AuthorizationRequest(BaseModel):
                 "user_id": "550e8400-e29b-41d4-a716-446655440000",
                 "organization_id": "660e8400-e29b-41d4-a716-446655440001",
                 "permission": "activity:update",
-                "resource_id": "770e8400-e29b-41d4-a716-446655440002"
+                "resource_id": "770e8400-e29b-41d4-a716-446655440002",
+                "request_id": "880e8400-e29b-41d4-a716-446655440003"
             }
         }
 

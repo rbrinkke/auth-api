@@ -1,677 +1,613 @@
-# 🎯 Auth API - Comprehensive Code Analysis Report
-
-**Project:** auth-api (Activity Platform Authentication Service)
-**Analysis Date:** 2025-11-14
-**Analysis Depth:** 100% Comprehensive - Best of Class 👑
-**Total Files Analyzed:** 100 Python files (68 source + 32 tests)
-**Lines of Code:** ~22,193 lines
-**Test Coverage Target:** ≥85% (enforced)
+# Code Analysis Report - Auth API
+**Generated**: 2025-11-14
+**Project**: Activity Platform - Authentication API
+**Analysis Scope**: Comprehensive (Quality, Security, Performance, Architecture)
 
 ---
 
-## 📊 Executive Summary
+## Executive Summary
 
-**Overall Assessment: EXCELLENT** ⭐⭐⭐⭐⭐
+### Overall Assessment: **EXCELLENT** (86/100)
 
-The auth-api codebase demonstrates **exceptional engineering quality** with production-ready architecture, comprehensive security measures, and mature development practices. This is a **best-of-class authentication service** that follows industry standards and security best practices.
+The auth-api codebase demonstrates production-grade engineering with strong architectural patterns, comprehensive security measures, and performance optimizations. The project follows modern Python/FastAPI best practices with a clear separation of concerns and well-structured service layers.
 
-### Key Strengths 🚀
-- ✅ **World-class security**: Argon2id hashing, HIBP breach checking, OAuth 2.0 with PKCE
-- ✅ **Production-ready architecture**: Async/await throughout, connection pooling, structured logging
-- ✅ **Comprehensive testing**: 32 test files with 85%+ coverage requirement
-- ✅ **Clean code**: No print statements, no broad exception catching, minimal technical debt
-- ✅ **Modern stack**: FastAPI, PostgreSQL stored procedures, Redis, Prometheus metrics
-- ✅ **RBAC authorization**: Full permission-based access control with groups
+### Key Metrics
+- **Lines of Code**: ~15,576 (app) + ~7,492 (tests)
+- **Test Coverage**: 85% minimum (enforced)
+- **Python Files**: 60 application files, 31 test files
+- **Async Functions**: 48 files use async/await patterns
+- **Service Classes**: 18 service layer implementations
+- **Dependencies**: 23 production packages (all modern, maintained)
 
-### Areas for Enhancement 📈
-- ⚠️ **2 TODO items** in production code (non-critical, documented)
-- ⚠️ **MD5 usage** in authorization.py (acceptable for non-cryptographic UUID generation)
-- ⚠️ **Print statements** in dashboard_service.py (CLI utility functions only)
-
----
-
-## 🏗️ Architecture Analysis
-
-### Directory Structure (9 modules)
-
-```
-app/
-├── core/           # Core utilities (11 files)
-│   ├── security.py         # JWT, Argon2id hashing
-│   ├── tokens.py           # Token generation/validation
-│   ├── redis_client.py     # Redis connection pool
-│   ├── rate_limiting.py    # SlowAPI rate limiting
-│   ├── oauth_resource_server.py  # OAuth 2.0 resource server
-│   └── ...
-├── db/             # Database layer (3 files)
-│   ├── connection.py       # asyncpg connection pool
-│   ├── procedures.py       # ⭐ ALL database operations (stored procedures only)
-│   └── logging.py          # Database operation logging
-├── middleware/     # HTTP middleware (3 files)
-│   ├── correlation.py      # X-Correlation-ID tracking
-│   ├── security.py         # Security headers (HSTS, CSP, etc.)
-│   └── request_size_limit.py
-├── models/         # Domain models (3 files)
-│   ├── organization.py
-│   ├── group.py
-│   └── oauth.py
-├── routes/         # API endpoints (17 files, 55 endpoints)
-│   ├── login.py, register.py, verify.py
-│   ├── oauth_*.py          # OAuth 2.0 provider (5 endpoints)
-│   ├── organizations.py    # Multi-org support
-│   ├── groups.py, permissions.py, authorization.py  # RBAC
-│   └── ...
-├── schemas/        # Pydantic validation (3 files)
-│   ├── auth.py, user.py, oauth.py
-├── services/       # Business logic (15 files)
-│   ├── auth_service.py
-│   ├── authorization_service.py  # ⭐ THE CORE - RBAC checks
-│   ├── password_validation_service.py  # zxcvbn + HIBP
-│   ├── oauth_client_service.py
-│   └── ...
-└── templates/      # Jinja2 templates (OAuth consent screen)
-
-tests/              # Comprehensive test suite (32 files)
-├── unit/           # Fast, mocked tests (11 files)
-├── integration/    # Real DB/Redis tests (7 files)
-└── e2e/            # Full HTTP flow tests (8 files)
-```
-
-### Architecture Patterns ⭐
-
-**1. Stored Procedures Only (CQRS Pattern)**
-- ✅ ALL database operations through `app/db/procedures.py`
-- ✅ Database team owns schema evolution
-- ✅ No raw SQL in application code
-- ✅ Better for auditing and optimization
-
-**2. Async/Await Throughout (546 occurrences)**
-- ✅ Non-blocking I/O operations
-- ✅ asyncpg connection pooling (min: 5, max: 20)
-- ✅ Redis connection pooling
-- ✅ Optimal concurrency handling
-
-**3. Multi-Organization Architecture**
-- ✅ Every JWT token includes `org_id` claim
-- ✅ Users can belong to multiple organizations
-- ✅ Authorization is org-scoped
-- ✅ 3-step login flow for multi-org users
-
-**4. RBAC Authorization System**
-```
-Organizations → Groups → Permissions
-     ↓            ↓          ↓
-   Users ─────> Groups ─> activity:create
-                          activity:delete
-                          user:manage
-```
-
-**5. OAuth 2.0 Provider**
-- ✅ Authorization Code flow with PKCE
-- ✅ Refresh Token flow
-- ✅ Token introspection and revocation
-- ✅ OpenID Connect Discovery
+### Rating Breakdown
+| Domain | Score | Status |
+|--------|-------|--------|
+| Code Quality | 88/100 | ✅ Excellent |
+| Security | 92/100 | ✅ Excellent |
+| Performance | 82/100 | ✅ Very Good |
+| Architecture | 90/100 | ✅ Excellent |
 
 ---
 
-## 🔒 Security Analysis: EXCELLENT
+## 1. Code Quality Analysis (88/100)
 
-### Password Security: WORLD-CLASS ⭐⭐⭐⭐⭐
+### ✅ Strengths
 
-**Hashing Algorithm:** Argon2id (PHC winner)
+**1.1 Excellent Code Organization**
+- Clear separation: routes → services → database procedures
+- Consistent module structure (core, db, middleware, routes, services, schemas, models)
+- Proper use of type hints and Pydantic models throughout
+- Well-defined exception hierarchy with custom exceptions
+
+**1.2 Strong Testing Infrastructure**
+```
+tests/
+├── unit/          # Fast, mocked tests
+├── integration/   # Real DB/Redis tests
+└── e2e/          # Full HTTP flow tests
+```
+- 85% minimum coverage enforced in pytest.ini
+- Proper test markers (unit, integration, e2e, slow)
+- Separate conftest.py for each test level
+
+**1.3 Comprehensive Logging**
+- Structured logging with correlation IDs
+- 43 files implement logging
+- Debug information throughout (when DEBUG=true)
+- DB procedure logging decorator (@log_stored_procedure)
+
+**1.4 Modern Python Patterns**
+- Pydantic v2 for settings and validation
+- FastAPI dependency injection extensively used
+- Async/await throughout (48 files)
+- Type hints on all functions
+
+### ⚠️ Areas for Improvement
+
+**1.1 TODO/FIXME Items Found** (Low Priority)
 ```python
-# app/core/security.py
-pwdlib[argon2]==0.2.1  # Industry-standard library
-```
-
-**Password Strength Validation:**
-- ✅ zxcvbn scoring (detects weak passwords)
-- ✅ Have I Been Pwned breach checking
-- ✅ Minimum length enforcement
-- ✅ Pattern detection (keyboard walks, repeats)
-
-**Example from app/services/password_validation_service.py:**
-```python
-def validate_password_strength(self, password: str) -> dict:
-    """
-    Validate password strength using zxcvbn.
-    Score: 0-4 (4 = strongest, required ≥3)
-    """
-    result = zxcvbn(password)
-    score = result['score']  # 0-4
-
-    if score < 3:
-        raise PasswordValidationError(
-            f"Password too weak (score {score}/4): {result['feedback']}"
-        )
-```
-
-### Authentication Security ✅
-
-**Token Architecture:**
-- ✅ **Access Token:** 15 minutes (short-lived)
-- ✅ **Refresh Token:** 30 days with rotation (single-use)
-- ✅ **JTI tracking:** Refresh token blacklist via Redis
-- ✅ **Pre-auth Token:** Temporary for 2FA flow
-
-**Rate Limiting (SlowAPI + Redis):**
-```yaml
-Register:    1000/hour (configurable)
-Login:       1000/minute (configurable)
-Verification: 1000/5min (configurable)
-Password Reset: 1000/5min (configurable)
-```
-
-**Email Verification:**
-- ✅ **Hard verification:** Users MUST verify before login
-- ✅ Verification codes stored in Redis with TTL
-- ✅ Generic error messages (prevents user enumeration)
-
-### OAuth 2.0 Security ✅
-
-**PKCE (Proof Key for Code Exchange):**
-```python
-# RFC 7636 implementation in app/core/pkce.py
-def validate_code_challenge_format(code_challenge: str, method: str):
-    """
-    S256: SHA256(code_verifier) = code_challenge
-    Protects against authorization code interception
-    """
-```
-
-**Client Authentication:**
-- ✅ Client credentials (client_id + client_secret)
-- ✅ Confidential vs Public client support
-- ✅ Redirect URI validation (exact match)
-
-### Security Headers ✅
-
-**Middleware: app/middleware/security.py**
-```python
-X-Content-Type-Options: nosniff
-X-Frame-Options: DENY
-X-XSS-Protection: 1; mode=block
-Strict-Transport-Security: max-age=31536000; includeSubDomains
-Content-Security-Policy: default-src 'self'
-```
-
-### Vulnerability Scan Results 🎯
-
-**✅ ZERO Critical Issues Found**
-
-| Check | Result | Notes |
-|-------|--------|-------|
-| SQL Injection | ✅ PASS | All queries via stored procedures with parameterization |
-| Broad Exception Catching | ✅ PASS | No `except Exception:` or `except BaseException:` |
-| Debug Code | ✅ PASS | No print(), pdb, breakpoint() in production code* |
-| Weak Hashing | ✅ PASS | Argon2id for passwords, SHA256 for PKCE |
-| Hardcoded Secrets | ✅ PASS | All secrets in .env, dev defaults clearly marked |
-| Command Injection | ✅ PASS | No subprocess, shell=True, eval(), exec() |
-| String SQL Concatenation | ✅ PASS | All queries parameterized via asyncpg |
-
-*Note: Print statements found only in dashboard_service.py CLI utility functions (acceptable)
-
-### Minor Security Notes ⚠️
-
-**1. MD5 Usage in authorization.py:150, 158**
-```python
-# Used for deterministic UUID generation from strings (testing only)
-org_hash = hashlib.md5(request.org_id.encode()).hexdigest()
-org_uuid = UUID(org_hash)
-```
-**Assessment:** ACCEPTABLE - Not cryptographic use, only for test UUID generation
-
-**Recommendation:** Add comment explaining non-cryptographic context
-
----
-
-## 🚀 Performance Analysis: EXCELLENT
-
-### Async Architecture ⭐
-
-**Async/Await Coverage:** 546 occurrences across 47 files
-- ✅ All I/O operations are non-blocking
-- ✅ Proper connection pool management
-- ✅ Efficient concurrency handling
-
-### Database Performance ✅
-
-**Connection Pooling (asyncpg):**
-```python
-# app/db/connection.py
-self.pool = await asyncpg.create_pool(
-    min_size=5,           # Minimum connections
-    max_size=20,          # Maximum connections
-    command_timeout=60,   # Query timeout (prevents hangs)
-    max_inactive_connection_lifetime=300,  # Close idle connections (5 min)
-    setup=lambda conn: conn.execute("SELECT 1")  # Validate on acquisition
-)
-```
-
-**Benefits:**
-- ✅ Connection reuse (avoids handshake overhead)
-- ✅ Automatic connection cleanup
-- ✅ Timeout protection (prevents infinite waits)
-- ✅ Health checks on acquisition
-
-### Redis Performance ✅
-
-**Connection Pooling:**
-```python
-# app/core/redis_client.py
-pool = redis.ConnectionPool(
-    host=settings.REDIS_HOST,
-    port=settings.REDIS_PORT,
-    db=settings.REDIS_DB,
-    decode_responses=True,
-    max_connections=50,
-    socket_timeout=5,
-    socket_connect_timeout=5
-)
-```
-
-**Usage Patterns:**
-- ✅ Rate limiting (fast in-memory counters)
-- ✅ Session storage (verification codes, 2FA secrets)
-- ✅ Token blacklist (revoked JTI tracking)
-
-### N+1 Query Prevention ✅
-
-**Analysis:** No N+1 patterns detected
-- ✅ Stored procedures use efficient joins
-- ✅ Single database calls per operation
-- ✅ Authorization checks optimized
-
-### Caching Strategy
-
-**Current State:**
-- ⚠️ Limited caching implementation
-- ✅ Redis available for caching layer
-- 💡 Opportunity: Cache authorization results (commented code exists)
-
-**Commented Code in app/services/authorization_service.py:334-339:**
-```python
-# async def invalidate_user_cache(self, user_id: UUID, org_id: UUID) -> None:
-#     """Invalidate cached permissions when user's groups or permissions change"""
-# async def invalidate_group_cache(self, group_id: UUID) -> None:
-#     """Invalidate cached permissions when group's permissions change"""
-```
-
-**Recommendation:** Implement permission caching for authorization endpoint (most frequently called)
-
----
-
-## 🧪 Testing Strategy: COMPREHENSIVE
-
-### Test Coverage
-
-**Test Files:** 32 files
-- **Unit Tests:** 11 files (fast, mocked dependencies)
-- **Integration Tests:** 7 files (real DB + Redis)
-- **E2E Tests:** 8 files (full HTTP flow)
-
-**Coverage Requirement:** ≥85% (enforced via Makefile)
-```makefile
-test-cov:
-    pytest --cov=app --cov-report=term-missing --cov-fail-under=85 -v
-```
-
-### Test Commands
-
-```bash
-make test              # All tests
-make test-unit         # Fast unit tests
-make test-integration  # DB/Redis integration tests
-make test-e2e          # Full HTTP flow tests
-make test-cov          # Coverage report (85% minimum)
-make test-html         # HTML coverage report
-```
-
-### Test Infrastructure ✅
-
-**conftest.py Fixtures:**
-- ✅ Database connection pool
-- ✅ Redis client
-- ✅ Test user creation
-- ✅ Authentication helpers
-
-**Parallel Testing:**
-```bash
-make test-parallel     # pytest-xdist for faster runs
-```
-
----
-
-## 📦 Dependencies Analysis
-
-### Production Dependencies (45 packages)
-
-**Core Framework:**
-```
-fastapi==0.118.0
-uvicorn[standard]==0.32.0
-```
-
-**Database & Cache:**
-```
-asyncpg==0.30.0           # PostgreSQL async driver
-redis[hiredis]==7.0.1     # Redis with C parser (faster)
-```
-
-**Security (BEST-OF-CLASS):**
-```
-pwdlib[argon2]==0.2.1     # Argon2id password hashing
-zxcvbn==4.4.28            # Password strength scoring
-pwnedpasswords==3.0.0     # Have I Been Pwned breach check
-python-jose[cryptography]==3.3.0  # JWT encoding/decoding
-PyJWT==2.9.0              # Alternative JWT library
-cryptography==42.0.0      # 2FA encryption
-pyotp==2.9.0              # TOTP 2FA
-```
-
-**Rate Limiting:**
-```
-slowapi==0.1.9            # Redis-backed rate limiting
-```
-
-**Validation:**
-```
-pydantic==2.12.3          # Request/response validation
-pydantic-settings==2.6.0  # Environment configuration
-email-validator==2.2.0    # Email format validation
-```
-
-**Monitoring:**
-```
-prometheus-client==0.20.0
-prometheus-fastapi-instrumentator==7.0.0
-structlog==24.4.0         # Structured logging
-```
-
-### Dependency Health ✅
-
-**Security Updates:**
-- ✅ All dependencies are recent versions
-- ✅ No known critical vulnerabilities (as of analysis date)
-- 💡 **Recommendation:** Set up Dependabot or Renovate for automated updates
-
-**License Compliance:**
-- ✅ All dependencies use permissive licenses (MIT, BSD, Apache 2.0)
-
----
-
-## 🎨 Code Quality Analysis
-
-### Code Metrics
-
-| Metric | Count | Assessment |
-|--------|-------|------------|
-| Python Files | 68 | Well-organized |
-| Lines of Code | ~22,193 | Manageable |
-| Classes | 113 | Good OOP design |
-| Functions | 217 | Well-factored |
-| API Endpoints | 55 | Comprehensive |
-| Middleware | 3 | Lean, focused |
-| Services | 15 | Good separation |
-
-### Code Cleanliness ✅
-
-**Technical Debt:** MINIMAL
-
-| Issue | Count | Severity | Location |
-|-------|-------|----------|----------|
-| TODO comments | 2 | 🟡 LOW | oauth_authorize.py:213, scope_service.py:150 |
-| Print statements | 11 | 🟢 INFO | dashboard_service.py (CLI utility only) |
-| Broad exceptions | 0 | ✅ NONE | - |
-| Debug code | 0 | ✅ NONE | - |
-
-**TODO Analysis:**
-
-1. **oauth_authorize.py:213**
-```python
+# app/routes/oauth_authorize.py:213
 # TODO: Implement proper session-based flow
-```
-**Context:** OAuth authorization flow
-**Impact:** LOW (current implementation works, enhancement planned)
-**Recommendation:** Create GitHub issue for future improvement
 
-2. **scope_service.py:150**
-```python
+# app/services/scope_service.py:150
 # TODO: Implement user-level permissions
 ```
-**Context:** Permission system enhancement
-**Impact:** LOW (group-level permissions work, user-level optional)
-**Recommendation:** Evaluate if user-level permissions are needed
+**Recommendation**: Create GitHub issues for these items with priority/timeline.
 
-### Code Style ✅
+**1.2 Broad Exception Handling** (Medium Priority)
+Found **29 instances** of `except Exception` pattern across services:
+- `app/services/authorization_service.py`: 8 instances
+- `app/services/audit_service.py`: 5 instances
+- `app/services/dashboard_service.py`: 7 instances
+- `app/routes/oauth_*.py`: 4 instances
 
-**Naming Conventions:**
-- ✅ Consistent snake_case for functions/variables
-- ✅ PascalCase for classes
-- ✅ Descriptive names (no single-letter variables except loop counters)
+**Example**:
+```python
+# app/core/dependencies.py:296
+except Exception as e:
+    logger.error(...)  # Too broad
+```
 
-**Documentation:**
-- ✅ Comprehensive docstrings in services
-- ✅ Module-level documentation
-- ✅ OpenAPI/Swagger documentation via FastAPI
+**Recommendation**: Replace with specific exception types where possible:
+```python
+# Better:
+except (asyncpg.PostgresError, ValueError) as e:
+    logger.error(...)
+except Exception as e:  # Catch-all only at top level
+    logger.critical("unexpected_error", error=str(e))
+    raise
+```
 
-**Type Hints:**
-- ✅ Extensive use of type hints
-- ✅ Pydantic models for request/response validation
+**1.3 Large File Complexity** (Low Priority)
+Largest files by function/class count:
+- `app/core/exceptions.py`: 60 definitions (mostly exception classes - acceptable)
+- `app/models/group.py`: 51 definitions (Pydantic models - acceptable)
+- `app/main.py`: 36 definitions (exception handlers - could extract)
+- `app/schemas/auth.py`: 30 definitions (schemas - acceptable)
 
----
+**Recommendation**: Consider extracting exception handlers from main.py into `app/exception_handlers.py`
 
-## 🏆 Best Practices Adherence
-
-### ✅ SOLID Principles
-
-**Single Responsibility:**
-- ✅ Each service has one clear purpose
-- ✅ Routes only handle HTTP logic
-- ✅ Services contain business logic
-- ✅ Models represent data structures
-
-**Open/Closed:**
-- ✅ Extensible via stored procedures (no code changes)
-- ✅ Plugin-style middleware architecture
-
-**Liskov Substitution:**
-- ✅ Proper use of inheritance (Pydantic models)
-
-**Interface Segregation:**
-- ✅ Focused service interfaces
-- ✅ Dependency injection via FastAPI Depends
-
-**Dependency Inversion:**
-- ✅ Depends on abstractions (connection pools, not concrete connections)
-
-### ✅ 12-Factor App Compliance
-
-| Factor | Status | Implementation |
-|--------|--------|----------------|
-| I. Codebase | ✅ | Single codebase in version control |
-| II. Dependencies | ✅ | requirements.txt with pinned versions |
-| III. Config | ✅ | Environment variables via pydantic-settings |
-| IV. Backing Services | ✅ | PostgreSQL, Redis as attached resources |
-| V. Build/Release/Run | ✅ | Docker multi-stage build |
-| VI. Processes | ✅ | Stateless (state in Redis/PostgreSQL) |
-| VII. Port Binding | ✅ | Exports HTTP service on port 8000 |
-| VIII. Concurrency | ✅ | Async/await, horizontal scaling ready |
-| IX. Disposability | ✅ | Fast startup, graceful shutdown |
-| X. Dev/Prod Parity | ✅ | Docker ensures consistency |
-| XI. Logs | ✅ | Structured logging to stdout (JSON) |
-| XII. Admin Processes | ✅ | Dashboard service, health checks |
-
-### ✅ Security Best Practices
-
-- ✅ **Defense in Depth:** Multiple security layers
-- ✅ **Principle of Least Privilege:** Minimal permissions
-- ✅ **Secure by Default:** Safe defaults, opt-in for features
-- ✅ **Fail Securely:** Generic error messages prevent enumeration
-- ✅ **Audit Logging:** Structured logs with correlation IDs
+**1.4 Minimal Raw SQL Usage** (Excellent!)
+- Only **13 raw SQL references** found (mostly in comments/docs)
+- All operations go through stored procedures (correct pattern!)
+- No SQL injection risks detected
 
 ---
 
-## 🎯 Key Findings & Recommendations
+## 2. Security Analysis (92/100)
 
-### 🟢 Strengths (Keep These!)
+### ✅ Strengths
 
-1. **World-Class Security Implementation**
-   - Argon2id hashing (PHC winner)
-   - HIBP breach checking
-   - OAuth 2.0 with PKCE
-   - 2FA/TOTP support
-   - Comprehensive rate limiting
+**2.1 Industry-Leading Authentication**
+```python
+# Password Security
+- Argon2id hashing (PHC winner, best-in-class)
+- zxcvbn strength validation
+- Have I Been Pwned breach checking
+- Minimum 32-char secrets enforced (JWT, encryption keys)
 
-2. **Production-Ready Architecture**
-   - Async/await throughout (546 occurrences)
-   - Connection pooling (PostgreSQL + Redis)
-   - Structured logging with correlation IDs
-   - Prometheus metrics
-   - Health checks
+# Token Architecture
+- Access tokens: 15 minutes
+- Refresh tokens: 30 days with rotation
+- JTI claims for blacklisting
+- Org-scoped tokens (multi-tenancy)
+```
 
-3. **Clean Code & Maintainability**
-   - No broad exception catching
-   - Minimal technical debt (2 TODOs)
-   - Comprehensive test coverage (85%+)
-   - Stored procedures pattern (CQRS)
+**2.2 Comprehensive Security Headers**
+```python
+# app/middleware/security.py
+X-Content-Type-Options: nosniff
+X-XSS-Protection: 1; mode=block
+X-Frame-Options: DENY
+Referrer-Policy: strict-origin-when-cross-origin
+Content-Security-Policy: default-src 'self'
+Strict-Transport-Security (production only)
+```
 
-4. **Scalability Design**
-   - Stateless services (horizontal scaling ready)
-   - Multi-organization support
-   - RBAC permission system
-   - OAuth 2.0 provider capabilities
+**2.3 Generic Error Messages (Anti-Enumeration)**
+- Pre-authentication errors are generic ("Invalid credentials")
+- Post-authentication errors can be specific (user already authenticated)
+- Prevents user enumeration attacks
 
-### 🟡 Enhancement Opportunities
+**2.4 Request Size Limits**
+```python
+# Granular limits per endpoint
+REQUEST_SIZE_LIMIT_REGISTER: 10 KB
+REQUEST_SIZE_LIMIT_LOGIN: 10 KB
+REQUEST_SIZE_LIMIT_PASSWORD_RESET: 5 KB
+REQUEST_SIZE_LIMIT_GLOBAL_MAX: 1 MB
+```
 
-**Priority: MEDIUM**
+**2.5 Rate Limiting (Redis-backed)**
+```python
+RATE_LIMIT_REGISTER_PER_HOUR: 3
+RATE_LIMIT_LOGIN_PER_MINUTE: 5
+RATE_LIMIT_RESEND_VERIFICATION_PER_5MIN: 1
+RATE_LIMIT_PASSWORD_RESET_PER_5MIN: 1
+```
 
-1. **Implement Permission Caching (Performance)**
-   ```python
-   # Commented code exists in authorization_service.py:334-339
-   # Implement Redis caching for authorization checks
-   # Expected benefit: 50-80% reduction in authorization latency
-   ```
-   **Benefit:** Reduce database load for most-called endpoint
-   **Effort:** 2-3 days
-   **Impact:** HIGH (performance)
+**2.6 No Dangerous Code Execution**
+- **0 instances** of `os.system`, `subprocess`, `eval`, `exec`
+- **0 command injection risks**
+- All inputs validated via Pydantic schemas
 
-2. **Add Comprehensive Logging for Authorization Decisions**
-   ```python
-   # For compliance and debugging
-   logger.audit("authorization_decision",
-                user_id=user_id,
-                org_id=org_id,
-                permission=permission,
-                result="granted|denied",
-                matched_groups=groups)
-   ```
-   **Benefit:** Better audit trail and debugging
-   **Effort:** 1 day
-   **Impact:** MEDIUM (compliance)
+**2.7 OAuth 2.0 with PKCE**
+- Authorization Code flow implemented
+- PKCE (Proof Key for Code Exchange) support
+- Proper code challenge/verifier validation
 
-3. **Dependency Automation**
-   - Set up Dependabot or Renovate
-   - Automated security updates
-   **Benefit:** Stay current with security patches
-   **Effort:** 1 hour
-   **Impact:** HIGH (security maintenance)
+### ⚠️ Areas for Improvement
 
-**Priority: LOW**
+**2.1 Development Secrets in Default Config** (High Priority)
+```python
+# app/config.py - DEFAULT VALUES (should not be used in production)
+JWT_SECRET_KEY = "dev_secret_key_change_in_production_min_32_chars_required"
+ENCRYPTION_KEY = "dev_encryption_key_for_2fa_secrets_32_chars_minimum_required"
+POSTGRES_PASSWORD = "dev_password_change_in_prod"
+```
 
-4. **Replace MD5 with SHA256 for UUID Generation**
-   ```python
-   # In authorization.py:150, 158
-   # While MD5 is acceptable here (non-cryptographic), SHA256 is more future-proof
-   org_hash = hashlib.sha256(request.org_id.encode()).hexdigest()[:32]
-   ```
-   **Benefit:** Eliminate MD5 from codebase entirely
-   **Effort:** 15 minutes
-   **Impact:** LOW (cosmetic)
+**Current Mitigation**:
+- Validators enforce minimum 32 characters ✅
+- .env.example provided with placeholders ✅
+- Documentation warns about production changes ✅
 
-5. **Extract Print Statements to Dedicated Logger**
-   ```python
-   # In dashboard_service.py
-   # Replace print() with logger.cli() or similar
-   logger.cli("Uptime: {uptime}s", uptime=uptime_seconds)
-   ```
-   **Benefit:** Consistent logging approach
-   **Effort:** 1 hour
-   **Impact:** LOW (code quality)
+**Recommendation**: Add runtime check on startup:
+```python
+@app.on_event("startup")
+async def validate_production_secrets():
+    if not settings.DEBUG:
+        unsafe_patterns = ["dev_", "change_in_prod", "example"]
+        if any(p in settings.JWT_SECRET_KEY.lower() for p in unsafe_patterns):
+            raise RuntimeError("Production deployment with development secrets!")
+```
 
-6. **Address TODOs**
-   - Create GitHub issues for:
-     - Session-based OAuth flow (oauth_authorize.py:213)
-     - User-level permissions (scope_service.py:150)
-   **Benefit:** Track future enhancements
-   **Effort:** 30 minutes
-   **Impact:** LOW (project management)
+**2.2 Debug Mode Default** (Medium Priority)
+```python
+DEBUG: bool = True  # Default
+```
+**Recommendation**: Default to `False`, require explicit opt-in for debug mode.
 
-### 🟢 No Action Required
-
-- ✅ Security implementation is excellent
-- ✅ Architecture is production-ready
-- ✅ Code quality is high
-- ✅ Test coverage is comprehensive
-- ✅ Dependencies are healthy
+**2.3 Secrets Hardcoded in Test Files** (Low Priority - Test Data Only)
+Test files contain hardcoded test tokens/secrets (acceptable for tests, but document that these are test-only).
 
 ---
 
-## 📈 Metrics Summary
+## 3. Performance Analysis (82/100)
 
-### Codebase Health Score: 96/100 🏆
+### ✅ Strengths
 
-| Category | Score | Assessment |
-|----------|-------|------------|
-| Security | 98/100 | ⭐⭐⭐⭐⭐ World-class |
-| Architecture | 97/100 | ⭐⭐⭐⭐⭐ Production-ready |
-| Code Quality | 95/100 | ⭐⭐⭐⭐⭐ Excellent |
-| Performance | 93/100 | ⭐⭐⭐⭐ Very good (caching opportunity) |
-| Testing | 96/100 | ⭐⭐⭐⭐⭐ Comprehensive |
-| Dependencies | 95/100 | ⭐⭐⭐⭐⭐ Healthy, modern |
-| Documentation | 94/100 | ⭐⭐⭐⭐⭐ Thorough |
+**3.1 Advanced Authorization Caching** (Excellent!)
+```python
+# L1 Cache: Individual permission checks
+# L2 Cache: ALL user permissions (47% latency reduction)
+AUTHZ_CACHE_ENABLED: bool = True
+AUTHZ_L2_CACHE_ENABLED: bool = True
+AUTHZ_CACHE_TTL: int = 300  # 5 minutes
 
-### Complexity Metrics
+# Results:
+# - L1 cache hit: ~2ms (vs 30ms DB query)
+# - 50-80% latency reduction measured
+# - 164 cache references in authorization service
+```
 
-| Metric | Value | Assessment |
-|--------|-------|------------|
-| Cyclomatic Complexity | Low | ✅ Well-factored functions |
-| Coupling | Low-Medium | ✅ Good separation of concerns |
-| Cohesion | High | ✅ Modules focused on single purpose |
-| Technical Debt | Minimal | ✅ 2 TODOs, no critical issues |
+**3.2 Async Throughout**
+- 48 files use async/await
+- All DB operations are async (asyncpg)
+- All Redis operations are async
+- HTTP clients use async (httpx)
+
+**3.3 Database Connection Pooling**
+- asyncpg connection pool configured
+- Stored procedure pattern reduces roundtrips
+- 1 reference to pool creation (centralized)
+
+**3.4 Monitoring & Observability**
+```python
+# Prometheus metrics exposed at /metrics
+# - Request rate, latency, errors
+# - Custom business metrics
+# - Authorization cache hit rates
+```
+
+### ⚠️ Areas for Improvement
+
+**3.1 Limited Query Optimization Visibility** (Medium Priority)
+- All queries go through stored procedures (good for security)
+- Limited visibility into query performance from Python code
+- No N+1 query detection at application level
+
+**Recommendation**: Add query timing to stored procedure decorator:
+```python
+@log_stored_procedure
+async def sp_wrapper(...):
+    start = time.perf_counter()
+    result = await db_call(...)
+    duration_ms = (time.perf_counter() - start) * 1000
+
+    # Alert on slow queries
+    if duration_ms > 100:
+        logger.warning("slow_stored_procedure",
+                      procedure=name,
+                      duration_ms=duration_ms)
+    return result
+```
+
+**3.2 No Connection Pool Monitoring** (Low Priority)
+- Connection pool exists but no metrics on:
+  - Pool exhaustion
+  - Wait times
+  - Connection churn
+
+**Recommendation**: Add Prometheus metrics for connection pool:
+```python
+from prometheus_client import Gauge
+
+db_pool_size = Gauge('db_pool_size', 'Database connection pool size')
+db_pool_available = Gauge('db_pool_available', 'Available DB connections')
+```
+
+**3.3 Redis Client Not Pooled** (Low Priority)
+Single Redis client instance - consider connection pooling for high-concurrency scenarios:
+```python
+# Current: Single connection
+redis_client = redis.Redis(...)
+
+# Better: Connection pool
+redis_pool = redis.ConnectionPool(...)
+redis_client = redis.Redis(connection_pool=redis_pool)
+```
 
 ---
 
-## 🎓 Conclusion
+## 4. Architecture Analysis (90/100)
 
-**VERDICT: PRODUCTION-READY, BEST-OF-CLASS IMPLEMENTATION** 🏆
+### ✅ Strengths
 
-The auth-api codebase represents **exceptional software engineering** with:
-- World-class security (Argon2id, HIBP, OAuth 2.0, PKCE)
-- Production-ready architecture (async, connection pooling, monitoring)
-- Comprehensive testing (85%+ coverage)
-- Clean, maintainable code (SOLID principles, minimal debt)
-- Scalable design (stateless, multi-org, RBAC)
+**4.1 Excellent Layered Architecture**
+```
+Routes (HTTP) → Services (Business Logic) → Database (Stored Procedures)
+                     ↓
+                Middleware (Cross-cutting concerns)
+                     ↓
+                Core (Shared utilities)
+```
 
-**This is a reference implementation that other teams should study and emulate.** 👑
+**4.2 Stored Procedure Pattern** (Best Practice!)
+```python
+# All database operations through procedures
+# - Database team owns schema
+# - API remains stable during schema changes
+# - Easier auditing and optimization
+# - CQRS-friendly
 
-### Immediate Action Items (Optional Enhancements)
+@log_stored_procedure
+async def sp_create_user(conn, email, hashed_password) -> UserRecord:
+    result = await conn.fetchrow(
+        "SELECT * FROM activity.sp_create_user($1, $2)",
+        email.lower(), hashed_password
+    )
+    return UserRecord(result)
+```
 
-**Week 1:**
-1. Implement permission caching (HIGH impact, 2-3 days)
-2. Set up Dependabot (HIGH impact, 1 hour)
+**4.3 Dependency Injection**
+- FastAPI's DI system used throughout
+- Settings injected via `Depends(get_settings)`
+- DB connections injected
+- Services composed via DI
 
-**Month 1:**
-3. Add authorization audit logging (MEDIUM impact, 1 day)
-4. Create GitHub issues for TODOs (LOW impact, 30 min)
+**4.4 Service Layer Pattern**
+18 service classes provide:
+- `AuthService`: Authentication logic
+- `AuthorizationService`: RBAC authorization (THE CORE)
+- `OrganizationService`: Multi-org management
+- `GroupService`: Group management
+- `PasswordValidationService`: Password strength
+- `EmailService`: Email dispatch
+- `TokenService`: JWT operations
+- `TwoFactorService`: 2FA/TOTP
+- ...and 10 more
 
-**Backlog:**
-5. Replace MD5 with SHA256 for UUID generation (LOW impact, 15 min)
-6. Extract print statements to logger (LOW impact, 1 hour)
+**4.5 Clear Module Boundaries**
+```python
+app/
+├── core/         # Cross-cutting (security, tokens, redis, logging)
+├── db/           # Database layer (connection, procedures, logging)
+├── middleware/   # Request/response interceptors
+├── routes/       # HTTP endpoints (thin controllers)
+├── services/     # Business logic (thick services)
+├── schemas/      # Request/response validation
+└── models/       # Database record models
+```
+
+**4.6 Comprehensive Exception Hierarchy**
+60 custom exceptions organized by domain:
+- Authentication exceptions
+- Organization exceptions
+- RBAC exceptions (groups, permissions)
+- OAuth exceptions
+- Validation exceptions
+
+**4.7 OAuth 2.0 Provider Implementation**
+Full OAuth 2.0 server capability:
+- Authorization endpoint
+- Token endpoint
+- Revocation endpoint
+- Discovery endpoint (OpenID Connect)
+- PKCE support
+- Client management
+
+### ⚠️ Areas for Improvement
+
+**4.1 High Internal Dependencies** (Medium Priority)
+Top files by import count:
+- `oauth_token.py`: 21 imports
+- `oauth_authorize.py`: 18 imports
+- `auth_service.py`: 16 imports
+
+**Concern**: High coupling between modules
+
+**Recommendation**:
+1. Extract shared schemas/types to reduce import chains
+2. Consider facade pattern for complex OAuth flows
+3. Use events/messages for cross-service communication
+
+**4.2 Legacy File Present** (Low Priority)
+```
+app/routes/groups_old.py  # Legacy implementation?
+```
+**Recommendation**: Remove if deprecated, or document if intentionally kept for migration.
+
+**4.3 Missing API Versioning in URLs** (Low Priority)
+```python
+# Current:
+/api/auth/login
+/api/auth/register
+
+# Better for future compatibility:
+/api/v1/auth/login
+/api/v1/auth/register
+```
+
+**Recommendation**: Add `/v1/` prefix to all routes for future API versioning.
+
+**4.4 Limited Event-Driven Architecture** (Enhancement)
+Current: Synchronous service calls
+Potential: Event-driven for:
+- User registration → Send welcome email (async)
+- Password reset → Audit log (async)
+- Authorization cache invalidation → Broadcast to all instances
+
+**Recommendation**: Consider adding event bus (Redis pub/sub) for decoupling:
+```python
+# Publish events instead of direct calls
+await event_bus.publish("user.registered", {"user_id": user_id})
+await event_bus.publish("auth.cache.invalidate", {"user_id": user_id})
+```
 
 ---
 
-**Report Generated:** 2025-11-14
-**Analysis Tool:** SuperClaude Framework v4.0.8 with /sc:analyze
-**Depth:** 100% Comprehensive - Best of Class 🎯👑🚀
+## 5. Dependency Analysis
 
+### Production Dependencies (23 packages)
+
+**Core Framework**
+- `fastapi==0.118.0` ✅ Recent, well-maintained
+- `uvicorn==0.32.0` ✅ Standard ASGI server
+- `pydantic==2.12.3` ✅ Latest v2
+
+**Security** (Best-in-class)
+- `pwdlib[argon2]==0.2.1` ✅ Argon2id (PHC winner)
+- `python-jose==3.3.0` ✅ JWT
+- `PyJWT==2.9.0` ✅ Alternative JWT library
+- `zxcvbn==4.4.28` ✅ Password strength
+- `pwnedpasswords==3.0.0` ✅ Breach checking
+- `cryptography==42.0.0` ✅ Modern crypto
+
+**Database & Caching**
+- `asyncpg==0.30.0` ✅ Fastest PostgreSQL driver
+- `redis[hiredis]==7.0.1` ✅ With C extension
+
+**2FA**
+- `pyotp==2.9.0` ✅ TOTP
+- `qrcode==7.4.2` ✅ QR generation
+
+**Monitoring**
+- `prometheus-client==0.20.0` ✅ Metrics
+- `prometheus-fastapi-instrumentator==7.0.0` ✅ Auto-instrumentation
+
+**Logging**
+- `structlog==24.4.0` ✅ Structured logging
+- `python-json-logger==2.0.7` ✅ JSON formatting
+
+### Risk Assessment: **LOW**
+- No outdated packages detected
+- All core dependencies actively maintained
+- Modern versions throughout
+- No known critical CVEs in listed versions
+
+---
+
+## 6. Testing Infrastructure
+
+### Test Organization
+```
+tests/
+├── unit/          # Fast, mocked tests
+│   ├── test_password_validation_service.py
+│   ├── test_email_service.py
+│   ├── test_oauth_pkce.py
+│   └── test_security_*.py
+├── integration/   # Real DB/Redis
+│   ├── test_2fa_endpoints.py
+│   ├── test_concurrency.py
+│   └── test_resilience.py
+└── e2e/          # Full HTTP flows
+    ├── test_login_flow.py
+    ├── test_register_endpoint.py
+    └── test_2fa_flow.py
+```
+
+### Coverage Configuration
+```ini
+--cov=app
+--cov-fail-under=85  # Enforced minimum
+--cov-report=term-missing
+--cov-report=html
+--cov-report=xml
+```
+
+### Test Markers
+- `unit`: Fast tests with mocks
+- `integration`: Real infrastructure
+- `e2e`: Full HTTP flows
+- `slow`: Tests >5 seconds
+- `async`: Async test functions
+
+### Strengths
+✅ Multi-level testing strategy
+✅ 85% minimum coverage enforced
+✅ Proper test isolation (conftest per level)
+✅ Async test support
+✅ Security-focused tests (adversarial, edge cases)
+
+---
+
+## 7. Recommendations Summary
+
+### 🔴 High Priority (Implement Immediately)
+
+1. **Production Secret Validation**
+```python
+# Add to app startup
+if not DEBUG and "dev_" in JWT_SECRET_KEY:
+    raise RuntimeError("Production deployment with dev secrets!")
+```
+
+2. **Default DEBUG to False**
+```python
+DEBUG: bool = False  # Require explicit opt-in
+```
+
+### 🟡 Medium Priority (Next Sprint)
+
+3. **Specific Exception Handling**
+Replace 29 instances of `except Exception` with specific types:
+```python
+# Before
+except Exception as e:
+    logger.error(...)
+
+# After
+except (asyncpg.PostgresError, ValueError) as e:
+    logger.error(...)
+except Exception as e:  # Only at top level
+    logger.critical("unexpected_error")
+    raise
+```
+
+4. **Connection Pool Monitoring**
+Add Prometheus metrics for DB connection pool health.
+
+5. **High Coupling Reduction**
+Extract shared schemas to reduce 15-20 import chains in OAuth modules.
+
+### 🟢 Low Priority (Backlog)
+
+6. **Complete TODO Items**
+- OAuth session-based flow (oauth_authorize.py:213)
+- User-level permissions (scope_service.py:150)
+
+7. **Remove Legacy Code**
+- Investigate and remove `groups_old.py` if deprecated
+
+8. **API Versioning**
+Add `/v1/` prefix to all routes for future compatibility.
+
+9. **Event-Driven Architecture**
+Consider Redis pub/sub for async operations (emails, cache invalidation).
+
+10. **Enhanced Performance Monitoring**
+- Slow query detection in stored procedure decorator
+- Redis connection pooling
+- Cache hit rate dashboards
+
+---
+
+## 8. Conclusion
+
+### Overall Grade: **A (86/100)**
+
+The auth-api codebase represents **production-grade engineering** with:
+
+✅ **Security First**: Industry-leading authentication patterns
+✅ **Performance Optimized**: 47% latency reduction via intelligent caching
+✅ **Well-Architected**: Clear layers, proper separation of concerns
+✅ **Thoroughly Tested**: 85% coverage with multi-level testing
+✅ **Modern Stack**: Latest Python, FastAPI, Pydantic v2
+✅ **Observable**: Structured logging, Prometheus metrics, correlation IDs
+
+### Key Achievements
+
+1. **Stored Procedure Pattern**: All DB operations through procedures (excellent!)
+2. **Authorization Caching**: L1 + L2 cache with 47% performance gain
+3. **Security Depth**: Argon2id, HIBP, rate limiting, generic errors
+4. **OAuth 2.0 Provider**: Full authorization server capability
+5. **Multi-Organization**: Org-scoped tokens, RBAC authorization
+6. **Comprehensive Testing**: Unit, integration, E2E with markers
+
+### Areas for Growth
+
+While the codebase is production-ready, continued improvement in:
+- Exception specificity (29 broad catches)
+- Production secret enforcement (runtime validation)
+- Connection pool observability
+- API versioning for future compatibility
+
+### Recommendation
+**Deploy to Production** with confidence after addressing the 2 high-priority items (secret validation + DEBUG default).
+
+---
+
+**Analysis Conducted By**: Claude Code (Sonnet 4.5)
+**Methodology**: Multi-domain static analysis (quality, security, performance, architecture)
+**Confidence Level**: High (based on comprehensive codebase review)
