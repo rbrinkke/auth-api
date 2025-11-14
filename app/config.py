@@ -52,7 +52,12 @@ class Settings(BaseSettings):
     REQUEST_SIZE_LIMIT_TOKEN_REFRESH: int = 5120  # 5 KB
     REQUEST_SIZE_LIMIT_2FA: int = 5120  # 5 KB
 
+    # Debug Mode Configuration
+    # Development: DEBUG=True (verbose logging, detailed errors, full audit logs)
+    # Production: DEBUG=False (security-first, generic errors, sampled audit logs)
+    # IMPORTANT: Production deployment with DEBUG=True is blocked by startup validation
     DEBUG: bool = True
+
     HOST: str = "0.0.0.0"
     PORT: int = 8000
 
@@ -137,6 +142,17 @@ def validate_production_secrets(settings: Settings) -> None:
     """
     # Only validate in production mode (DEBUG=False)
     if settings.DEBUG:
+        # Extra safety: Warn if DEBUG=True in production-like environments
+        import os
+        env = os.getenv("ENVIRONMENT", "").lower()
+        if env in ["production", "prod", "staging", "stage"]:
+            import warnings
+            warnings.warn(
+                f"⚠️  WARNING: DEBUG=True in {env.upper()} environment! "
+                "This enables verbose logging and detailed error messages. "
+                "Set DEBUG=False for production deployments.",
+                stacklevel=2
+            )
         return
 
     # Define secrets to validate and their names for error messages
