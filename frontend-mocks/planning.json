@@ -1,0 +1,1518 @@
+{
+  "metadata": {
+    "project_name": "MSW Mock Handlers Testing Suite",
+    "version": "1.0.0",
+    "created": "2025-11-14",
+    "owner": "Activity App Team",
+    "status": "Planning Complete - Ready for Implementation",
+    "scope": "Comprehensive testing strategy for 36 MSW authentication endpoints with MCP server integration",
+    "estimated_total_effort": "26-36 hours over 3 weeks",
+    "confidence_level": "HIGH - Strategy validated via Sequential MCP ultrathink analysis"
+  },
+
+  "executive_summary": {
+    "objective": "Validate 100% functionality and accuracy of MSW mock handlers for Activity App authentication API",
+    "strategy": "3-layer test pyramid: 60% Vitest unit tests, 30% Playwright integration tests, 10% MCP validation",
+    "primary_mcp": "Playwright MCP (browser-native MSW testing)",
+    "secondary_mcps": ["MockLoop MCP (coverage)", "REST API Tester MCP (accuracy)", "Mock Data MCP (data quality)"],
+    "key_insight": "MSW runs in browser context (service workers), therefore Playwright MCP is optimal for integration testing",
+    "critical_prerequisite": "Minimal test frontend app required for Playwright browser testing (4-6 hours investment)",
+    "expected_outcomes": [
+      "90%+ code coverage via Vitest",
+      "100% endpoint coverage (36/36)",
+      "100% response accuracy vs real API",
+      "8/8 critical flows validated",
+      "Production-ready mocks for frontend development"
+    ]
+  },
+
+  "mcp_servers": {
+    "playwright": {
+      "priority": "PRIMARY",
+      "purpose": "Browser-native MSW integration and E2E testing",
+      "availability": "Available in Claude Code (built-in MCP)",
+      "use_cases": [
+        "Integration testing of MSW service worker in real browser",
+        "End-to-end user flows (3-step login, OAuth PKCE, 2FA)",
+        "Token lifecycle testing (create, refresh, revoke)",
+        "Browser storage validation (localStorage, sessionStorage)",
+        "Visual regression testing (screenshots)",
+        "Accessibility testing (WCAG compliance)"
+      ],
+      "tools": [
+        "browser_navigate",
+        "browser_click",
+        "browser_type",
+        "browser_snapshot",
+        "browser_take_screenshot",
+        "browser_evaluate",
+        "browser_wait_for"
+      ],
+      "estimated_effort": "12-16 hours",
+      "test_coverage": "30% of total test suite (integration + E2E)",
+      "performance": "Fast (2-5s per test), headless mode for CI/CD",
+      "advantages": [
+        "Native MSW environment (browser service workers)",
+        "Real user interaction simulation",
+        "Complete flow testing (multi-step processes)",
+        "Screenshot/video artifacts for debugging",
+        "Cross-browser testing capability"
+      ],
+      "limitations": [
+        "Requires test frontend app",
+        "Slower than unit tests",
+        "More complex setup"
+      ],
+      "integration_points": {
+        "test_frontend": "Minimal Vite + React app with MSW integration",
+        "test_files": "tests/playwright/integration/*.spec.ts, tests/playwright/e2e/*.spec.ts",
+        "config": "playwright.config.ts"
+      }
+    },
+    "mockloop": {
+      "priority": "SECONDARY",
+      "purpose": "Coverage validation and reference mock generation from OpenAPI specs",
+      "availability": "Installed (/home/rob/fastapi-mcp-env/bin/python -m mockloop_mcp.server)",
+      "use_cases": [
+        "Generate reference mocks from auth-api OpenAPI spec (http://localhost:8000/openapi.json)",
+        "Validate 100% endpoint coverage (all 36 endpoints present)",
+        "Identify missing scenarios or edge cases",
+        "Compare MockLoop auto-generated mocks with handcrafted MSW handlers",
+        "AI-assisted scenario creation for complex flows"
+      ],
+      "tools": [
+        "generate_mock_from_openapi",
+        "create_scenario",
+        "validate_coverage"
+      ],
+      "estimated_effort": "2-3 hours (one-time validation)",
+      "test_coverage": "5% of total test suite (coverage validation only)",
+      "performance": "Medium (5-10 min for full spec processing)",
+      "advantages": [
+        "Automated coverage detection",
+        "AI-assisted scenario generation",
+        "OpenAPI spec validation",
+        "Identifies gaps in manual mocks"
+      ],
+      "limitations": [
+        "Requires running auth-api for OpenAPI spec",
+        "Auto-generated mocks may be less realistic than handcrafted",
+        "One-time check, not continuous testing"
+      ],
+      "integration_points": {
+        "openapi_spec_url": "http://localhost:8000/openapi.json",
+        "test_script": "tests/validation/coverage-check.ts",
+        "comparison_output": "reports/coverage-comparison.json"
+      }
+    },
+    "rest-api-tester": {
+      "priority": "SECONDARY",
+      "purpose": "Accuracy validation by comparing MSW mocks with real API responses",
+      "availability": "Installed (npx -y dkmaker-mcp-rest-api)",
+      "use_cases": [
+        "Test all 36 endpoints on real auth-api (http://localhost:8000)",
+        "Capture real API responses (status codes, headers, JSON bodies)",
+        "Compare real responses with MSW mock responses",
+        "Validate 100% accuracy of mock data",
+        "Performance benchmarking (real API vs mocks)",
+        "Identify response schema drift"
+      ],
+      "tools": [
+        "test_get_endpoint",
+        "test_post_endpoint",
+        "test_put_endpoint",
+        "test_delete_endpoint",
+        "test_patch_endpoint"
+      ],
+      "estimated_effort": "3-4 hours",
+      "test_coverage": "5% of total test suite (accuracy validation)",
+      "performance": "Fast (10-15 min for 36 endpoints)",
+      "advantages": [
+        "Direct API comparison",
+        "Bearer token authentication support",
+        "Request/response validation",
+        "Performance timing",
+        "Ensures mocks stay synchronized with real API"
+      ],
+      "limitations": [
+        "Requires running auth-api",
+        "Cannot test service worker interception (MSW-specific)",
+        "Scheduled checks only (not continuous)"
+      ],
+      "integration_points": {
+        "api_base_url": "http://localhost:8000",
+        "test_script": "tests/validation/compare-with-real-api.ts",
+        "comparison_report": "reports/accuracy-report.json"
+      },
+      "validation_schedule": "Daily during development, weekly after stabilization"
+    },
+    "mock-data": {
+      "priority": "SUPPORT",
+      "purpose": "Generate realistic test data with Faker.js for improved mock quality",
+      "availability": "Installed (/home/rob/mock-data-mcp)",
+      "use_cases": [
+        "Generate 100+ realistic test users (names, emails, addresses)",
+        "Create diverse test scenarios (edge cases, international users)",
+        "Bulk data generation for performance testing",
+        "Improve mock response realism",
+        "Generate test organizations and groups"
+      ],
+      "tools": [
+        "generate_mock_data",
+        "generate_bulk_data",
+        "generate_with_schema"
+      ],
+      "estimated_effort": "2-3 hours",
+      "test_coverage": "Data quality enhancement (supports all tests)",
+      "performance": "Very fast (<1 min for 100+ records)",
+      "advantages": [
+        "Realistic data (Faker.js)",
+        "Multiple locales support",
+        "Customizable schemas",
+        "Bulk generation",
+        "JSON/CSV export"
+      ],
+      "limitations": [
+        "Data generation only (not validation)",
+        "Requires schema definition"
+      ],
+      "integration_points": {
+        "test_script": "scripts/generate-test-data.ts",
+        "output_dir": "tests/fixtures/",
+        "schemas": "tests/fixtures/schemas/"
+      },
+      "data_types": [
+        "users (email, password, name, phone)",
+        "organizations (name, description, settings)",
+        "groups (name, permissions)",
+        "addresses (Dutch postal codes via postcode-api)",
+        "auth codes (verification, TOTP, PKCE)"
+      ]
+    },
+    "sequential": {
+      "priority": "STRATEGIC",
+      "purpose": "Complex flow analysis and test strategy planning (used for this planning document)",
+      "availability": "Available in Claude Code (built-in MCP)",
+      "use_cases": [
+        "Multi-step reasoning for complex flows (OAuth PKCE, 3-step login)",
+        "Test strategy planning and validation",
+        "Hypothesis testing (does token rotation work correctly?)",
+        "Root cause analysis for failing tests",
+        "Architecture review and optimization"
+      ],
+      "tools": [
+        "sequentialthinking"
+      ],
+      "estimated_effort": "Planning only (not direct implementation)",
+      "test_coverage": "Strategic planning and analysis",
+      "performance": "Planning phase (1-2 hours for deep analysis)",
+      "advantages": [
+        "Structured multi-step reasoning",
+        "Hypothesis generation and validation",
+        "Complex problem decomposition",
+        "Evidence-based decision making"
+      ],
+      "usage_examples": [
+        "Analyze OAuth PKCE flow requirements → Generate comprehensive test cases",
+        "Debug failing token refresh tests → Identify root cause systematically",
+        "Plan optimal test coverage → Validate against success criteria"
+      ],
+      "integration_points": {
+        "planning_phase": "This planning.json document",
+        "test_design": "Complex flow test case generation",
+        "debugging": "Root cause analysis for test failures"
+      }
+    }
+  },
+
+  "phases": [
+    {
+      "phase": 1,
+      "name": "Setup & Vitest Unit Tests",
+      "duration": "Week 1 (8-12 hours)",
+      "priority": "CRITICAL",
+      "status": "Ready to Start",
+      "objective": "Establish test foundation with comprehensive unit tests achieving 90%+ coverage",
+      "mcp_usage": "None (Vitest native, fastest approach)",
+      "tasks": [
+        {
+          "task": "Install Playwright",
+          "command": "cd frontend-mocks && npm install -D @playwright/test",
+          "effort": "10 minutes",
+          "deliverable": "package.json updated with Playwright"
+        },
+        {
+          "task": "Create test directory structure",
+          "deliverable": "tests/playwright/{integration,e2e}/, tests/validation/, scripts/",
+          "effort": "30 minutes"
+        },
+        {
+          "task": "Create handlers.test.ts",
+          "file": "src/mocks/handlers.test.ts",
+          "effort": "8-12 hours",
+          "test_count": "100+ test cases",
+          "coverage_target": "90%+",
+          "test_categories": [
+            "Authentication endpoints (8 tests)",
+            "Password reset endpoints (2 tests)",
+            "2FA endpoints (5 tests)",
+            "OAuth 2.0 endpoints (9 tests)",
+            "User/Organization endpoints (12 tests)",
+            "Error scenarios (all endpoints)",
+            "Scenario header testing (X-Mock-Scenario)",
+            "Utility functions (JWT, PKCE, RBAC)"
+          ]
+        },
+        {
+          "task": "Run Vitest tests and achieve coverage",
+          "command": "npm test && npm run test:coverage",
+          "effort": "Iterative (test → fix → test)",
+          "success_criteria": "All tests passing, 90%+ coverage"
+        }
+      ],
+      "deliverables": [
+        "handlers.test.ts with 100+ test cases",
+        "Coverage report showing 90%+ coverage",
+        "Test execution time <5 minutes",
+        "All 36 endpoints unit tested"
+      ],
+      "success_criteria": {
+        "coverage": "≥90%",
+        "tests_passing": "100%",
+        "execution_time": "<5 minutes",
+        "endpoint_coverage": "36/36"
+      },
+      "quick_wins": [
+        "Immediate feedback on handler correctness",
+        "Fast test execution (2-5 minutes)",
+        "Foundation for all future testing",
+        "High confidence in basic functionality"
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "Test Frontend & Playwright Setup",
+      "duration": "Week 2 (6-9 hours)",
+      "priority": "HIGH",
+      "status": "Blocked by Phase 1",
+      "objective": "Create minimal test frontend and configure Playwright for browser-based MSW testing",
+      "mcp_usage": "Playwright MCP (browser automation)",
+      "prerequisite": "Phase 1 complete (Vitest tests passing)",
+      "tasks": [
+        {
+          "task": "Create minimal test frontend",
+          "deliverable": "test-frontend/ (Vite + React + MSW integration)",
+          "effort": "4-6 hours",
+          "components": [
+            "Login page (3-step flow support)",
+            "Registration page",
+            "Dashboard (protected route)",
+            "MSW worker integration",
+            "Token management (localStorage)",
+            "Basic routing (React Router)"
+          ],
+          "rationale": "CRITICAL - MSW runs in browser, requires frontend for Playwright testing"
+        },
+        {
+          "task": "Configure Playwright",
+          "file": "playwright.config.ts",
+          "effort": "1-2 hours",
+          "config": {
+            "testDir": "./tests/playwright",
+            "browsers": ["chromium", "firefox"],
+            "baseURL": "http://localhost:5173",
+            "use": {
+              "headless": true,
+              "screenshot": "on-failure",
+              "video": "retain-on-failure"
+            }
+          }
+        },
+        {
+          "task": "Create integration tests",
+          "deliverable": "tests/playwright/integration/*.spec.ts",
+          "effort": "2-3 hours",
+          "test_files": [
+            "auth-login.spec.ts (3-step login flows)",
+            "oauth-pkce.spec.ts (OAuth authorization)",
+            "token-refresh.spec.ts (token lifecycle)",
+            "2fa-flow.spec.ts (2FA setup and login)"
+          ]
+        }
+      ],
+      "deliverables": [
+        "Minimal test frontend (Vite + React + MSW)",
+        "playwright.config.ts configuration",
+        "4 integration test files",
+        "All tests passing in headless mode"
+      ],
+      "success_criteria": {
+        "frontend_running": "http://localhost:5173 accessible",
+        "msw_active": "Service worker intercepting requests",
+        "playwright_tests": "All integration tests passing",
+        "execution_time": "<10 minutes"
+      }
+    },
+    {
+      "phase": 3,
+      "name": "Playwright E2E Tests",
+      "duration": "Week 2 (6-7 hours)",
+      "priority": "HIGH",
+      "status": "Blocked by Phase 2",
+      "objective": "Complete end-to-end user journey testing with Playwright MCP",
+      "mcp_usage": "Playwright MCP (E2E flows)",
+      "tasks": [
+        {
+          "task": "Create E2E test suite",
+          "deliverable": "tests/playwright/e2e/complete-flows.spec.ts",
+          "effort": "4-5 hours",
+          "flows": [
+            "New user registration → verification → login → API usage",
+            "2FA setup and login flow",
+            "Password reset flow",
+            "Multi-org user journey",
+            "OAuth client authorization flow",
+            "Token refresh on expiration",
+            "Logout and session cleanup",
+            "Error recovery (401, 403 redirects)"
+          ]
+        },
+        {
+          "task": "Add visual regression tests",
+          "effort": "1-2 hours",
+          "test_types": [
+            "Login page screenshot baseline",
+            "Org selection screenshot",
+            "2FA QR code display",
+            "Error message display"
+          ]
+        },
+        {
+          "task": "Accessibility testing",
+          "effort": "1 hour",
+          "tool": "axe-core via Playwright",
+          "target": "WCAG AA compliance"
+        }
+      ],
+      "deliverables": [
+        "E2E test suite with 8 complete flows",
+        "Visual regression test baselines",
+        "Accessibility test suite",
+        "Screenshot/video artifacts"
+      ],
+      "success_criteria": {
+        "flow_coverage": "8/8 critical flows tested",
+        "visual_tests": "Baseline screenshots captured",
+        "accessibility": "0 WCAG AA violations",
+        "execution_time": "<10 minutes"
+      }
+    },
+    {
+      "phase": 4,
+      "name": "MCP Validation Suite",
+      "duration": "Week 3 (6-8 hours)",
+      "priority": "MEDIUM",
+      "status": "Blocked by Phase 3",
+      "objective": "Validate coverage, accuracy, and data quality using MCP servers",
+      "mcp_usage": "MockLoop MCP, REST API Tester MCP, Mock Data MCP",
+      "tasks": [
+        {
+          "task": "MockLoop coverage validation",
+          "mcp": "MockLoop MCP",
+          "effort": "2-3 hours",
+          "steps": [
+            "Start auth-api (docker compose up)",
+            "Fetch OpenAPI spec (http://localhost:8000/openapi.json)",
+            "Generate reference mock with MockLoop",
+            "Compare with MSW handlers",
+            "Identify coverage gaps"
+          ],
+          "deliverable": "reports/coverage-comparison.json"
+        },
+        {
+          "task": "REST API accuracy validation",
+          "mcp": "REST API Tester MCP",
+          "effort": "3-4 hours",
+          "steps": [
+            "Test all 36 endpoints on real API",
+            "Capture real responses",
+            "Test same endpoints with MSW mocks",
+            "Compare responses (status, headers, body)",
+            "Generate accuracy report"
+          ],
+          "deliverable": "reports/accuracy-report.json",
+          "target": "100% response accuracy"
+        },
+        {
+          "task": "Mock Data enhancement",
+          "mcp": "Mock Data MCP",
+          "effort": "1-2 hours",
+          "steps": [
+            "Generate 100+ realistic test users",
+            "Generate test organizations and groups",
+            "Update mock handlers with realistic data",
+            "Test edge cases (long names, special chars, international)"
+          ],
+          "deliverable": "tests/fixtures/generated-data.json"
+        }
+      ],
+      "deliverables": [
+        "Coverage comparison report (MockLoop)",
+        "Accuracy validation report (REST API Tester)",
+        "Enhanced test data fixtures (Mock Data)",
+        "Gap analysis document"
+      ],
+      "success_criteria": {
+        "coverage": "100% endpoint coverage confirmed",
+        "accuracy": "100% response match with real API",
+        "data_quality": "Realistic test data in place",
+        "gaps_identified": "All missing scenarios documented"
+      }
+    },
+    {
+      "phase": 5,
+      "name": "Documentation & CI/CD",
+      "duration": "Week 3 (4-6 hours)",
+      "priority": "MEDIUM",
+      "status": "Blocked by Phase 4",
+      "objective": "Document testing strategy and automate test execution in CI/CD pipeline",
+      "mcp_usage": "None (documentation and automation)",
+      "tasks": [
+        {
+          "task": "Create test documentation",
+          "effort": "2-3 hours",
+          "deliverables": [
+            "TESTING.md (comprehensive test guide)",
+            "Test report template",
+            "Troubleshooting guide",
+            "MCP integration documentation"
+          ]
+        },
+        {
+          "task": "CI/CD integration",
+          "effort": "2-3 hours",
+          "deliverables": [
+            ".github/workflows/test.yml (GitHub Actions)",
+            "Docker Compose test environment",
+            "Test orchestration script (run-all-tests.sh)"
+          ],
+          "automation": [
+            "Run Vitest on every commit",
+            "Run Playwright on PR creation",
+            "Daily MockLoop coverage check",
+            "Weekly REST API accuracy validation"
+          ]
+        }
+      ],
+      "deliverables": [
+        "Complete test documentation",
+        "CI/CD pipeline configuration",
+        "Automated test execution",
+        "Test result reporting"
+      ],
+      "success_criteria": {
+        "documentation": "Complete and up-to-date",
+        "ci_cd": "All tests automated",
+        "reporting": "Structured test reports",
+        "maintenance": "Easy to update and extend"
+      }
+    }
+  ],
+
+  "test_matrix": {
+    "description": "Complete test coverage matrix for all 36 MSW endpoints",
+    "total_endpoints": 36,
+    "test_layers": {
+      "unit_tests": {
+        "tool": "Vitest",
+        "coverage": "60%",
+        "endpoints": 36,
+        "test_count": "100+",
+        "execution_time": "<5 minutes"
+      },
+      "integration_tests": {
+        "tool": "Playwright MCP",
+        "coverage": "30%",
+        "flows": 8,
+        "test_count": "25-30",
+        "execution_time": "<10 minutes"
+      },
+      "validation_tests": {
+        "tools": ["MockLoop MCP", "REST API Tester MCP", "Mock Data MCP"],
+        "coverage": "10%",
+        "validation_types": ["coverage", "accuracy", "data quality"],
+        "execution_time": "<15 minutes"
+      }
+    },
+    "endpoints": {
+      "authentication": {
+        "count": 8,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/auth/register",
+            "status_codes": [201, 400, 422],
+            "scenarios": ["success", "duplicate email", "weak password", "breached password"],
+            "test_types": ["unit", "integration", "e2e"],
+            "critical": true
+          },
+          {
+            "method": "POST",
+            "path": "/auth/login (step 1)",
+            "status_codes": [200, 403, 400],
+            "scenarios": ["code sent", "unverified user", "invalid credentials"],
+            "test_types": ["unit", "integration", "e2e"],
+            "critical": true
+          },
+          {
+            "method": "POST",
+            "path": "/auth/login/verify (step 2)",
+            "status_codes": [200, 400],
+            "scenarios": ["multi-org", "single-org", "invalid code"],
+            "test_types": ["unit", "integration", "e2e"],
+            "critical": true
+          },
+          {
+            "method": "POST",
+            "path": "/auth/login/select-org (step 3)",
+            "status_codes": [200, 400],
+            "scenarios": ["tokens issued", "invalid org"],
+            "test_types": ["unit", "integration"],
+            "critical": true
+          },
+          {
+            "method": "POST",
+            "path": "/auth/refresh",
+            "status_codes": [200, 401],
+            "scenarios": ["token rotation", "invalid token", "blacklisted token"],
+            "test_types": ["unit", "integration", "e2e"],
+            "critical": true
+          },
+          {
+            "method": "POST",
+            "path": "/auth/logout",
+            "status_codes": [200, 401],
+            "scenarios": ["success", "unauthorized"],
+            "test_types": ["unit", "integration", "e2e"],
+            "critical": false
+          },
+          {
+            "method": "POST",
+            "path": "/auth/verify-email",
+            "status_codes": [200, 400],
+            "scenarios": ["success", "invalid token", "expired token"],
+            "test_types": ["unit", "integration", "e2e"],
+            "critical": true
+          },
+          {
+            "method": "POST",
+            "path": "/auth/resend-verification",
+            "status_codes": [200, 429],
+            "scenarios": ["success", "rate limit"],
+            "test_types": ["unit", "integration"],
+            "critical": false
+          }
+        ]
+      },
+      "password_reset": {
+        "count": 2,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/auth/request-password-reset",
+            "status_codes": [200, 429],
+            "scenarios": ["success", "rate limit", "user not found"],
+            "test_types": ["unit", "integration", "e2e"],
+            "critical": false
+          },
+          {
+            "method": "POST",
+            "path": "/auth/reset-password",
+            "status_codes": [200, 400],
+            "scenarios": ["success", "invalid token", "weak password"],
+            "test_types": ["unit", "integration", "e2e"],
+            "critical": false
+          }
+        ]
+      },
+      "two_factor_auth": {
+        "count": 5,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/auth/2fa/setup",
+            "status_codes": [200, 401],
+            "scenarios": ["QR code generated", "unauthorized"],
+            "test_types": ["unit", "integration", "e2e"],
+            "critical": false
+          },
+          {
+            "method": "POST",
+            "path": "/auth/2fa/verify-setup",
+            "status_codes": [200, 400],
+            "scenarios": ["success", "invalid TOTP"],
+            "test_types": ["unit", "integration", "e2e"],
+            "critical": false
+          },
+          {
+            "method": "POST",
+            "path": "/auth/2fa/enable",
+            "status_codes": [200, 401],
+            "scenarios": ["enabled", "unauthorized"],
+            "test_types": ["unit", "integration"],
+            "critical": false
+          },
+          {
+            "method": "POST",
+            "path": "/auth/2fa/disable",
+            "status_codes": [200, 401],
+            "scenarios": ["disabled", "unauthorized"],
+            "test_types": ["unit", "integration"],
+            "critical": false
+          },
+          {
+            "method": "POST",
+            "path": "/auth/2fa/login",
+            "status_codes": [200, 400],
+            "scenarios": ["tokens issued", "invalid TOTP"],
+            "test_types": ["unit", "integration", "e2e"],
+            "critical": false
+          }
+        ]
+      },
+      "oauth": {
+        "count": 9,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/oauth/authorize",
+            "status_codes": [200, 401, 400],
+            "scenarios": ["consent page", "unauthorized", "invalid client"],
+            "test_types": ["unit", "integration", "e2e"],
+            "critical": true
+          },
+          {
+            "method": "POST",
+            "path": "/oauth/consent",
+            "status_codes": [302, 400],
+            "scenarios": ["redirect with code", "invalid request"],
+            "test_types": ["unit", "integration", "e2e"],
+            "critical": true
+          },
+          {
+            "method": "POST",
+            "path": "/oauth/token (authorization_code)",
+            "status_codes": [200, 400],
+            "scenarios": ["tokens issued", "invalid code", "PKCE validation"],
+            "test_types": ["unit", "integration", "e2e"],
+            "critical": true
+          },
+          {
+            "method": "POST",
+            "path": "/oauth/token (refresh_token)",
+            "status_codes": [200, 400],
+            "scenarios": ["token rotation", "invalid token"],
+            "test_types": ["unit", "integration"],
+            "critical": true
+          },
+          {
+            "method": "POST",
+            "path": "/oauth/token (client_credentials)",
+            "status_codes": [200, 401],
+            "scenarios": ["service token", "invalid client"],
+            "test_types": ["unit"],
+            "critical": false
+          },
+          {
+            "method": "POST",
+            "path": "/oauth/revoke",
+            "status_codes": [200, 401],
+            "scenarios": ["token revoked", "unauthorized"],
+            "test_types": ["unit", "integration"],
+            "critical": false
+          },
+          {
+            "method": "GET",
+            "path": "/oauth/userinfo",
+            "status_codes": [200, 401],
+            "scenarios": ["user info", "unauthorized"],
+            "test_types": ["unit", "integration"],
+            "critical": false
+          },
+          {
+            "method": "GET",
+            "path": "/.well-known/oauth-authorization-server",
+            "status_codes": [200],
+            "scenarios": ["metadata"],
+            "test_types": ["unit"],
+            "critical": false
+          },
+          {
+            "method": "POST",
+            "path": "/oauth/introspect",
+            "status_codes": [200, 401],
+            "scenarios": ["token active", "token inactive", "unauthorized"],
+            "test_types": ["unit"],
+            "critical": false
+          }
+        ]
+      },
+      "user_organization": {
+        "count": 12,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/users/me",
+            "status_codes": [200, 401],
+            "scenarios": ["user profile", "unauthorized"],
+            "test_types": ["unit", "integration"],
+            "critical": false
+          },
+          {
+            "method": "GET",
+            "path": "/users/me/organizations",
+            "status_codes": [200, 401],
+            "scenarios": ["org list", "unauthorized"],
+            "test_types": ["unit", "integration"],
+            "critical": false
+          },
+          {
+            "method": "POST",
+            "path": "/users/me/organizations",
+            "status_codes": [201, 401, 409],
+            "scenarios": ["org created", "unauthorized", "duplicate name"],
+            "test_types": ["unit", "integration"],
+            "critical": false
+          },
+          {
+            "method": "GET",
+            "path": "/users/me/organizations/{org_id}",
+            "status_codes": [200, 401, 404],
+            "scenarios": ["org details", "unauthorized", "not found"],
+            "test_types": ["unit"],
+            "critical": false
+          },
+          {
+            "method": "PUT",
+            "path": "/users/me/organizations/{org_id}",
+            "status_codes": [200, 401, 404],
+            "scenarios": ["org updated", "unauthorized", "not found"],
+            "test_types": ["unit"],
+            "critical": false
+          },
+          {
+            "method": "DELETE",
+            "path": "/users/me/organizations/{org_id}",
+            "status_codes": [204, 401, 404],
+            "scenarios": ["org deleted", "unauthorized", "not found"],
+            "test_types": ["unit"],
+            "critical": false
+          },
+          {
+            "method": "GET",
+            "path": "/users/me/organizations/{org_id}/groups",
+            "status_codes": [200, 401],
+            "scenarios": ["group list", "unauthorized"],
+            "test_types": ["unit"],
+            "critical": false
+          },
+          {
+            "method": "POST",
+            "path": "/users/me/organizations/{org_id}/groups",
+            "status_codes": [201, 401, 403],
+            "scenarios": ["group created", "unauthorized", "no permission"],
+            "test_types": ["unit"],
+            "critical": false
+          },
+          {
+            "method": "GET",
+            "path": "/users/me/organizations/{org_id}/groups/{group_id}",
+            "status_codes": [200, 401, 404],
+            "scenarios": ["group details", "unauthorized", "not found"],
+            "test_types": ["unit"],
+            "critical": false
+          },
+          {
+            "method": "PUT",
+            "path": "/users/me/organizations/{org_id}/groups/{group_id}",
+            "status_codes": [200, 401, 403],
+            "scenarios": ["group updated", "unauthorized", "no permission"],
+            "test_types": ["unit"],
+            "critical": false
+          },
+          {
+            "method": "DELETE",
+            "path": "/users/me/organizations/{org_id}/groups/{group_id}",
+            "status_codes": [204, 401, 403],
+            "scenarios": ["group deleted", "unauthorized", "no permission"],
+            "test_types": ["unit"],
+            "critical": false
+          },
+          {
+            "method": "GET",
+            "path": "/users/me/permissions",
+            "status_codes": [200, 401],
+            "scenarios": ["permission list", "unauthorized"],
+            "test_types": ["unit"],
+            "critical": false
+          }
+        ]
+      }
+    },
+    "critical_flows": [
+      {
+        "flow": "Complete Registration Flow",
+        "steps": ["register", "verify email", "login"],
+        "test_type": "E2E",
+        "mcp": "Playwright",
+        "duration": "1-2 minutes",
+        "critical": true
+      },
+      {
+        "flow": "Multi-org Login (3-step)",
+        "steps": ["login step 1", "verify code", "select org", "get tokens"],
+        "test_type": "Integration",
+        "mcp": "Playwright",
+        "duration": "30 seconds",
+        "critical": true
+      },
+      {
+        "flow": "Single-org Login (2-step)",
+        "steps": ["login step 1", "verify code", "auto org select", "get tokens"],
+        "test_type": "Integration",
+        "mcp": "Playwright",
+        "duration": "30 seconds",
+        "critical": true
+      },
+      {
+        "flow": "OAuth PKCE Authorization Flow",
+        "steps": ["generate PKCE", "authorize", "consent", "token exchange", "validate"],
+        "test_type": "Integration",
+        "mcp": "Playwright",
+        "duration": "1 minute",
+        "critical": true
+      },
+      {
+        "flow": "Token Refresh Cycle",
+        "steps": ["login", "get tokens", "wait expiration", "refresh", "validate rotation"],
+        "test_type": "Integration",
+        "mcp": "Playwright",
+        "duration": "1 minute",
+        "critical": true
+      },
+      {
+        "flow": "2FA Setup and Login",
+        "steps": ["setup 2FA", "get QR", "verify TOTP", "enable", "logout", "login with 2FA"],
+        "test_type": "E2E",
+        "mcp": "Playwright",
+        "duration": "2 minutes",
+        "critical": false
+      },
+      {
+        "flow": "Password Reset Flow",
+        "steps": ["request reset", "get token", "reset password", "login"],
+        "test_type": "E2E",
+        "mcp": "Playwright",
+        "duration": "1 minute",
+        "critical": false
+      },
+      {
+        "flow": "RBAC Permission Check",
+        "steps": ["login", "get permissions", "test protected endpoint", "verify 403"],
+        "test_type": "Integration",
+        "mcp": "Playwright",
+        "duration": "30 seconds",
+        "critical": false
+      }
+    ]
+  },
+
+  "tool_selection_matrix": {
+    "description": "Decision matrix for selecting optimal tool/MCP per testing scenario",
+    "scenarios": [
+      {
+        "scenario": "Unit test handler response",
+        "best_tool": "Vitest (no MCP)",
+        "reason": "Fastest, most direct, no overhead",
+        "estimated_time": "2 minutes for 100+ tests",
+        "alternatives": []
+      },
+      {
+        "scenario": "Integration test 3-step login",
+        "best_tool": "Playwright MCP",
+        "reason": "Browser context required, MSW native environment",
+        "estimated_time": "30 seconds per flow",
+        "alternatives": []
+      },
+      {
+        "scenario": "Validate endpoint coverage",
+        "best_tool": "MockLoop MCP",
+        "reason": "Auto-generate from OpenAPI, compare coverage",
+        "estimated_time": "5 minutes one-time",
+        "alternatives": ["Manual OpenAPI comparison"]
+      },
+      {
+        "scenario": "Compare mock vs real API",
+        "best_tool": "REST API Tester MCP",
+        "reason": "Direct API comparison, response validation",
+        "estimated_time": "10 minutes for 36 endpoints",
+        "alternatives": ["Manual Postman testing"]
+      },
+      {
+        "scenario": "Generate test data",
+        "best_tool": "Mock Data MCP",
+        "reason": "Realistic, diverse test data with Faker.js",
+        "estimated_time": "1 minute for 100+ users",
+        "alternatives": ["Manual test data creation"]
+      },
+      {
+        "scenario": "Analyze complex OAuth flow",
+        "best_tool": "Sequential MCP",
+        "reason": "Multi-step reasoning, validation logic",
+        "estimated_time": "Planning only",
+        "alternatives": ["Manual analysis"]
+      },
+      {
+        "scenario": "E2E user journey",
+        "best_tool": "Playwright MCP",
+        "reason": "Complete browser flows, state persistence",
+        "estimated_time": "1-2 minutes per journey",
+        "alternatives": []
+      },
+      {
+        "scenario": "Visual regression testing",
+        "best_tool": "Playwright MCP",
+        "reason": "Screenshot capability, baseline comparison",
+        "estimated_time": "30 seconds per page",
+        "alternatives": []
+      }
+    ]
+  },
+
+  "success_criteria": {
+    "technical_metrics": {
+      "code_coverage": {
+        "target": "≥90%",
+        "minimum": "85%",
+        "measurement": "Vitest coverage report"
+      },
+      "endpoint_coverage": {
+        "target": "100% (36/36)",
+        "minimum": "100%",
+        "measurement": "Test matrix validation"
+      },
+      "flow_coverage": {
+        "target": "100% (8/8 critical flows)",
+        "minimum": "100%",
+        "measurement": "Playwright test suite"
+      },
+      "response_accuracy": {
+        "target": "100%",
+        "minimum": "95%",
+        "measurement": "REST API Tester comparison"
+      },
+      "test_execution_time": {
+        "unit_tests": "<5 minutes",
+        "integration_tests": "<10 minutes",
+        "validation_tests": "<15 minutes",
+        "total": "<30 minutes"
+      },
+      "failure_rate": {
+        "happy_paths": "0%",
+        "edge_cases": "<5%"
+      }
+    },
+    "quality_metrics": {
+      "false_positive_rate": "<2%",
+      "false_negative_rate": "0% (critical)",
+      "mock_realism": "≥95%",
+      "data_quality": "Realistic test data via Mock Data MCP"
+    },
+    "process_metrics": {
+      "time_to_first_test": "<1 week (Phase 1)",
+      "time_to_full_coverage": "3 weeks",
+      "mcp_integration_success": "100% (all 5 MCPs working)",
+      "ci_cd_integration": "Automated tests on commit"
+    },
+    "business_value": {
+      "frontend_development": "Unblocked (mocks ready)",
+      "api_dependency": "Eliminated (no backend needed for frontend dev)",
+      "development_speed": "50%+ faster (parallel frontend/backend work)",
+      "confidence": "HIGH (validated mocks)"
+    }
+  },
+
+  "risks": [
+    {
+      "risk": "MCP Server Failures",
+      "probability": "MEDIUM",
+      "impact": "HIGH",
+      "description": "MCP servers may become unavailable or fail during test execution",
+      "mitigation": [
+        "Fallback to Vitest for unit tests (no MCP dependency)",
+        "Check MCP availability before test execution",
+        "Graceful degradation strategy",
+        "Document manual alternatives for each MCP tool"
+      ],
+      "contingency": "Core testing (Vitest + Playwright) can proceed without FastAPI MCPs"
+    },
+    {
+      "risk": "Browser Compatibility Issues",
+      "probability": "LOW",
+      "impact": "MEDIUM",
+      "description": "Playwright tests may fail on specific browsers",
+      "mitigation": [
+        "Test on multiple browsers (Chrome, Firefox)",
+        "Use headless mode for CI/CD",
+        "Screenshot artifacts for debugging",
+        "Browser version pinning in config"
+      ],
+      "contingency": "Focus on Chromium for primary testing"
+    },
+    {
+      "risk": "Incomplete MSW Handler Coverage",
+      "probability": "LOW",
+      "impact": "HIGH",
+      "description": "MSW handlers may be missing endpoints or scenarios",
+      "mitigation": [
+        "MockLoop coverage check (compare with OpenAPI spec)",
+        "Manual endpoint audit",
+        "REST API Tester comparison",
+        "Comprehensive test matrix"
+      ],
+      "contingency": "Gap analysis document with remediation plan"
+    },
+    {
+      "risk": "Performance Issues",
+      "probability": "MEDIUM",
+      "impact": "LOW",
+      "description": "Test execution may be slower than expected",
+      "mitigation": [
+        "Parallel test execution (Vitest, Playwright)",
+        "Cache browser instances (Playwright)",
+        "Optimize test data size",
+        "Headless mode for speed"
+      ],
+      "contingency": "Prioritize critical tests, run full suite nightly"
+    },
+    {
+      "risk": "False Positives",
+      "probability": "MEDIUM",
+      "impact": "HIGH",
+      "description": "Mocks may be too permissive, passing incorrect behavior",
+      "mitigation": [
+        "REST API Tester comparison with real API",
+        "Strict response schema validation",
+        "Test edge cases explicitly",
+        "Regular accuracy validation"
+      ],
+      "contingency": "Weekly REST API comparison, monthly full validation"
+    },
+    {
+      "risk": "CI/CD Integration Challenges",
+      "probability": "LOW",
+      "impact": "MEDIUM",
+      "description": "Automated testing may face environment issues",
+      "mitigation": [
+        "Docker containers for consistency",
+        "Environment variables for configuration",
+        "Retry strategy for flaky tests",
+        "Comprehensive documentation"
+      ],
+      "contingency": "Manual test runs for releases until CI/CD stabilized"
+    },
+    {
+      "risk": "Test Frontend Not Available",
+      "probability": "MEDIUM",
+      "impact": "HIGH",
+      "description": "CRITICAL BLOCKER - Playwright requires frontend app",
+      "mitigation": [
+        "Create minimal test frontend (Phase 2, 4-6 hours)",
+        "Use Vite for fast setup",
+        "Minimal React components",
+        "MSW integration"
+      ],
+      "contingency": "Unit tests can proceed without frontend; integration tests blocked"
+    }
+  ],
+
+  "quick_wins": [
+    {
+      "win": "Vitest Unit Tests",
+      "effort": "8-12 hours",
+      "impact": "HIGH",
+      "roi": "Very High",
+      "value": "90%+ code coverage, immediate feedback, fast execution",
+      "timeline": "Week 1"
+    },
+    {
+      "win": "Playwright Setup",
+      "effort": "2-3 hours",
+      "impact": "HIGH",
+      "roi": "High",
+      "value": "Foundation for all browser testing",
+      "timeline": "Week 2"
+    },
+    {
+      "win": "Mock Data Generator",
+      "effort": "1-2 hours",
+      "impact": "MEDIUM",
+      "roi": "High",
+      "value": "Realistic test data, better quality",
+      "timeline": "Week 3"
+    },
+    {
+      "win": "REST API Comparison",
+      "effort": "3-4 hours",
+      "impact": "HIGH",
+      "roi": "Very High",
+      "value": "100% accuracy validation against real API",
+      "timeline": "Week 3"
+    }
+  ],
+
+  "prerequisites": [
+    {
+      "prerequisite": "Test Frontend App",
+      "status": "MISSING - CRITICAL BLOCKER",
+      "solution": "Create minimal Vite + React app with MSW integration",
+      "effort": "4-6 hours",
+      "priority": "CRITICAL",
+      "blocks": ["Playwright integration tests", "E2E tests"],
+      "timeline": "Week 2, Phase 2"
+    },
+    {
+      "prerequisite": "Auth API Running",
+      "status": "AVAILABLE",
+      "solution": "docker compose up in auth-api directory",
+      "effort": "5 minutes",
+      "priority": "HIGH",
+      "needed_for": ["REST API Tester comparison", "MockLoop validation"]
+    },
+    {
+      "prerequisite": "MCP Servers Configured",
+      "status": "INSTALLED",
+      "verification": "Confirmed in claudedocs_shared/mcp_info/",
+      "mcps": [
+        "Playwright MCP (built-in)",
+        "MockLoop MCP (/home/rob/fastapi-mcp-env)",
+        "REST API Tester MCP (npx)",
+        "Mock Data MCP (/home/rob/mock-data-mcp)",
+        "Sequential MCP (built-in)"
+      ],
+      "priority": "DONE"
+    },
+    {
+      "prerequisite": "Node.js Dependencies",
+      "status": "PARTIAL",
+      "solution": "npm install -D @playwright/test",
+      "effort": "10 minutes",
+      "priority": "HIGH",
+      "timeline": "Week 1, Phase 1"
+    }
+  ],
+
+  "dependency_chain": {
+    "description": "Critical path for successful implementation",
+    "chain": [
+      {
+        "step": 1,
+        "task": "Vitest Unit Tests",
+        "duration": "8-12 hours",
+        "blocks": [],
+        "delivers": "Foundation, 90%+ coverage"
+      },
+      {
+        "step": 2,
+        "task": "Test Frontend Creation",
+        "duration": "4-6 hours",
+        "blocks": ["Playwright setup"],
+        "delivers": "Browser environment for MSW"
+      },
+      {
+        "step": 3,
+        "task": "Playwright Setup",
+        "duration": "2-3 hours",
+        "blocks": ["Integration tests"],
+        "delivers": "Browser testing capability"
+      },
+      {
+        "step": 4,
+        "task": "Integration Tests",
+        "duration": "6-7 hours",
+        "blocks": ["E2E tests"],
+        "delivers": "Critical flow validation"
+      },
+      {
+        "step": 5,
+        "task": "E2E Tests",
+        "duration": "6-7 hours",
+        "blocks": ["MCP validation"],
+        "delivers": "Complete user journeys"
+      },
+      {
+        "step": 6,
+        "task": "MCP Validation",
+        "duration": "6-8 hours",
+        "blocks": [],
+        "delivers": "100% coverage + accuracy validation"
+      }
+    ],
+    "total_duration": "32-43 hours",
+    "critical_path": "Step 1 → Step 2 → Step 3 → Step 4 → Step 5 → Step 6"
+  },
+
+  "execution_recommendations": {
+    "recommended_approach": "INCREMENTAL",
+    "rationale": "Minimize risk, faster time to value, easier to debug",
+    "approach": {
+      "week_1": {
+        "focus": "Vitest unit tests only",
+        "effort": "8-12 hours",
+        "value": "Immediate feedback, 90%+ coverage, foundation",
+        "deliverable": "handlers.test.ts with 100+ tests passing"
+      },
+      "week_2": {
+        "focus": "Test frontend + Playwright setup + integration tests",
+        "effort": "12-16 hours",
+        "value": "Browser testing capability, critical flows validated",
+        "deliverable": "Test frontend + Playwright integration suite"
+      },
+      "week_3": {
+        "focus": "E2E tests + MCP validation + documentation",
+        "effort": "10-14 hours",
+        "value": "Complete validation, CI/CD ready",
+        "deliverable": "Full test suite + documentation + automation"
+      }
+    },
+    "decision_point": {
+      "when": "After Week 1 (Vitest complete)",
+      "evaluation": "If Vitest tests reveal issues → Fix handlers first. If tests pass → Proceed to Playwright",
+      "criteria": "All unit tests passing, 90%+ coverage achieved"
+    },
+    "avoid": {
+      "all_at_once": "High risk, overwhelming scope, dependency blockers, longer time to first value",
+      "playwright_first": "Requires frontend prerequisite, slower feedback loop",
+      "mcp_only": "Cannot test MSW service worker interception without browser"
+    }
+  },
+
+  "continuous_validation": {
+    "description": "Ongoing test execution schedule for maintaining quality",
+    "schedules": {
+      "continuous": {
+        "trigger": "Every commit",
+        "tests": "Vitest unit tests",
+        "duration": "<5 minutes",
+        "tool": "GitHub Actions"
+      },
+      "on_pr": {
+        "trigger": "Pull request creation",
+        "tests": "Vitest + Playwright integration",
+        "duration": "<15 minutes",
+        "tool": "GitHub Actions"
+      },
+      "daily": {
+        "trigger": "Nightly build",
+        "tests": "Full suite (Vitest + Playwright + MockLoop)",
+        "duration": "<30 minutes",
+        "tool": "Scheduled GitHub Actions"
+      },
+      "weekly": {
+        "trigger": "Sunday midnight",
+        "tests": "Full suite + REST API Tester comparison",
+        "duration": "<45 minutes",
+        "tool": "Scheduled GitHub Actions"
+      },
+      "monthly": {
+        "trigger": "First day of month",
+        "tests": "Complete MCP validation suite + accuracy report",
+        "duration": "1-2 hours",
+        "tool": "Manual + scheduled automation"
+      },
+      "on_demand": {
+        "trigger": "Before releases",
+        "tests": "Full validation + manual review",
+        "duration": "2-3 hours",
+        "tool": "Manual execution"
+      }
+    }
+  },
+
+  "file_structure": {
+    "description": "Complete test directory structure",
+    "structure": {
+      "frontend-mocks/": {
+        "src/mocks/": {
+          "handlers.ts": "Existing - 36 MSW endpoints (2,978 lines)",
+          "handlers.test.ts": "TO CREATE - Vitest unit tests (100+ cases)"
+        },
+        "tests/": {
+          "playwright/": {
+            "integration/": {
+              "auth-login.spec.ts": "TO CREATE - 3-step login tests",
+              "oauth-pkce.spec.ts": "TO CREATE - OAuth PKCE flow",
+              "token-refresh.spec.ts": "TO CREATE - Token lifecycle",
+              "2fa-flow.spec.ts": "TO CREATE - 2FA setup/login"
+            },
+            "e2e/": {
+              "complete-flows.spec.ts": "TO CREATE - End-to-end journeys"
+            }
+          },
+          "validation/": {
+            "coverage-check.ts": "TO CREATE - MockLoop integration",
+            "compare-with-real-api.ts": "TO CREATE - REST API Tester"
+          },
+          "fixtures/": {
+            "schemas/": "TO CREATE - Mock Data schemas",
+            "generated-data.json": "TO CREATE - Test data"
+          }
+        },
+        "scripts/": {
+          "generate-test-data.ts": "TO CREATE - Mock Data MCP script",
+          "validate-mocks.ts": "TO CREATE - Orchestration script",
+          "run-all-tests.sh": "TO CREATE - CI/CD runner"
+        },
+        "test-frontend/": {
+          "src/": {
+            "pages/": "TO CREATE - Login, Register, Dashboard",
+            "main.tsx": "TO CREATE - App entry + MSW setup",
+            "router.tsx": "TO CREATE - React Router config"
+          },
+          "vite.config.ts": "TO CREATE - Vite configuration",
+          "package.json": "TO CREATE - Dependencies"
+        },
+        "playwright.config.ts": "TO CREATE - Playwright config",
+        "vitest.config.ts": "OPTIONAL - Vitest config (already in package.json)",
+        "reports/": {
+          "coverage/": "AUTO-GENERATED - Vitest coverage reports",
+          "playwright/": "AUTO-GENERATED - Playwright test results",
+          "coverage-comparison.json": "AUTO-GENERATED - MockLoop report",
+          "accuracy-report.json": "AUTO-GENERATED - REST API Tester"
+        },
+        ".github/workflows/": {
+          "test.yml": "TO CREATE - GitHub Actions workflow"
+        },
+        "TESTING.md": "TO CREATE - Test documentation",
+        "planning.json": "THIS FILE - Complete implementation plan"
+      }
+    }
+  },
+
+  "commands": {
+    "description": "All commands for test execution and validation",
+    "setup": {
+      "install_playwright": "cd frontend-mocks && npm install -D @playwright/test",
+      "install_browsers": "npx playwright install",
+      "create_directories": "mkdir -p tests/playwright/{integration,e2e} tests/validation tests/fixtures scripts test-frontend"
+    },
+    "unit_tests": {
+      "run_all": "npm test",
+      "watch_mode": "npm run test:watch",
+      "with_coverage": "npm run test:coverage",
+      "ui_mode": "npm run test:ui"
+    },
+    "integration_tests": {
+      "run_all": "npx playwright test tests/playwright/integration/",
+      "watch_mode": "npx playwright test tests/playwright/integration/ --ui",
+      "headed_mode": "npx playwright test tests/playwright/integration/ --headed",
+      "specific_browser": "npx playwright test --project=chromium"
+    },
+    "e2e_tests": {
+      "run_all": "npx playwright test tests/playwright/e2e/",
+      "with_trace": "npx playwright test tests/playwright/e2e/ --trace on",
+      "show_trace": "npx playwright show-trace trace.zip"
+    },
+    "mcp_validation": {
+      "mockloop_coverage": "# Use Claude Code: 'Use MockLoop MCP to validate coverage from http://localhost:8000/openapi.json'",
+      "rest_api_comparison": "# Use Claude Code: 'Use REST API Tester MCP to compare all endpoints with http://localhost:8000'",
+      "generate_test_data": "# Use Claude Code: 'Use Mock Data MCP to generate 100 realistic test users'"
+    },
+    "full_suite": {
+      "all_tests": "npm test && npx playwright test",
+      "with_reports": "npm run test:coverage && npx playwright test --reporter=html"
+    },
+    "auth_api": {
+      "start": "cd ../auth-api && docker compose up -d",
+      "stop": "cd ../auth-api && docker compose down",
+      "logs": "cd ../auth-api && docker compose logs -f auth-api"
+    },
+    "test_frontend": {
+      "dev": "cd test-frontend && npm run dev",
+      "build": "cd test-frontend && npm run build"
+    }
+  },
+
+  "next_actions": {
+    "immediate": [
+      {
+        "action": "Review planning.json",
+        "effort": "30 minutes",
+        "output": "Validated implementation plan"
+      },
+      {
+        "action": "Install Playwright",
+        "command": "cd frontend-mocks && npm install -D @playwright/test",
+        "effort": "10 minutes"
+      },
+      {
+        "action": "Create test directory structure",
+        "command": "mkdir -p tests/playwright/{integration,e2e} tests/validation tests/fixtures scripts",
+        "effort": "5 minutes"
+      },
+      {
+        "action": "Start handlers.test.ts",
+        "effort": "Begin Phase 1 (Week 1)",
+        "priority": "HIGH"
+      }
+    ],
+    "this_week": [
+      {
+        "action": "Complete Vitest unit tests",
+        "deliverable": "handlers.test.ts with 100+ test cases",
+        "target": "90%+ coverage",
+        "effort": "8-12 hours"
+      }
+    ],
+    "next_week": [
+      {
+        "action": "Create test frontend",
+        "deliverable": "Minimal Vite + React app with MSW",
+        "effort": "4-6 hours"
+      },
+      {
+        "action": "Playwright integration tests",
+        "deliverable": "4 integration test files",
+        "effort": "6-7 hours"
+      }
+    ],
+    "week_3": [
+      {
+        "action": "E2E tests",
+        "deliverable": "Complete user journey tests",
+        "effort": "6-7 hours"
+      },
+      {
+        "action": "MCP validation",
+        "deliverable": "Coverage + accuracy reports",
+        "effort": "6-8 hours"
+      },
+      {
+        "action": "Documentation & CI/CD",
+        "deliverable": "TESTING.md + GitHub Actions",
+        "effort": "4-6 hours"
+      }
+    ]
+  },
+
+  "conclusion": {
+    "summary": "Comprehensive 3-layer test strategy validated via Sequential MCP ultrathink analysis (22 reasoning steps)",
+    "confidence": "HIGH - Strategy is evidence-based, practical, and achievable",
+    "unique_insight": "Playwright MCP is optimal for MSW testing because MSW runs in browser context (service workers)",
+    "critical_success_factor": "Create test frontend in Phase 2 (prerequisite for Playwright)",
+    "expected_outcome": "Production-ready MSW mocks with 100% validation, enabling parallel frontend/backend development",
+    "roi": "Very High - 50%+ faster development, eliminated API dependency for frontend work",
+    "ready_to_execute": true,
+    "next_step": "Begin Phase 1: Install Playwright and create handlers.test.ts"
+  }
+}

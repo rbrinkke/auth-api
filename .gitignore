@@ -50,3 +50,5 @@ logs/
 .DS_Store
 Thumbs.db
 .venv/
+node_modules/
+*.log

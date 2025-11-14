@@ -4,28 +4,172 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Ultra-minimalistic authentication service for the Activity App. Built with **FastAPI** (Python), **PostgreSQL** (stored procedures only), **Redis**, and integrated with centralized observability stack (Prometheus, Loki, Grafana).
+**Auth API** is a FastAPI-based authentication service for the Activity Platform. It serves as a token factory focused exclusively on authentication and JWT token issuance - no user profiles or business logic.
 
-**Core Philosophy**: Token factory only - no user profiles, no business logic, ONLY authentication and token issuance.
+**Core Philosophy**: Database team owns schema through stored procedures. All database operations go through PostgreSQL stored procedures in the `activity` schema.
+
+**Key Technologies**: FastAPI, PostgreSQL (stored procedures), Redis, asyncpg, JWT, Argon2id password hashing
+
+## Critical Development Patterns
+
+### 🔴 Always Rebuild Docker After Code Changes
+
+**CRITICAL**: `docker compose restart` uses the OLD image. You MUST rebuild:
+
+```bash
+# Wrong (uses cached old code)
+docker compose restart auth-api
+
+# Right (picks up new code)
+docker compose build auth-api && docker compose restart auth-api
+
+# Force rebuild without cache (use after significant changes)
+docker compose build --no-cache auth-api && docker compose restart auth-api
+```
+
+**When to rebuild:**
+- After ANY Python code changes
+- After requirements.txt updates
+- After .env changes
+- After Dockerfile modifications
+
+This is the #1 cause of "my fix didn't work" issues. Always rebuild!
+
+### Stored Procedure Pattern (Required)
+
+All database operations MUST go through stored procedures in `activity` schema:
+
+```python
+# Python wrapper in app/db/procedures.py
+@log_stored_procedure
+async def sp_create_user(
+    conn: asyncpg.Connection,
+    email: str,
+    hashed_password: str
+) -> UserRecord:
+    result = await conn.fetchrow(
+        "SELECT * FROM activity.sp_create_user($1, $2)",
+        email.lower(),
+        hashed_password
+    )
+    return UserRecord(result)
+```
+
+**Why stored procedures?**
+- Database team owns schema evolution
+- Better for CQRS architecture
+- Easier auditing and optimization
+- API changes don't require schema changes
+
+**Never write raw SQL** - only call stored procedures via `app/db/procedures.py`
+
+### JWT Token Architecture
+
+**Token Types:**
+1. **Access Token**: 15 minutes, used for API authentication
+2. **Refresh Token**: 30 days, single-use with rotation
+3. **Pre-auth Token**: Temporary token for 2FA flow
+
+**Token Issuance Pattern:**
+```python
+# All tokens must include org_id for multi-org support
+payload = {
+    "sub": str(user_id),           # User ID (UUID)
+    "org_id": str(org_id),          # Organization scope
+    "exp": expiration_timestamp,
+    "jti": unique_token_id          # For blacklist/rotation
+}
+```
+
+**Critical**: `JWT_SECRET_KEY` MUST match across all services that validate tokens (auth-api, chat-api, image-api, etc.)
+
+### Multi-Organization Login Flow
+
+**3-Step Login Process:**
+
+```bash
+# Step 1: Password validation → sends email code
+POST /api/auth/login
+{
+  "email": "user@example.com",
+  "password": "Password123!"
+}
+# Response: { "requires_code": true, "user_id": "...", "message": "..." }
+
+# Step 2: Code validation → org selection (if multi-org user)
+POST /api/auth/login
+{
+  "email": "user@example.com",
+  "password": "Password123!",
+  "code": "123456"
+}
+# Response (multi-org): { "requires_org_selection": true, "organizations": [...] }
+# Response (single-org): { "access_token": "...", "refresh_token": "..." }
+
+# Step 3: Org selection → tokens (multi-org only)
+POST /api/auth/login
+{
+  "email": "user@example.com",
+  "password": "Password123!",
+  "code": "123456",
+  "org_id": "650e8400-e29b-41d4-a716-446655440001"
+}
+# Response: { "access_token": "...", "refresh_token": "...", "org_id": "..." }
+```
+
+**Development Shortcut**: Set `SKIP_LOGIN_CODE=true` to skip email codes (Step 2 becomes optional)
+
+### Security Patterns
+
+**Generic Error Messages (Prevent User Enumeration):**
+
+```python
+# ✅ Right: Generic message
+raise InvalidCredentialsError()  # Returns "Invalid credentials"
+
+# ❌ Wrong: Reveals information
+raise Exception("User not found")      # User enumeration attack vector
+raise Exception("Password incorrect")  # Reveals email exists
+```
+
+**Exception After Authentication:**
+```python
+# ✅ OK: User already authenticated
+if not user.is_verified:
+    raise AccountNotVerifiedError("Email not verified. Check your inbox.")
+
+# User knows they're authenticated, specific error is safe
+```
+
+**Password Security:**
+- Argon2id hashing (PHC password hashing competition winner)
+- zxcvbn strength validation (detects weak passwords)
+- Have I Been Pwned breach checking (optional, requires network)
 
 ## Common Commands
 
-### Development
+### Development Workflow
 
 ```bash
-# Start all services (auth-api connects to external PostgreSQL + Redis)
+# Start infrastructure (PostgreSQL, Redis - required first!)
+cd /path/to/activity
+./scripts/start-infra.sh
+
+# Start auth-api
+cd auth-api
 docker compose up -d
 
-# View API logs
+# Watch logs
 docker compose logs -f auth-api
 
-# Rebuild after code changes (CRITICAL - restart alone doesn't update code)
+# Rebuild after code changes (CRITICAL!)
 docker compose build auth-api && docker compose restart auth-api
 
-# Run backend locally (without Docker)
-cd /mnt/d/activity/auth-api
-export $(cat .env | xargs)
-python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# Access container shell
+docker exec -it auth-api bash
+
+# Stop service
+docker compose down
 ```
 
 ### Testing
@@ -34,474 +178,486 @@ python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 # Run all tests
 make test
 
-# Run by test type
-make test-unit          # Fast, mocked tests (~5s)
-make test-integration   # Real DB/Redis tests (~30s)
-make test-e2e           # Full API tests (~60s, requires API running)
+# Run specific test types
+make test-unit           # Fast, mocked tests (no DB/Redis)
+make test-integration    # Real DB/Redis tests
+make test-e2e           # Full HTTP flow tests
 
-# Run with coverage (enforces 85% minimum)
-make test-cov
+# Coverage report
+make test-cov           # Terminal report (85% minimum)
+make test-html          # HTML report → htmlcov/index.html
 
-# Run specific test file
-make test-file FILE=tests/unit/test_auth_service.py
+# Specific test file
+make test-file FILE=tests/unit/test_password_validation_service.py
 
-# Run specific test method
-make test-single TEST=tests/unit/test_auth_service.py::TestAuthService::test_login
+# Single test
+make test-single TEST=tests/unit/test_auth_service.py::TestAuthService::test_login_success
 
-# Run tests in parallel (faster)
-make test-parallel
-
-# Security & resilience tests
-make test-security      # JWT forgery, replay attacks
-make test-resilience    # Chaos engineering, DB atomicity
-
-# Reset test database (clean state)
-make test-reset
+# Test markers
+make test-marker MARKER=unit
+make test-marker MARKER=slow
 
 # Clean test artifacts
 make clean
 ```
 
-### Code Quality
+### Database Operations
 
 ```bash
-# Format code
-black app/ tests/
-isort app/ tests/
+# Connect to PostgreSQL
+docker exec -it activity-postgres-db psql -U postgres -d activitydb
 
-# Type checking
-mypy app/
+# Inside psql:
+\dn                                    # List schemas
+\dt activity.*                         # List tables in activity schema
+\df activity.*                         # List stored procedures
+SELECT COUNT(*) FROM activity.users;   # Query users
 ```
 
-## Architecture Overview
-
-### Database-First Design (Stored Procedures Only)
-
-**ALL** database operations go through PostgreSQL stored procedures in the `activity` schema:
-
-```
-Python Service → sp_create_user() → PostgreSQL
-Python Service → sp_get_user_by_email() → PostgreSQL
-Python Service → sp_verify_user_email() → PostgreSQL
-```
-
-**Why stored procedures?**
-- Database team owns schema and business logic
-- Better for CQRS architecture
-- Easier to audit (all DB logic centralized)
-- Can optimize without changing API code
-- Separation of concerns
-
-**Required stored procedures:**
-- `sp_create_user(email, hashed_password)` - Create user (is_verified=FALSE)
-- `sp_get_user_by_email(email)` - Fetch user by email
-- `sp_get_user_by_id(user_id)` - Fetch user by ID
-- `sp_verify_user_email(user_id)` - Mark email verified
-- `sp_update_password(user_id, hashed_password)` - Update password
-- `sp_save_refresh_token()` - Store refresh token
-- `sp_validate_refresh_token()` - Check token validity
-- `sp_revoke_refresh_token()` - Blacklist token
-
-See `app/db/procedures.py` for Python wrappers around stored procedures.
-
-### Code Organization
-
-```
-app/
-├── main.py              # FastAPI app, middleware, exception handlers
-├── config.py            # Environment configuration (Pydantic settings)
-│
-├── core/                # Reusable utilities
-│   ├── security.py      # Argon2id password hashing (pwdlib)
-│   ├── tokens.py        # JWT generation/validation (jose)
-│   ├── redis_client.py  # Redis connection + token storage
-│   ├── logging_config.py # Structlog JSON logging
-│   ├── rate_limiting.py # SlowAPI rate limiter setup
-│   ├── metrics.py       # Prometheus metrics
-│   └── exceptions.py    # Custom exception classes
-│
-├── db/                  # Database layer
-│   ├── connection.py    # PostgreSQL connection pool (asyncpg)
-│   └── procedures.py    # Stored procedure Python wrappers
-│
-├── middleware/          # Request/response middleware
-│   ├── correlation.py   # Trace ID injection (X-Trace-ID header)
-│   ├── security.py      # Security headers (CSP, HSTS, etc.)
-│   └── request_size_limit.py # Request body size limits
-│
-├── routes/              # API endpoints (thin routing layer)
-│   ├── register.py      # POST /auth/register
-│   ├── login.py         # POST /auth/login
-│   ├── refresh.py       # POST /auth/refresh (token rotation)
-│   ├── logout.py        # POST /auth/logout (blacklist)
-│   ├── verify.py        # GET /auth/verify?token=xxx
-│   ├── password_reset.py # POST /auth/request-password-reset, /auth/reset-password
-│   ├── twofa.py         # POST /auth/2fa/* (2FA/TOTP endpoints)
-│   └── dashboard.py     # GET /dashboard (admin metrics)
-│
-├── services/            # Business logic layer
-│   ├── auth_service.py          # Login, logout, token refresh
-│   ├── registration_service.py  # User registration flow
-│   ├── password_service.py      # Password hashing
-│   ├── password_validation_service.py  # zxcvbn + HIBP breach check
-│   ├── password_reset_service.py # Password reset flow
-│   ├── token_service.py         # JWT token management
-│   ├── email_service.py         # Email service HTTP client
-│   └── two_factor_service.py    # 2FA/TOTP management
-│
-└── schemas/             # Pydantic models for API requests/responses
-    ├── auth.py          # LoginRequest, TokenResponse, etc.
-    └── user.py          # UserCreate, UserResponse
-```
-
-### Key Architectural Patterns
-
-**1. Hard Email Verification**
-- Users MUST verify email before login
-- Registration returns 201 but NO tokens
-- Login returns 403 if not verified
-- Rationale: Activity app is social → quality matters, filters bots
-
-**2. JWT Token Architecture**
-- Access Token: 15 minutes, stateless
-- Refresh Token: 30 days, single-use with JTI blacklist
-- Token rotation: Old refresh token blacklisted immediately on refresh
-- Logout: Blacklist refresh token JTI in Redis
-
-**3. Redis Token Storage**
-```
-verify_token:{token} → user_id (TTL: 24h)
-verify_user:{user_id} → token (TTL: 24h)    # Reverse lookup (only 1 active token)
-reset_token:{token} → user_id (TTL: 1h)
-reset_user:{user_id} → token (TTL: 1h)
-blacklist_jti:{jti} → "1" (TTL: 30d)
-```
-
-**4. Password Security**
-- Argon2id hashing (PHC winner, GPU-resistant)
-- zxcvbn strength scoring (must achieve score 3-4)
-- Have I Been Pwned breach check (613M+ breached passwords)
-- Minimum 8 characters
-
-**5. Rate Limiting (Redis-backed)**
-```
-/auth/register → 3/hour
-/auth/login → 5/minute
-/auth/resend-verification → 1/5min
-/auth/request-password-reset → 1/5min
-```
-
-## Critical Development Patterns
-
-### Always Rebuild Containers After Code Changes
-
-**CRITICAL**: `docker compose restart` uses OLD code. You MUST rebuild:
+### Redis Operations
 
 ```bash
-# Wrong (restart uses old image)
-docker compose restart auth-api
+# Connect to Redis
+docker exec -it auth-redis redis-cli
 
-# Right (rebuild picks up code changes)
-docker compose build auth-api && docker compose restart auth-api
+# Inside redis-cli:
+KEYS *                    # List all keys (dev only!)
+GET verification:email:<email>
+TTL verification:email:<email>
+DEL verification:email:<email>
 ```
 
-### Stored Procedure Pattern
+### Local Development (Without Docker)
 
-When adding new database operations:
+```bash
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+# or
+.venv\Scripts\activate     # Windows
 
-1. **Define stored procedure in PostgreSQL** (coordinate with DB team)
-2. **Add Python wrapper in `app/db/procedures.py`**:
-```python
-async def sp_your_operation(
-    conn: asyncpg.Connection,
-    param: str
-) -> Optional[UserRecord]:
-    result = await conn.fetchrow(
-        "SELECT * FROM activity.sp_your_operation($1)",
-        param
-    )
-    return UserRecord(result) if result else None
-```
-3. **Call from service layer** (not directly from routes)
+# Install dependencies
+pip install -r requirements.txt
+pip install -r requirements-dev.txt  # For testing
 
-### Service Layer Pattern
+# Set environment variables
+export $(cat .env | xargs)
 
-Services handle business logic and call stored procedures:
+# Run locally
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
-```python
-# ✅ Right: Service layer calls stored procedures
-class AuthService:
-    async def login(self, email: str, password: str):
-        user = await sp_get_user_by_email(self.db, email)
-        if not user or not verify_password(password, user.hashed_password):
-            raise InvalidCredentialsError()
-
-        if not user.is_verified:
-            raise AccountNotVerifiedError()
-
-        # Generate tokens, update last_login, etc.
-        return tokens
-
-# ❌ Wrong: Routes directly calling stored procedures
-@router.post("/login")
-async def login(db: asyncpg.Connection):
-    user = await sp_get_user_by_email(db, email)  # Skip this - use service
+# Access API
+curl http://localhost:8000/health
+open http://localhost:8000/docs  # Swagger UI
 ```
 
-### Exception Handling Pattern
+## Architecture
 
-Use domain-specific exceptions for security:
-
-```python
-# ✅ Right: Generic error messages (no user enumeration)
-raise InvalidCredentialsError()  # Returns "Invalid credentials"
-
-# ❌ Wrong: Reveals information
-raise Exception("User not found")  # Reveals email exists
-raise Exception("Password incorrect")  # Reveals email exists but wrong password
-```
-
-**Exception:** After successful authentication, be specific:
-```python
-# ✅ OK: User already authenticated (password correct)
-if not user.is_verified:
-    raise AccountNotVerifiedError("Email not verified. Check your inbox...")
-```
-
-### Logging Pattern
-
-Use structured logging with trace IDs:
-
-```python
-from app.core.logging_config import get_logger
-
-logger = get_logger(__name__)
-
-# ✅ Right: Structured logging
-logger.info("user_login_success",
-           user_id=str(user.id),
-           email=user.email,
-           ip_address=request.client.host)
-
-# ❌ Wrong: String interpolation
-logger.info(f"User {user.id} logged in from {ip}")
-```
-
-**Security note:** Never log passwords, tokens, or sensitive data.
-
-## Testing Strategy
-
-### Test Pyramid
+### Directory Structure
 
 ```
-     E2E Tests (20%)
-    /            \
-   /   Integration  \
-  /    Tests (30%)   \
- /____________________\
-   Unit Tests (50%)
+auth-api/
+├── app/
+│   ├── core/              # Core utilities
+│   │   ├── security.py    # JWT, password hashing
+│   │   ├── tokens.py      # Token generation/validation
+│   │   ├── redis_client.py
+│   │   ├── rate_limiting.py
+│   │   └── exceptions.py
+│   ├── db/
+│   │   ├── connection.py  # PostgreSQL connection pool
+│   │   └── procedures.py  # Stored procedure wrappers (CRITICAL)
+│   ├── middleware/
+│   │   ├── correlation.py # X-Correlation-ID tracking
+│   │   ├── security.py    # Security headers
+│   │   └── request_size_limit.py
+│   ├── models/            # Pydantic models for stored procedure results
+│   ├── routes/            # FastAPI route handlers
+│   │   ├── login.py
+│   │   ├── register.py
+│   │   ├── organizations.py
+│   │   ├── groups.py      # RBAC groups
+│   │   ├── permissions.py # RBAC permissions
+│   │   ├── oauth_*.py     # OAuth 2.0 endpoints
+│   │   └── ...
+│   ├── schemas/           # Request/response schemas
+│   ├── services/          # Business logic
+│   │   ├── auth_service.py
+│   │   ├── organization_service.py
+│   │   ├── authorization_service.py  # THE CORE - RBAC checks
+│   │   ├── password_validation_service.py
+│   │   └── ...
+│   ├── config.py          # Settings (pydantic-settings)
+│   └── main.py            # FastAPI app initialization
+├── tests/
+│   ├── unit/              # Fast, mocked tests
+│   ├── integration/       # Real DB/Redis tests
+│   └── e2e/               # Full HTTP flow tests
+├── frontend-mocks/        # MSW mock handlers for frontend dev
+├── Dockerfile             # Production-ready multi-stage build
+├── docker-compose.yml     # Service + Redis
+├── Makefile              # Test commands
+└── requirements.txt       # Python dependencies
 ```
 
-**Unit Tests** (`tests/unit/`)
-- Fast (<5s total), mocked dependencies
-- Test services in isolation
-- Use `@pytest.mark.unit`
-- Example: `test_password_validation_service.py`
+### Service Dependencies
 
-**Integration Tests** (`tests/integration/`)
-- Real PostgreSQL + Redis
-- Full user flows
-- Transaction testing, race conditions
-- Use `@pytest.mark.integration`
-- Example: `test_registration_flow.py`, `test_resilience.py`
+**Required Infrastructure** (must start first):
+- PostgreSQL (`activity-postgres-db` on port 5441)
+- Redis (`activity-redis` on port 6379)
+- Docker network: `activity-network`
 
-**E2E Tests** (`tests/e2e/`)
-- Full HTTP flow through FastAPI
-- Real API endpoints
-- Security validation, rate limiting
-- Use `@pytest.mark.e2e`
-- Example: `test_login_flow.py`, `test_2fa_flow.py`
+**Optional Dependencies**:
+- Email service (for verification codes - can skip in dev with `SKIP_LOGIN_CODE=true`)
 
-### Key Test Files
+### Key Architectural Decisions
 
-**Security Tests:**
-- `tests/unit/test_security_adversarial.py` - JWT forgery, replay attacks
-- `tests/unit/test_security_edge_cases.py` - Edge cases, malformed input
+**1. Stored Procedures Only**
+- All database operations through `app/db/procedures.py`
+- Database team owns schema evolution
+- API remains stable even with schema changes
 
-**Resilience Tests:**
-- `tests/integration/test_resilience.py` - DB/Redis atomicity, failure scenarios
-- `tests/integration/test_concurrency.py` - Race conditions, parallel requests
+**2. Multi-Organization Scoping**
+- Every token includes `org_id` claim
+- Users can belong to multiple organizations
+- Authorization checks are org-scoped
 
-**Flow Tests:**
-- `tests/e2e/test_login_flow.py` - Full login flow
-- `tests/e2e/test_token_refresh_flow.py` - Token rotation
-- `tests/e2e/test_rate_limiting.py` - Rate limit enforcement
+**3. RBAC Authorization**
+- Groups contain users
+- Permissions are granted to groups
+- Authorization service checks: user → groups → permissions
+- Core endpoint: `POST /api/v1/authorization/authorize`
 
-### Coverage Requirements
+**4. Token Rotation**
+- Refresh tokens are single-use
+- Each refresh returns new access + refresh tokens
+- Old refresh token is blacklisted via JTI
 
-- Minimum: 85% (enforced by pytest.ini)
-- Target: 90%+ across all critical paths
-- Run `make test-cov` to check coverage
-
-## Observability Integration
-
-Auth API is integrated with centralized Activity App observability stack:
-
-**Prometheus Metrics:**
-- Exposed at `/metrics` endpoint
-- Service discovery via Docker labels
-- Metrics: request count, latency, error rate
-
-**Structured Logging:**
-- JSON format with ISO 8601 timestamps
-- Trace ID injection (`X-Trace-ID` header)
-- Log levels: DEBUG, INFO, WARNING, ERROR
-
-**Health Checks:**
-- Primary: `GET /health`
-- Legacy: `GET /api/health` (backward compatibility)
-
-**Monitoring Targets:**
-- Login success/failure rates
-- Token refresh rates
-- Rate limit hits
-- Password validation failures
-- Email service errors
+**5. Generic Error Messages**
+- Prevents user enumeration attacks
+- Pre-authentication: Always generic ("Invalid credentials")
+- Post-authentication: Can be specific (user already verified)
 
 ## Configuration
 
-All configuration via environment variables (see `.env.example`).
+### Environment Variables (.env)
 
-**Critical Production Settings:**
-
+**Critical Settings (MUST configure):**
 ```bash
-# MUST change (generate with: python -c "import secrets; print(secrets.token_urlsafe(64))")
-JWT_SECRET_KEY=your-secure-random-key-min-32-chars
+# JWT Secret (MUST match across all services!)
+JWT_SECRET_KEY=your_very_long_secret_key_at_least_32_characters
 
-# MUST change for 2FA encryption
-ENCRYPTION_KEY=your-32-byte-base64-encoded-key
+# 2FA Encryption Key
+ENCRYPTION_KEY=your_very_long_secret_key_for_2FA_at_least_32_characters
 
-# Database connection (external PostgreSQL)
-POSTGRES_HOST=activity-postgres-db
+# Database Connection
+POSTGRES_HOST=activity-postgres-db  # Docker container name
+POSTGRES_PORT=5432
 POSTGRES_DB=activitydb
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres_secure_password_change_in_prod
 POSTGRES_SCHEMA=activity
 
-# Redis connection
-REDIS_HOST=auth-redis
+# Redis
+REDIS_HOST=auth-redis  # Docker container name
+REDIS_PORT=6379
+REDIS_DB=0
 
-# Email service
+# Email Service
 EMAIL_SERVICE_URL=http://email-api:8010
-SERVICE_AUTH_TOKEN=your-service-token
-
-# Frontend URL (for email links)
-FRONTEND_URL=https://your-app.com
+SERVICE_AUTH_TOKEN=st_dev_5555555555555555555555555555555555555555
 ```
 
-## API Endpoints
+**Development Shortcuts:**
+```bash
+DEBUG=true
+SKIP_LOGIN_CODE=true  # Skip email verification codes
+ENABLE_DOCS=true      # Enable Swagger UI (/docs)
+LOG_LEVEL=DEBUG       # Verbose logging
+```
 
-| Method | Endpoint | Auth | Rate Limit | Description |
-|--------|----------|------|------------|-------------|
-| POST | `/auth/register` | No | 3/hour | Register new user |
-| GET | `/auth/verify?token=xxx` | No | - | Verify email |
-| POST | `/auth/resend-verification` | No | 1/5min | Resend verification email |
-| POST | `/auth/login` | No | 5/min | Login (requires verified email) |
-| POST | `/auth/refresh` | Refresh Token | - | Refresh access token (rotates tokens) |
-| POST | `/auth/logout` | Refresh Token | - | Logout (blacklist refresh token) |
-| POST | `/auth/request-password-reset` | No | 1/5min | Request password reset |
-| POST | `/auth/reset-password` | No | - | Reset password with token |
-| POST | `/auth/2fa/setup` | Access Token | - | Setup 2FA/TOTP |
-| POST | `/auth/2fa/verify` | Access Token | - | Verify 2FA setup |
-| POST | `/auth/2fa/enable` | Access Token | - | Enable 2FA |
-| POST | `/auth/2fa/login` | No | - | Login with 2FA code |
-| GET | `/health` | No | - | Health check |
-| GET | `/metrics` | No | - | Prometheus metrics |
+**Production Settings:**
+```bash
+DEBUG=false
+SKIP_LOGIN_CODE=false
+ENABLE_DOCS=false  # Disable Swagger (security)
+LOG_LEVEL=INFO
+```
+
+### Port Allocation
+
+- **8000**: Auth API HTTP (exposed)
+- **6380**: Redis (exposed, maps to container port 6379)
+
+## Testing Strategy
+
+### Test Organization
+
+**Unit Tests** (`tests/unit/`):
+- Fast, mocked dependencies
+- Test individual functions/classes
+- No database or Redis required
+- Run with: `make test-unit`
+
+**Integration Tests** (`tests/integration/`):
+- Real PostgreSQL and Redis connections
+- Test service integration
+- Requires running infrastructure
+- Run with: `make test-integration`
+
+**E2E Tests** (`tests/e2e/`):
+- Full HTTP flow testing
+- Requires running API
+- Tests complete user journeys
+- Run with: `make test-e2e`
+
+### Test Markers
+
+```python
+@pytest.mark.unit           # Fast, mocked
+@pytest.mark.integration    # Real DB/Redis
+@pytest.mark.e2e           # Full HTTP
+@pytest.mark.slow          # Tests >5 seconds
+@pytest.mark.async         # Async tests
+```
+
+### Coverage Requirements
+
+**Minimum**: 85% coverage (enforced by `make test-cov`)
+
+```bash
+# Check coverage
+make test-cov
+
+# View HTML report
+make test-html
+open htmlcov/index.html
+```
+
+## OAuth 2.0 Provider
+
+Auth API acts as an **OAuth 2.0 Authorization Server** for other services.
+
+### Supported Grant Types
+
+1. **Authorization Code** (with PKCE)
+2. **Refresh Token**
+3. **Password** (Resource Owner Password Credentials - dev only)
+
+### OAuth Endpoints
+
+```bash
+# Discovery (OpenID Connect Discovery)
+GET /.well-known/oauth-authorization-server
+
+# Authorization (user consent)
+GET /oauth/authorize?response_type=code&client_id=...&redirect_uri=...&code_challenge=...
+
+# Token exchange
+POST /oauth/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code&code=...&redirect_uri=...&code_verifier=...&client_id=...&client_secret=...
+
+# Token revocation
+POST /oauth/revoke
+Content-Type: application/x-www-form-urlencoded
+
+token=...&client_id=...&client_secret=...
+```
+
+### Registered OAuth Clients
+
+Clients are defined in database via stored procedures. Example:
+
+```sql
+-- Register OAuth client (done by database team)
+INSERT INTO activity.oauth_clients (client_id, client_secret, redirect_uris, ...)
+VALUES ('image-api-v1', 'hashed_secret', ARRAY['http://localhost:8002/callback'], ...);
+```
+
+## RBAC Authorization System
+
+### Core Concepts
+
+**Organizations** → **Groups** → **Permissions**
+
+- Users belong to Organizations with a role (owner/admin/member)
+- Organizations contain Groups (e.g., "Administrators", "Content Creators")
+- Groups are granted Permissions (e.g., "activity:create", "activity:delete")
+- Users get permissions through group membership
+
+### Authorization Flow
+
+```python
+# THE CORE: Check if user has permission in org
+POST /api/v1/authorization/authorize
+{
+  "user_id": "550e8400-e29b-41d4-a716-446655440000",
+  "organization_id": "650e8400-e29b-41d4-a716-446655440001",
+  "permission": "activity:create"
+}
+
+# Response:
+{
+  "authorized": true,
+  "reason": "User has permission through group membership",
+  "matched_groups": ["Administrators"]
+}
+```
+
+### Permission Naming Convention
+
+Format: `resource:action`
+
+Examples:
+- `activity:create` - Create activities
+- `activity:update` - Update activities
+- `activity:delete` - Delete activities
+- `activity:read` - View activities
+- `user:manage` - Manage users
+
+### Group Management
+
+```bash
+# Create group
+POST /api/auth/organizations/{org_id}/groups
+{ "name": "Content Creators", "description": "..." }
+
+# Add user to group
+POST /api/auth/groups/{group_id}/members
+{ "user_id": "..." }
+
+# Grant permission to group
+POST /api/auth/groups/{group_id}/permissions
+{ "permission_id": "..." }
+```
+
+## Frontend Development
+
+### MSW Mock Handlers
+
+Complete Mock Service Worker handlers are available in `frontend-mocks/`:
+
+```bash
+# Copy handlers to frontend project
+cp frontend-mocks/src/mocks/handlers.ts <your-frontend>/src/mocks/
+
+# 100% API coverage with realistic behavior
+# See frontend-mocks/README.md for complete documentation
+```
+
+**Test Accounts** (for mock handlers):
+- `test@example.com` / `Password123!` (multi-org user)
+- `admin@acme.com` / `Password123!` (single org, admin)
+- `unverified@example.com` / `Password123!` (unverified)
 
 ## Troubleshooting
 
-**Container code not updating:**
+### "Code changes not taking effect"
+
 ```bash
-# Always rebuild after code changes
+# ALWAYS rebuild after code changes
 docker compose build auth-api && docker compose restart auth-api
 ```
 
-**Database connection errors:**
-```bash
-# Check external PostgreSQL is running
-docker network inspect activity-network
+### "Database connection failed"
 
-# Verify stored procedures exist
-docker exec activity-postgres-db psql -U activity_user -d activitydb -c "\df activity.*"
+```bash
+# Check PostgreSQL is running
+docker ps | grep activity-postgres-db
+
+# Check connection settings
+cat .env | grep POSTGRES_
+
+# Test connection
+docker exec activity-postgres-db psql -U postgres -d activitydb -c "SELECT 1;"
 ```
 
-**Redis connection errors:**
+### "Redis connection failed"
+
 ```bash
-# Check Redis is healthy
-docker compose ps redis
+# Check Redis is running
+docker ps | grep auth-redis
+
+# Test connection
 docker exec auth-redis redis-cli ping
-
-# Check verification tokens
-docker exec auth-redis redis-cli KEYS "verify_token:*"
+# Expected: PONG
 ```
 
-**Rate limiting not working:**
+### "JWT validation fails in other services"
+
 ```bash
-# Verify Redis connection (rate limiting requires Redis)
-docker exec auth-redis redis-cli KEYS "slowapi:*"
+# Check JWT_SECRET_KEY matches across all services
+cat .env | grep JWT_SECRET_KEY
+cat ../chat-api/.env | grep JWT_SECRET_KEY
+cat ../image-api/.env | grep JWT_SECRET_KEY
+
+# They MUST be identical!
 ```
 
-**Tests failing:**
+### "Tests failing with database errors"
+
 ```bash
-# Reset test database to clean state
+# Reset test database
 make test-reset
 
-# Run specific test type
-make test-unit  # Fast tests only
+# Ensure clean isolation
+make test-isolation
 ```
 
-## Security Considerations
+### "Import errors in Python"
 
-**Token Security:**
-- JWT_SECRET_KEY must be ≥32 characters
-- Refresh tokens are single-use (blacklisted on refresh)
-- Access tokens are stateless (15 min expiry)
-- All tokens use HS256 algorithm
+```bash
+# Ensure PYTHONPATH is set
+export PYTHONPATH=/path/to/auth-api
 
-**Password Security:**
-- Argon2id hashing (never plain text)
-- zxcvbn strength validation
-- HIBP breach checking
-- Generic error messages (no user enumeration)
+# Or use python -m
+python -m pytest tests/unit/
 
-**Request Security:**
-- Request size limits enforced
-- Rate limiting on sensitive endpoints
-- CORS configured for frontend only
-- Security headers (CSP, HSTS, X-Frame-Options)
+# In Docker, PYTHONPATH=/app (already set)
+```
 
-**Input Validation:**
-- All inputs validated via Pydantic schemas
-- Email normalization (lowercase)
-- SQL injection prevented (stored procedures only)
-- XSS prevented (API-only, no HTML rendering)
+## Production Deployment Checklist
 
-## External Dependencies
+Before deploying to production:
 
-**PostgreSQL** (external, shared database):
-- Expected schema: `activity.users` table
-- Required stored procedures (see README.md)
-- Connection pool: 5-20 connections
+**Security:**
+- [ ] Change `JWT_SECRET_KEY` to 64+ char random string
+- [ ] Change `ENCRYPTION_KEY` to 64+ char random string
+- [ ] Change all database passwords
+- [ ] Change Redis password
+- [ ] Set `DEBUG=false`
+- [ ] Set `ENABLE_DOCS=false` (disable Swagger)
+- [ ] Set `SKIP_LOGIN_CODE=false`
+- [ ] Configure CORS_ORIGINS for production domains
+- [ ] Review rate limiting settings
 
-**Redis** (local to auth-api):
-- Used for: token storage, rate limiting
-- Persistence: AOF + RDB snapshots
-- Memory limit: 256MB (LRU eviction)
+**Infrastructure:**
+- [ ] Use managed PostgreSQL (e.g., AWS RDS)
+- [ ] Use managed Redis (e.g., AWS ElastiCache)
+- [ ] Configure HTTPS/TLS termination
+- [ ] Setup monitoring (Prometheus metrics exposed at `/metrics`)
+- [ ] Configure log aggregation (structured JSON logs)
+- [ ] Setup automated backups
 
-**Email Service** (external):
-- Expected endpoint: `POST /send`
-- Templates: email_verification, password_reset, 2fa_code
-- Timeout: 10 seconds
+**Testing:**
+- [ ] Run full test suite: `make test-all`
+- [ ] Verify coverage: `make test-cov` (85%+ required)
+- [ ] Load testing on token endpoints
+- [ ] Security audit (penetration testing)
 
-**Network** (external):
-- Network name: `activity-network`
-- Created by central docker compose
-- Shared by: postgres, redis, email-api, auth-api
+## Additional Documentation
+
+- `frontend-mocks/README.md` - MSW mock handlers documentation
+- `.env.example` - Complete environment variable reference
+- `pytest.ini` - Test configuration
+- FastAPI auto-generated docs: http://localhost:8000/docs (when ENABLE_DOCS=true)
+
+## Need Help?
+
+- Check logs: `docker compose logs -f auth-api`
+- Check health: `curl http://localhost:8000/health`
+- Access Swagger UI: http://localhost:8000/docs (if ENABLE_DOCS=true)
+- Database shell: `docker exec -it activity-postgres-db psql -U postgres -d activitydb`
+- Redis shell: `docker exec -it auth-redis redis-cli`

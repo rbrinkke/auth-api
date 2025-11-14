@@ -24,15 +24,20 @@
     "uuid": "^9.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "@vitest/coverage-v8": "^1.6.1",
+    "@vitest/ui": "^1.6.1",
     "msw": "^2.0.0",
+    "otplib": "^12.0.1",
+    "qrcode": "^1.5.3",
+    "typescript": "^5.0.0",
     "uuid": "^9.0.1",
-    "vitest": "^1.0.0",
-    "@vitest/ui": "^1.0.0",
-    "@vitest/coverage-v8": "^1.0.0",
-    "typescript": "^5.0.0"
+    "vitest": "^1.0.0"
   },
   "scripts": {
     "test": "vitest run src/mocks/handlers.test.ts --reporter=verbose",
+    "test:complete": "vitest run src/mocks/handlers.complete.test.ts --reporter=verbose",
+    "test:100": "vitest run src/mocks/handlers.complete.test.ts --reporter=verbose --bail=1",
     "test:watch": "vitest src/mocks/handlers.test.ts",
     "test:ui": "vitest --ui src/mocks/handlers.test.ts",
     "test:coverage": "vitest run src/mocks/handlers.test.ts --coverage",

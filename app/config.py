@@ -65,6 +65,11 @@ class Settings(BaseSettings):
 
     LOG_LEVEL: str = "INFO"
 
+    # API Documentation Settings
+    ENABLE_DOCS: bool = True
+    API_VERSION: str = "1.0.0"
+    PROJECT_NAME: str = "Activity Platform - Authentication API"
+
     @field_validator("JWT_SECRET_KEY", mode="after")
     @classmethod
     def validate_jwt_secret_key(cls, v: str) -> str:

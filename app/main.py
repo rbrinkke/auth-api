@@ -54,7 +54,52 @@ from app.routes import (
 setup_logging()
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Auth API")
+settings = get_settings()
+
+# FastAPI app with environment-conditional Swagger UI (best practice for production security)
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    version=settings.API_VERSION,
+    description="""
+**Ultra-minimalistic authentication service for Activity Platform.**
+
+Built with FastAPI, PostgreSQL (stored procedures only), Redis, and JWT tokens.
+
+## Core Philosophy
+Token factory only - no user profiles, no business logic, ONLY authentication and token issuance.
+
+## Key Features
+- **Hard Email Verification**: Users MUST verify email before login
+- **JWT Token Architecture**: Access token (15 min) + Refresh token (30 days) with rotation
+- **Password Security**: Argon2id hashing, zxcvbn strength validation, HIBP breach checking
+- **2FA/TOTP Support**: Optional two-factor authentication
+- **OAuth 2.0 Provider**: Authorization Code flow with PKCE
+- **Rate Limiting**: Redis-backed rate limits on sensitive endpoints
+- **Stored Procedures**: All database operations through PostgreSQL stored procedures
+
+## Architecture
+- **Database**: PostgreSQL with `activity` schema (stored procedures pattern)
+- **Cache**: Redis for token storage, rate limiting, verification codes
+- **Email**: Integration with email-service for verification/password reset
+- **Observability**: Prometheus metrics, structured logging with correlation IDs
+
+## Security
+- Generic error messages (prevents user enumeration)
+- Request size limits enforced
+- Security headers (CSP, HSTS, X-Frame-Options)
+- Single-use refresh tokens with JTI blacklist
+    """,
+    docs_url="/docs" if settings.ENABLE_DOCS else None,
+    redoc_url="/redoc" if settings.ENABLE_DOCS else None,
+    openapi_url="/openapi.json" if settings.ENABLE_DOCS else None,
+    contact={
+        "name": "Activity Platform Team",
+        "email": "dev@activityapp.com"
+    },
+    license_info={
+        "name": "Proprietary"
+    }
+)
 
 # Rate limiting setup
 limiter = init_limiter()
@@ -72,8 +117,6 @@ async def shutdown_event():
     logger.info("Disconnecting from database...")
     await db.disconnect()
     logger.info("Database disconnected")
-
-settings = get_settings()
 
 # Add request size limit middleware (must be first to protect all routes)
 app.add_middleware(RequestSizeLimitMiddleware, settings=settings)
@@ -329,6 +372,25 @@ app.include_router(oauth_authorize.router, tags=["OAuth 2.0"])
 app.include_router(oauth_token.router, tags=["OAuth 2.0"])
 app.include_router(oauth_revoke.router, tags=["OAuth 2.0"])
 app.include_router(oauth_discovery.router, tags=["OAuth 2.0 Discovery"])
+
+# Add JWT Bearer security scheme to OpenAPI schema (best practice for API documentation)
+@app.on_event("startup")
+async def configure_openapi_security():
+    """Configure OpenAPI security scheme for JWT Bearer authentication."""
+    if not settings.ENABLE_DOCS:
+        return
+
+    # Add security scheme to OpenAPI schema
+    if app.openapi_schema:
+        app.openapi_schema["components"] = app.openapi_schema.get("components", {})
+        app.openapi_schema["components"]["securitySchemes"] = {
+            "BearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+                "description": "JWT access token from /auth/login or /auth/refresh. Format: `Bearer <token>`"
+            }
+        }
 
 @app.get("/health", status_code=status.HTTP_200_OK, tags=["Health"])
 async def health_check():

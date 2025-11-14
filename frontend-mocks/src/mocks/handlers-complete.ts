@@ -753,7 +753,7 @@ export const handlers = [
   // ==========================================================================
 
   // POST /auth/register
-  http.post('/api/auth/register', async ({ request }) => {
+  http.post('/auth/register', async ({ request }) => {
     await simulateDelay(350)
 
     const body = await request.json() as { email: string; password: string }
@@ -765,12 +765,10 @@ export const handlers = [
         {
           detail: [
             {
-              type: 'string_too_short',
               loc: ['body', 'password'],
               msg: 'String should have at least 8 characters',
-              input: body,
-              ctx: { min_length: 8 },
-              url: 'https://errors.pydantic.dev/2.0/v/string_too_short'
+              type: 'string_too_short',
+              ctx: { min_length: 8 }
             }
           ]
         },
@@ -783,11 +781,9 @@ export const handlers = [
         {
           detail: [
             {
-              type: 'value_error.email',
               loc: ['body', 'email'],
               msg: 'value is not a valid email address',
-              input: body,
-              url: 'https://errors.pydantic.dev/2.0/v/value_error'
+              type: 'value_error.email'
             }
           ]
         },
@@ -827,7 +823,7 @@ export const handlers = [
   }),
 
   // POST /auth/verify-code
-  http.post('/api/auth/verify-code', async ({ request }) => {
+  http.post('/auth/verify-code', async ({ request }) => {
     await simulateDelay(300)
 
     const body = await request.json() as { verification_token: string; code: string }
@@ -869,7 +865,7 @@ export const handlers = [
   }),
 
   // POST /auth/resend-verification (MISSING ENDPOINT - NOW IMPLEMENTED)
-  http.post('/api/auth/resend-verification', async ({ request }) => {
+  http.post('/auth/resend-verification', async ({ request }) => {
     await simulateDelay(400)
 
     const body = await request.json() as { email: string }
@@ -908,7 +904,7 @@ export const handlers = [
   }),
 
   // POST /auth/login (3-step flow: code → org selection → tokens)
-  http.post('/api/auth/login', async ({ request }) => {
+  http.post('/auth/login', async ({ request }) => {
     await simulateDelay(400)
 
     const body = await request.json() as {
@@ -925,11 +921,9 @@ export const handlers = [
         {
           detail: [
             {
-              type: 'missing',
               loc: ['body', !body.email ? 'email' : 'password'],
               msg: 'Field required',
-              input: body,
-              url: 'https://errors.pydantic.dev/2.0/v/missing'
+              type: 'missing'
             }
           ]
         },
@@ -1043,7 +1037,7 @@ export const handlers = [
           sub: user.id,
           org_id: orgId
         }),
-        token_type: 'Bearer',
+        token_type: 'bearer',
         org_id: orgId
       })
     }
@@ -1057,13 +1051,13 @@ export const handlers = [
       refresh_token: generateMockJWT('refresh', {
         sub: user.id
       }),
-      token_type: 'Bearer',
+      token_type: 'bearer',
       org_id: null
     })
   }),
 
   // POST /auth/login/2fa (MISSING ENDPOINT - NOW IMPLEMENTED)
-  http.post('/api/auth/login/2fa', async ({ request }) => {
+  http.post('/auth/login/2fa', async ({ request }) => {
     await simulateDelay(300)
 
     const body = await request.json() as { pre_auth_token: string; code: string }
@@ -1117,13 +1111,13 @@ export const handlers = [
         sub: user.id,
         org_id: orgId
       }),
-      token_type: 'Bearer',
+      token_type: 'bearer',
       org_id: orgId
     })
   }),
 
   // POST /auth/refresh (Token rotation with JTI blacklist)
-  http.post('/api/auth/refresh', async ({ request }) => {
+  http.post('/auth/refresh', async ({ request }) => {
     await simulateDelay(250)
 
     const body = await request.json() as { refresh_token: string }
@@ -1161,13 +1155,13 @@ export const handlers = [
         sub: payload.sub,
         org_id: payload.org_id
       }),
-      token_type: 'Bearer',
+      token_type: 'bearer',
       org_id: payload.org_id || null
     })
   }),
 
   // POST /auth/logout
-  http.post('/api/auth/logout', async ({ request }) => {
+  http.post('/auth/logout', async ({ request }) => {
     await simulateDelay(200)
 
     const body = await request.json() as { refresh_token: string }
@@ -1184,7 +1178,7 @@ export const handlers = [
   }),
 
   // POST /auth/request-password-reset
-  http.post('/api/auth/request-password-reset', async ({ request }) => {
+  http.post('/auth/request-password-reset', async ({ request }) => {
     await simulateDelay(400)
 
     const body = await request.json() as { email: string }
@@ -1223,7 +1217,7 @@ export const handlers = [
   }),
 
   // POST /auth/reset-password
-  http.post('/api/auth/reset-password', async ({ request }) => {
+  http.post('/auth/reset-password', async ({ request }) => {
     await simulateDelay(350)
 
     const body = await request.json() as {
@@ -1286,7 +1280,7 @@ export const handlers = [
   }),
 
   // POST /auth/2fa/setup
-  http.post('/api/auth/2fa/setup', async ({ request }) => {
+  http.post('/auth/2fa/setup', async ({ request }) => {
     await simulateDelay(300)
 
     const authHeader = request.headers.get('Authorization')
@@ -1315,7 +1309,7 @@ export const handlers = [
   }),
 
   // POST /auth/2fa/verify
-  http.post('/api/auth/2fa/verify', async ({ request }) => {
+  http.post('/auth/2fa/verify', async ({ request }) => {
     await simulateDelay(250)
 
     const body = await request.json() as { code: string }
@@ -1353,7 +1347,7 @@ export const handlers = [
   }),
 
   // POST /auth/2fa/disable
-  http.post('/api/auth/2fa/disable', async ({ request }) => {
+  http.post('/auth/2fa/disable', async ({ request }) => {
     await simulateDelay(200)
 
     const authHeader = request.headers.get('Authorization')
@@ -1681,7 +1675,7 @@ export const handlers = [
           sub: codeRecord.user_id,
           client_id: clientId
         }),
-        token_type: 'Bearer',
+        token_type: 'bearer',
         expires_in: 900,
         scope: codeRecord.scopes.join(' ')
       })
@@ -1736,7 +1730,7 @@ export const handlers = [
           client_id: clientId,
           scope: finalScope
         }),
-        token_type: 'Bearer',
+        token_type: 'bearer',
         expires_in: 900,
         scope: finalScope
       })
@@ -1772,7 +1766,7 @@ export const handlers = [
           client_id: clientId,
           scope: scopes.join(' ')
         }),
-        token_type: 'Bearer',
+        token_type: 'bearer',
         expires_in: 3600,
         scope: scopes.join(' ')
       })
@@ -1839,7 +1833,7 @@ export const handlers = [
   // ==========================================================================
 
   // POST /organizations (Create organization)
-  http.post('/api/auth/organizations', async ({ request }) => {
+  http.post('/organizations', async ({ request }) => {
     await simulateDelay(400)
 
     const authHeader = request.headers.get('Authorization')
@@ -1930,7 +1924,7 @@ export const handlers = [
   }),
 
   // GET /organizations (List user's organizations)
-  http.get('/api/auth/organizations', async ({ request }) => {
+  http.get('/organizations', async ({ request }) => {
     await simulateDelay(250)
 
     const authHeader = request.headers.get('Authorization')
@@ -1965,7 +1959,7 @@ export const handlers = [
   }),
 
   // GET /organizations/:org_id (Get organization details)
-  http.get('/api/auth/organizations/:org_id', async ({ request, params }) => {
+  http.get('/organizations/:org_id', async ({ request, params }) => {
     await simulateDelay(200)
 
     const authHeader = request.headers.get('Authorization')
@@ -2008,7 +2002,7 @@ export const handlers = [
   }),
 
   // GET /organizations/:org_id/members (List organization members)
-  http.get('/api/auth/organizations/:org_id/members', async ({ request, params }) => {
+  http.get('/organizations/:org_id/members', async ({ request, params }) => {
     await simulateDelay(250)
 
     const authHeader = request.headers.get('Authorization')
@@ -2050,7 +2044,7 @@ export const handlers = [
   }),
 
   // POST /organizations/:org_id/members (Add member to organization)
-  http.post('/api/auth/organizations/:org_id/members', async ({ request, params }) => {
+  http.post('/organizations/:org_id/members', async ({ request, params }) => {
     await simulateDelay(350)
 
     const authHeader = request.headers.get('Authorization')
@@ -2117,7 +2111,7 @@ export const handlers = [
   }),
 
   // DELETE /organizations/:org_id/members/:user_id (Remove member)
-  http.delete('/api/auth/organizations/:org_id/members/:user_id', async ({ request, params }) => {
+  http.delete('/organizations/:org_id/members/:user_id', async ({ request, params }) => {
     await simulateDelay(300)
 
     const authHeader = request.headers.get('Authorization')
@@ -2169,7 +2163,7 @@ export const handlers = [
   }),
 
   // PATCH /organizations/:org_id/members/:user_id/role (Update member role)
-  http.patch('/api/auth/organizations/:org_id/members/:user_id/role', async ({ request, params }) => {
+  http.patch('/organizations/:org_id/members/:user_id/role', async ({ request, params }) => {
     await simulateDelay(300)
 
     const authHeader = request.headers.get('Authorization')
@@ -2237,7 +2231,7 @@ export const handlers = [
   // ==========================================================================
 
   // POST /organizations/:org_id/groups (Create group)
-  http.post('/api/auth/organizations/:org_id/groups', async ({ request, params }) => {
+  http.post('/organizations/:org_id/groups', async ({ request, params }) => {
     await simulateDelay(350)
 
     const authHeader = request.headers.get('Authorization')
@@ -2306,7 +2300,7 @@ export const handlers = [
   }),
 
   // GET /organizations/:org_id/groups (List groups in organization)
-  http.get('/api/auth/organizations/:org_id/groups', async ({ request, params }) => {
+  http.get('/organizations/:org_id/groups', async ({ request, params }) => {
     await simulateDelay(200)
 
     const authHeader = request.headers.get('Authorization')
@@ -2345,7 +2339,7 @@ export const handlers = [
   }),
 
   // GET /groups/:group_id (Get group details)
-  http.get('/api/auth/groups/:group_id', async ({ request, params }) => {
+  http.get('/groups/:group_id', async ({ request, params }) => {
     await simulateDelay(150)
 
     const authHeader = request.headers.get('Authorization')
@@ -2389,7 +2383,7 @@ export const handlers = [
   }),
 
   // PATCH /groups/:group_id (Update group)
-  http.patch('/api/auth/groups/:group_id', async ({ request, params }) => {
+  http.patch('/groups/:group_id', async ({ request, params }) => {
     await simulateDelay(250)
 
     const authHeader = request.headers.get('Authorization')
@@ -2442,7 +2436,7 @@ export const handlers = [
   }),
 
   // DELETE /groups/:group_id (Delete group)
-  http.delete('/api/auth/groups/:group_id', async ({ request, params }) => {
+  http.delete('/groups/:group_id', async ({ request, params }) => {
     await simulateDelay(300)
 
     const authHeader = request.headers.get('Authorization')
@@ -2482,7 +2476,7 @@ export const handlers = [
   }),
 
   // GET /groups/:group_id/members (List group members)
-  http.get('/api/auth/groups/:group_id/members', async ({ request, params }) => {
+  http.get('/groups/:group_id/members', async ({ request, params }) => {
     await simulateDelay(200)
 
     const authHeader = request.headers.get('Authorization')
@@ -2521,7 +2515,7 @@ export const handlers = [
   }),
 
   // POST /groups/:group_id/members (Add member to group)
-  http.post('/api/auth/groups/:group_id/members', async ({ request, params }) => {
+  http.post('/groups/:group_id/members', async ({ request, params }) => {
     await simulateDelay(300)
 
     const authHeader = request.headers.get('Authorization')
@@ -2577,7 +2571,7 @@ export const handlers = [
   }),
 
   // DELETE /groups/:group_id/members/:user_id (Remove member from group)
-  http.delete('/api/auth/groups/:group_id/members/:user_id', async ({ request, params }) => {
+  http.delete('/groups/:group_id/members/:user_id', async ({ request, params }) => {
     await simulateDelay(250)
 
     const authHeader = request.headers.get('Authorization')
@@ -2620,7 +2614,7 @@ export const handlers = [
   }),
 
   // GET /groups/:group_id/permissions (List group permissions)
-  http.get('/api/auth/groups/:group_id/permissions', async ({ request, params }) => {
+  http.get('/groups/:group_id/permissions', async ({ request, params }) => {
     await simulateDelay(200)
 
     const authHeader = request.headers.get('Authorization')
@@ -2665,7 +2659,7 @@ export const handlers = [
   }),
 
   // POST /groups/:group_id/permissions (Grant permission to group)
-  http.post('/api/auth/groups/:group_id/permissions', async ({ request, params }) => {
+  http.post('/groups/:group_id/permissions', async ({ request, params }) => {
     await simulateDelay(300)
 
     const authHeader = request.headers.get('Authorization')
@@ -2729,7 +2723,7 @@ export const handlers = [
   }),
 
   // DELETE /groups/:group_id/permissions/:permission_id (Revoke permission from group)
-  http.delete('/api/auth/groups/:group_id/permissions/:permission_id', async ({ request, params }) => {
+  http.delete('/groups/:group_id/permissions/:permission_id', async ({ request, params }) => {
     await simulateDelay(250)
 
     const authHeader = request.headers.get('Authorization')
@@ -2771,7 +2765,7 @@ export const handlers = [
   }),
 
   // POST /permissions (Create permission)
-  http.post('/api/auth/permissions', async ({ request }) => {
+  http.post('/permissions', async ({ request }) => {
     await simulateDelay(300)
 
     const authHeader = request.headers.get('Authorization')
@@ -2824,11 +2818,20 @@ export const handlers = [
     )
   }),
 
-  // GET /permissions (List all permissions - PUBLIC ENDPOINT)
-  http.get('/api/auth/permissions', async ({ request }) => {
+  // GET /permissions (List all permissions)
+  http.get('/permissions', async ({ request }) => {
     await simulateDelay(150)
 
-    // NO authentication required - public endpoint (matches real API)
+    const authHeader = request.headers.get('Authorization')
+    const userId = extractUserIdFromAuth(authHeader)
+
+    if (!userId) {
+      return HttpResponse.json(
+        { detail: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
     return HttpResponse.json({
       permissions: Object.values(mockPermissions).map(p => ({
         id: p.id,
@@ -2846,7 +2849,7 @@ export const handlers = [
   // ==========================================================================
 
   // POST /authorize (Check single permission)
-  http.post('/api/auth/authorize', async ({ request }) => {
+  http.post('/authorize', async ({ request }) => {
     await simulateDelay(200)
 
     const body = await request.json() as {
@@ -2884,7 +2887,7 @@ export const handlers = [
   }),
 
   // GET /users/:user_id/permissions (List user's effective permissions in org)
-  http.get('/api/auth/users/:user_id/permissions', async ({ request, params }) => {
+  http.get('/users/:user_id/permissions', async ({ request, params }) => {
     await simulateDelay(250)
 
     const authHeader = request.headers.get('Authorization')
@@ -2927,7 +2930,7 @@ export const handlers = [
   }),
 
   // GET /users/:user_id/check-permission (Check specific permission)
-  http.get('/api/auth/users/:user_id/check-permission', async ({ request, params }) => {
+  http.get('/users/:user_id/check-permission', async ({ request, params }) => {
     await simulateDelay(150)
 
     const authHeader = request.headers.get('Authorization')
@@ -2970,252 +2973,6 @@ export const handlers = [
       matched_groups: result.groups,
       matched_permissions: result.permissions
     })
-  }),
-
-  // ==========================================================================
-  // IMAGE-API COMPATIBLE AUTHORIZATION ENDPOINT (CRITICAL)
-  // ==========================================================================
-
-  // POST /api/v1/authorization/check (Image-API compatible format)
-  http.post('/api/v1/authorization/check', async ({ request }) => {
-    await simulateDelay(200)
-
-    const body = await request.json() as {
-      org_id: string
-      user_id: string
-      permission: string
-    }
-
-    // Test credentials (from real API authorization.py)
-    const TEST_CREDENTIALS: Record<string, string[]> = {
-      'test-org:test-user': ['photographers', 'editors', 'admins'],
-      'test-org-456:test-user-123': ['photographers', 'editors'],
-      'test-org:readonly-user': ['viewers']
-    }
-
-    const testKey = `${body.org_id}:${body.user_id}`
-    const userGroups = TEST_CREDENTIALS[testKey]
-
-    if (userGroups) {
-      // Test mode authorization
-      const PERMISSION_GROUPS: Record<string, string[]> = {
-        'image:upload': ['photographers', 'editors', 'admins'],
-        'image:read': ['photographers', 'editors', 'admins', 'viewers'],
-        'image:delete': ['editors', 'admins'],
-        'image:admin': ['admins'],
-        'activity:create': ['photographers', 'editors', 'admins'],
-        'activity:read': ['photographers', 'editors', 'admins', 'viewers'],
-        'activity:delete': ['editors', 'admins'],
-        'activity:update': ['photographers', 'editors', 'admins']
-      }
-
-      const requiredGroups = PERMISSION_GROUPS[body.permission] || []
-      const hasPermission = requiredGroups.some(g => userGroups.includes(g))
-
-      if (hasPermission) {
-        return HttpResponse.json({
-          allowed: true,
-          groups: userGroups,
-          reason: 'Test user authorized'
-        })
-      } else {
-        return HttpResponse.json(
-          {
-            allowed: false,
-            reason: `Test user not in required groups: ${requiredGroups.join(', ')}`
-          },
-          { status: 403 }
-        )
-      }
-    }
-
-    // Production mode: Use existing authorization logic
-    const result = userHasPermission(body.user_id, body.org_id, body.permission)
-
-    if (result.authorized) {
-      return HttpResponse.json({
-        allowed: true,
-        groups: result.groups,
-        reason: result.permissions.length > 0
-          ? 'User has permission via group membership'
-          : 'User authorized'
-      })
-    } else {
-      return HttpResponse.json(
-        {
-          allowed: false,
-          reason: `No permission '${body.permission}' granted`
-        },
-        { status: 403 }
-      )
-    }
-  }),
-
-  // ==========================================================================
-  // HEALTH & MONITORING ENDPOINTS (Infrastructure)
-  // ==========================================================================
-
-  // GET /health (Primary health check)
-  http.get('/health', async () => {
-    return HttpResponse.json({
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      service: 'auth-api'
-    })
-  }),
-
-  // GET /api/health (Legacy health check for backward compatibility)
-  http.get('/api/health', async () => {
-    return HttpResponse.json({
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      service: 'auth-api'
-    })
-  }),
-
-  // GET /metrics (Prometheus metrics - simplified mock)
-  http.get('/metrics', async () => {
-    const metrics = `# HELP auth_api_requests_total Total number of requests
-# TYPE auth_api_requests_total counter
-auth_api_requests_total{status="200"} 1234
-auth_api_requests_total{status="401"} 45
-auth_api_requests_total{status="403"} 23
-auth_api_requests_total{status="500"} 5
-
-# HELP auth_api_requests_inprogress Requests currently being processed
-# TYPE auth_api_requests_inprogress gauge
-auth_api_requests_inprogress 0
-
-# HELP auth_api_login_attempts_total Total login attempts
-# TYPE auth_api_login_attempts_total counter
-auth_api_login_attempts_total{result="success"} 892
-auth_api_login_attempts_total{result="failure"} 45
-
-# HELP auth_api_token_operations_total Token operations
-# TYPE auth_api_token_operations_total counter
-auth_api_token_operations_total{operation="refresh"} 456
-auth_api_token_operations_total{operation="logout"} 123
-`
-
-    return new HttpResponse(metrics, {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/plain; charset=utf-8'
-      }
-    })
-  }),
-
-  // GET /dashboard (Admin dashboard HTML)
-  http.get('/dashboard', async () => {
-    const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auth API Dashboard (Mock)</title>
-    <style>
-        body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .card { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        h1 { color: #333; margin: 0 0 10px 0; }
-        .status { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 14px; font-weight: 600; }
-        .status.healthy { background: #d4edda; color: #155724; }
-        .metric { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
-        .metric:last-child { border-bottom: none; }
-        .metric-label { font-weight: 500; color: #666; }
-        .metric-value { font-weight: 600; color: #333; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="card">
-            <h1>Auth API Dashboard</h1>
-            <p><span class="status healthy">HEALTHY</span> <em>Mock Service - Using MSW Handlers</em></p>
-        </div>
-        <div class="card">
-            <h2>System Metrics</h2>
-            <div class="metric">
-                <span class="metric-label">Total Users</span>
-                <span class="metric-value">8</span>
-            </div>
-            <div class="metric">
-                <span class="metric-label">Total Organizations</span>
-                <span class="metric-value">3</span>
-            </div>
-            <div class="metric">
-                <span class="metric-label">Total Groups</span>
-                <span class="metric-value">3</span>
-            </div>
-            <div class="metric">
-                <span class="metric-label">Total Permissions</span>
-                <span class="metric-value">7</span>
-            </div>
-        </div>
-        <div class="card">
-            <h2>Authentication Stats (Mock)</h2>
-            <div class="metric">
-                <span class="metric-label">Login Success Rate</span>
-                <span class="metric-value">95.2%</span>
-            </div>
-            <div class="metric">
-                <span class="metric-label">Active Sessions</span>
-                <span class="metric-value">23</span>
-            </div>
-            <div class="metric">
-                <span class="metric-label">2FA Enabled Users</span>
-                <span class="metric-value">1 (12.5%)</span>
-            </div>
-        </div>
-    </div>
-</body>
-</html>`
-
-    return new HttpResponse(html, {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/html; charset=utf-8'
-      }
-    })
-  }),
-
-  // GET /dashboard/api (Dashboard metrics JSON)
-  http.get('/dashboard/api', async () => {
-    return HttpResponse.json({
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      service: 'auth-api',
-      version: '1.0.0',
-      environment: 'mock',
-      metrics: {
-        users: {
-          total: 8,
-          verified: 7,
-          unverified: 1,
-          with_2fa: 1
-        },
-        organizations: {
-          total: 3,
-          total_members: 57
-        },
-        groups: {
-          total: 3,
-          total_members: 3
-        },
-        permissions: {
-          total: 7
-        },
-        authentication: {
-          login_success_rate: 0.952,
-          active_sessions: 23,
-          failed_logins_last_hour: 3,
-          rate_limit_hits_last_hour: 0
-        },
-        tokens: {
-          refresh_operations_last_hour: 45,
-          logout_operations_last_hour: 12,
-          revoked_tokens: 5
-        }
-      }
-    })
   })
 ]
+
