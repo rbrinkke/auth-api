@@ -11,7 +11,7 @@ from app.middleware.correlation import trace_id_middleware
 from app.middleware.security import add_security_headers
 from app.middleware.request_size_limit import RequestSizeLimitMiddleware
 from app.db import db
-from app.config import get_settings
+from app.config import get_settings, validate_production_secrets
 from app.core.exceptions import (
     AuthException,
     InvalidCredentialsError,
@@ -109,6 +109,20 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 @app.on_event("startup")
 async def startup_event():
     from app.services.audit_service import initialize_audit_logger
+
+    # 🔐 CRITICAL: Validate production secrets BEFORE any other startup tasks
+    # This prevents deployment with development secrets in production mode
+    logger.info("Validating production secrets...")
+    try:
+        validate_production_secrets(settings)
+        if not settings.DEBUG:
+            logger.info("✅ Production secrets validation passed - all secrets are secure")
+        else:
+            logger.info("⚠️  Running in DEBUG mode - production secret validation skipped")
+    except RuntimeError as e:
+        logger.critical("❌ Production secrets validation FAILED")
+        logger.critical(str(e))
+        raise  # Re-raise to prevent application startup
 
     logger.info("Connecting to database...")
     await db.connect()

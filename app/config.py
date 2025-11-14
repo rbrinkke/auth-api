@@ -118,6 +118,94 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8"
     )
 
+def validate_production_secrets(settings: Settings) -> None:
+    """Validate that production secrets don't contain development patterns.
+
+    This function prevents deploying to production with unsafe development secrets.
+    Called during application startup when DEBUG=False.
+
+    Args:
+        settings: The Settings instance to validate
+
+    Raises:
+        RuntimeError: If any unsafe secrets are detected in production mode
+
+    Example unsafe patterns:
+        - JWT_SECRET_KEY = "dev_secret_key_change_in_production..."
+        - POSTGRES_PASSWORD = "dev_password_change_in_prod"
+        - ENCRYPTION_KEY = "dev_encryption_key_for_2fa..."
+    """
+    # Only validate in production mode (DEBUG=False)
+    if settings.DEBUG:
+        return
+
+    # Define secrets to validate and their names for error messages
+    secrets_to_check = {
+        "JWT_SECRET_KEY": settings.JWT_SECRET_KEY,
+        "ENCRYPTION_KEY": settings.ENCRYPTION_KEY,
+        "POSTGRES_PASSWORD": settings.POSTGRES_PASSWORD,
+        "SERVICE_AUTH_TOKEN": settings.SERVICE_AUTH_TOKEN,
+    }
+
+    # Patterns that indicate development/unsafe secrets
+    unsafe_patterns = [
+        "dev_",
+        "change_in_prod",
+        "example",
+        "test_",
+        "demo_",
+        "localhost",
+        "password",  # Common weak password
+        "secret",    # Too generic
+        "default",
+    ]
+
+    # Check each secret for unsafe patterns
+    unsafe_secrets = []
+    for secret_name, secret_value in secrets_to_check.items():
+        secret_lower = secret_value.lower()
+
+        # Check for each unsafe pattern
+        for pattern in unsafe_patterns:
+            if pattern in secret_lower:
+                unsafe_secrets.append({
+                    "name": secret_name,
+                    "pattern": pattern,
+                    "preview": secret_value[:20] + "..." if len(secret_value) > 20 else secret_value
+                })
+                break  # Only report first match per secret
+
+    # If any unsafe secrets found, raise error with details
+    if unsafe_secrets:
+        error_messages = [
+            "🚨 PRODUCTION DEPLOYMENT BLOCKED - UNSAFE SECRETS DETECTED 🚨",
+            "",
+            "The following secrets contain development/unsafe patterns:",
+            ""
+        ]
+
+        for unsafe in unsafe_secrets:
+            error_messages.append(
+                f"  ❌ {unsafe['name']}: Contains pattern '{unsafe['pattern']}'"
+            )
+            error_messages.append(
+                f"     Preview: {unsafe['preview']}"
+            )
+            error_messages.append("")
+
+        error_messages.extend([
+            "Production secrets MUST:",
+            "  1. Be cryptographically random (use: python -c \"import secrets; print(secrets.token_urlsafe(64))\")",
+            "  2. Not contain patterns like: dev_, test_, example, change_in_prod, password, secret",
+            "  3. Be set via environment variables (.env file), never hardcoded",
+            "",
+            "Fix these secrets in your .env file before deploying to production!",
+            ""
+        ])
+
+        raise RuntimeError("\n".join(error_messages))
+
+
 @lru_cache()
 def get_settings() -> Settings:
     return Settings()
