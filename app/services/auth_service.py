@@ -113,7 +113,18 @@ class AuthService:
         """
         trace_id = trace_id_var.get()
 
-        logger.info("login_attempt_start", email=email, has_code=(code is not None))
+        # NEW: Capture intent context (INTENTION MODEL)
+        from app.middleware.intent import get_request_intent
+        intent = get_request_intent()
+
+        logger.info("login_attempt_start",
+                   email=email,
+                   has_code=(code is not None),
+                   # NEW: Intent context
+                   operation_intent=intent.operation_intent,
+                   session_mode=intent.session_mode,
+                   is_test=intent.is_test,
+                   is_automated=intent.is_automated())
         logger.debug("login_fetching_user_from_db", email=email)
 
         user = await procedures.sp_get_user_by_email(self.db, email)

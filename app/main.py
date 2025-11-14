@@ -10,6 +10,7 @@ from app.core.rate_limiting import init_limiter
 from app.middleware.correlation import trace_id_middleware
 from app.middleware.security import add_security_headers
 from app.middleware.request_size_limit import RequestSizeLimitMiddleware
+from app.middleware.intent import intent_extraction_middleware
 from app.db import db
 from app.config import get_settings, validate_production_secrets
 from app.core.exceptions import (
@@ -170,6 +171,16 @@ async def security_headers_middleware(request: Request, call_next):
 @app.middleware("http")
 async def trace_middleware(request: Request, call_next):
     return await trace_id_middleware(request, call_next)
+
+@app.middleware("http")
+async def intent_middleware(request: Request, call_next):
+    """
+    INTENTION MODEL: Extract operational intent from requests.
+
+    This middleware captures WHY requests are made (not just WHAT),
+    enabling intent-aware authorization, auditing, and metrics.
+    """
+    return await intent_extraction_middleware(request, call_next)
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):

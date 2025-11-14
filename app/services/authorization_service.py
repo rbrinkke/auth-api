@@ -61,10 +61,13 @@ def _log_authorization_decision(
     session_id: Optional[str] = None
 ):
     """
-    Fire-and-forget audit logging for authorization decisions.
+    Fire-and-forget audit logging for authorization decisions WITH INTENT CONTEXT.
 
     This function is NON-BLOCKING - it schedules audit logging but returns immediately.
     Audit logs are written asynchronously in batches for zero performance impact.
+
+    NEW: Captures operational intent (WHY) alongside authorization decision (WHAT).
+    This enables intent-aware auditing, compliance, and anomaly detection.
 
     Args:
         user_id: User making the request
@@ -82,9 +85,13 @@ def _log_authorization_decision(
     """
     try:
         from app.services.audit_service import get_audit_logger
+        from app.middleware.intent import get_request_intent
         import asyncio
 
         audit_logger = get_audit_logger()
+
+        # Capture request intent (NEW: WHY is this happening?)
+        intent = get_request_intent()
 
         # Create task without awaiting (fire-and-forget)
         asyncio.create_task(
@@ -100,7 +107,9 @@ def _log_authorization_decision(
                 resource_id=resource_id,
                 ip_address=ip_address,
                 user_agent=user_agent,
-                session_id=session_id
+                session_id=session_id,
+                # NEW: Intent context
+                intent=intent
             )
         )
     except Exception as e:

@@ -47,7 +47,7 @@ logger = get_logger(__name__)
 
 
 class AuditLogEntry:
-    """Structured audit log entry before database write."""
+    """Structured audit log entry before database write WITH INTENT CONTEXT."""
 
     def __init__(
         self,
@@ -66,7 +66,14 @@ class AuditLogEntry:
         request_id: UUID,
         log_level: str,
         session_id: Optional[str],
-        timestamp: datetime
+        timestamp: datetime,
+        # NEW: Intent context (INTENTIONAL AUTHORIZATION)
+        operation_intent: Optional[str] = None,
+        session_mode: Optional[str] = None,
+        request_purpose: Optional[str] = None,
+        batch_id: Optional[str] = None,
+        is_test: bool = False,
+        criticality: Optional[str] = None
     ):
         self.user_id = user_id
         self.organization_id = organization_id
@@ -84,6 +91,13 @@ class AuditLogEntry:
         self.log_level = log_level
         self.session_id = session_id
         self.timestamp = timestamp
+        # Intent context
+        self.operation_intent = operation_intent
+        self.session_mode = session_mode
+        self.request_purpose = request_purpose
+        self.batch_id = batch_id
+        self.is_test = is_test
+        self.criticality = criticality
 
 
 class AsyncAuditLogger:
@@ -177,21 +191,33 @@ class AsyncAuditLogger:
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None,
         request_id: Optional[UUID] = None,
-        session_id: Optional[str] = None
+        session_id: Optional[str] = None,
+        # NEW: Intent context (INTENTION MODEL)
+        intent: Optional[any] = None
     ):
         """
-        Log authorization decision (fire-and-forget, non-blocking).
+        Log authorization decision with INTENT CONTEXT (fire-and-forget, non-blocking).
+
+        NEW: This method now captures operational intent (WHY) alongside
+        authorization decision (WHAT). This enables:
+        - Intent-aware compliance auditing (test vs prod separation)
+        - Anomaly detection (unusual intent patterns)
+        - Performance optimization (intent-bucketed metrics)
+        - Security monitoring (automated vs manual access patterns)
 
         This method returns immediately after adding to buffer.
         Actual database write happens asynchronously in background.
         """
 
         # Apply sampling strategy (production only)
-        if not self._should_log(authorized):
+        # BUT: Always log test traffic (for compliance)
+        is_test = intent.is_test if intent else False
+        if not self._should_log(authorized, is_test):
             logger.debug("audit_log_sampled_out",
                         user_id=str(user_id),
                         permission=permission,
-                        authorized=authorized)
+                        authorized=authorized,
+                        is_test=is_test)
             return
 
         # Parse permission (e.g., "activity:create" -> "activity", "create")
@@ -200,7 +226,21 @@ class AsyncAuditLogger:
         # Determine log level based on mode
         log_level = self._get_log_level(authorized)
 
-        # Create entry
+        # Extract intent fields (if intent provided)
+        operation_intent = None
+        session_mode = None
+        request_purpose = None
+        batch_id = None
+        criticality = None
+
+        if intent:
+            operation_intent = intent.operation_intent
+            session_mode = intent.session_mode
+            request_purpose = intent.request_purpose
+            batch_id = intent.batch_id
+            criticality = intent.criticality
+
+        # Create entry with intent context
         entry = AuditLogEntry(
             user_id=user_id,
             organization_id=organization_id,
@@ -217,7 +257,14 @@ class AsyncAuditLogger:
             request_id=request_id or UUID(int=0),  # Placeholder if not provided
             log_level=log_level,
             session_id=session_id,
-            timestamp=datetime.utcnow()
+            timestamp=datetime.utcnow(),
+            # NEW: Intent context
+            operation_intent=operation_intent,
+            session_mode=session_mode,
+            request_purpose=request_purpose,
+            batch_id=batch_id,
+            is_test=is_test,
+            criticality=criticality
         )
 
         # Add to buffer (fire-and-forget)
@@ -237,27 +284,41 @@ class AsyncAuditLogger:
                            error=str(e),
                            buffer_size=len(self.buffer))
 
-        # Log to structured logs (Loki) for real-time debugging
-        if self.settings.DEBUG:
-            logger.debug("authz_audit_logged",
-                        user_id=str(user_id),
-                        org_id=str(organization_id),
-                        permission=permission,
-                        authorized=authorized,
-                        cache_source=cache_source,
-                        log_level=log_level)
+        # Log to structured logs (Loki) for real-time debugging WITH INTENT
+        if self.settings.DEBUG or is_test or operation_intent != "standard":
+            # Log non-standard traffic for visibility
+            logger.info("authz_audit_logged_with_intent",
+                       user_id=str(user_id),
+                       org_id=str(organization_id),
+                       permission=permission,
+                       authorized=authorized,
+                       cache_source=cache_source,
+                       log_level=log_level,
+                       # NEW: Intent context (INTENTION MODEL)
+                       operation_intent=operation_intent,
+                       session_mode=session_mode,
+                       is_test=is_test,
+                       criticality=criticality,
+                       batch_id=batch_id,
+                       request_purpose=request_purpose)
 
-    def _should_log(self, authorized: bool) -> bool:
+    def _should_log(self, authorized: bool, is_test: bool = False) -> bool:
         """
-        Sampling strategy for production (reduce volume).
+        Sampling strategy for production (reduce volume) WITH INTENT AWARENESS.
 
         Rules:
         - Development: Log EVERYTHING (100%)
+        - Test traffic: Log EVERYTHING (compliance - separate test from prod)
         - Production (denied): Log 100% (security monitoring)
         - Production (allowed): Log 10% (sample for compliance)
+
+        NEW: Test traffic is ALWAYS logged for compliance (separation of concerns).
         """
         if self.settings.DEBUG:
             return True  # Development: log everything
+
+        if is_test:
+            return True  # Test traffic: ALWAYS log (compliance requirement)
 
         if not authorized:
             return True  # Always log denied (security alerts)
