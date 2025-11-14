@@ -1,0 +1,48 @@
+{
+  "name": "@activity-app/msw-auth-handlers",
+  "version": "1.0.0",
+  "description": "Best-of-class MSW mock handlers for Activity App Authentication API - 100% coverage",
+  "main": "src/mocks/handlers.ts",
+  "types": "src/mocks/handlers.ts",
+  "keywords": [
+    "msw",
+    "mock",
+    "auth",
+    "oauth",
+    "rbac",
+    "testing",
+    "frontend"
+  ],
+  "author": "Activity App Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rbrinkke/auth-api"
+  },
+  "peerDependencies": {
+    "msw": "^2.0.0",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "msw": "^2.0.0",
+    "uuid": "^9.0.1",
+    "vitest": "^1.0.0",
+    "@vitest/ui": "^1.0.0",
+    "@vitest/coverage-v8": "^1.0.0",
+    "typescript": "^5.0.0"
+  },
+  "scripts": {
+    "test": "vitest run src/mocks/handlers.test.ts --reporter=verbose",
+    "test:watch": "vitest src/mocks/handlers.test.ts",
+    "test:ui": "vitest --ui src/mocks/handlers.test.ts",
+    "test:coverage": "vitest run src/mocks/handlers.test.ts --coverage",
+    "type-check": "tsc --noEmit"
+  },
+  "files": [
+    "src/mocks/handlers.ts",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
