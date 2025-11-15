@@ -1,361 +1,48 @@
 """
-Dashboard Routes - Technical Monitoring Interface
+Dashboard UI Components
 
-This module provides FastAPI routes for the technical monitoring dashboard.
-It serves both a JSON API endpoint for programmatic access and an interactive
-HTML dashboard for human monitoring.
+Reusable, self-contained UI components for the technical monitoring dashboard.
+This module follows the separation of concerns principle by isolating all
+presentation logic (CSS, HTML structure, JavaScript) into dedicated component classes.
 
-Endpoints:
-    GET /dashboard      - Interactive HTML dashboard (auto-refreshing)
-    GET /dashboard/api  - JSON API with all dashboard data
+Architecture:
+    - DashboardStyles: Complete CSS stylesheet for dark theme UI
+    - DashboardHTML: HTML structure and layout
+    - DashboardScripts: Client-side JavaScript for data fetching and rendering
 
-The dashboard is designed for system administrators, DevOps engineers, and
-developers who need real-time insights into the authentication API's health,
-performance, and activity.
-
-Features:
-    - Real-time system health monitoring (database, Redis, uptime)
-    - Database connection pool utilization tracking
-    - User and token lifecycle statistics
-    - Authentication operation metrics (logins, registrations, etc.)
-    - Security event tracking (rate limits, invalid credentials)
-    - Performance metrics via Prometheus integration
-    - Recent user activity (last 10 users)
-    - Configuration overview (no secrets exposed)
-    - Auto-refreshing HTML UI (10-second intervals)
-
-Security Considerations:
-    ⚠️ IMPORTANT: In production, these endpoints should be protected with authentication!
-    The dashboard exposes sensitive operational data including:
-    - User emails (in recent activity section)
-    - Database structure and sizes
-    - System configuration
-    - Connection pool statistics
-
-    Recommended protection:
-    - Add authentication middleware (e.g., API key, OAuth)
-    - Restrict access to admin users only
-    - Use IP whitelist for internal monitoring
-    - Consider VPN access only
-
-Usage Examples:
-    # Access HTML dashboard in browser
-    http://localhost:8000/dashboard
-
-    # Fetch JSON data programmatically
-    curl http://localhost:8000/dashboard/api | jq .
-
-    # Monitor specific metric with jq
-    curl -s http://localhost:8000/dashboard/api | jq '.database_metrics.users.total_users'
-
-    # Check system health status
-    curl -s http://localhost:8000/dashboard/api | jq '.system_health.database.status'
-
-HTML Dashboard Features:
-    - Dark theme optimized for long monitoring sessions
-    - Monospace font for technical data readability
-    - Color-coded status indicators (green/yellow/red)
-    - Responsive grid layout with organized metric cards
-    - Tables for recent user activity and database sizes
+Design Philosophy:
+    - Component-based architecture for maintainability
+    - No external dependencies (vanilla JS, pure CSS)
+    - GitHub dark theme for professional monitoring interface
+    - Responsive grid layout optimized for desktop/tablet
     - Auto-refresh every 10 seconds for real-time monitoring
-    - Error handling with user-friendly messages
-
-Data Refresh:
-    - HTML dashboard: Auto-refreshes every 10 seconds via JavaScript
-    - JSON API: No caching, always returns fresh data
-    - Performance: Typical response time 50-200ms
-
-Integration:
-    The JSON API can be integrated with:
-    - External monitoring tools (Datadog, New Relic, Grafana)
-    - Custom alerting systems
-    - CI/CD health checks
-    - Load balancer health probes
-    - Infrastructure as Code (Terraform, etc.)
 
 Author: Claude Code
-Version: 1.0.0
+Version: 2.0.0 (Refactored modular design)
 """
 
-from fastapi import APIRouter, Response
-from fastapi.responses import HTMLResponse
-import structlog
 
-from app.services.dashboard_service import DashboardService
-
-logger = structlog.get_logger(__name__)
-router = APIRouter(prefix="/dashboard", tags=["dashboard"])
-
-
-@router.get("/api", summary="Get comprehensive dashboard data (JSON)")
-async def get_dashboard_data():
+class DashboardStyles:
     """
-    Get comprehensive technical dashboard data in JSON format.
+    CSS Stylesheet Component
 
-    This endpoint provides all monitoring data in a structured JSON format,
-    suitable for programmatic access by monitoring tools, scripts, and
-    external systems. Data is collected in real-time with no caching.
-
-    **Data Sections:**
-
-    1. **System Health** - Database, Redis status, uptime
-       - Database connection status and basic stats
-       - Redis cache status and memory usage
-       - Service uptime since last restart
-       - Python version information
-
-    2. **Database Metrics** - Detailed database statistics
-       - Connection pool utilization (active/idle/total)
-       - User statistics (total, verified, active, 24h activity)
-       - Token statistics (active, revoked, expired, 1h created)
-       - Recent user activity (last 10 users)
-       - Database table sizes
-
-    3. **Prometheus Metrics** - All Prometheus counters and gauges
-       - HTTP request counts by endpoint and status
-       - Authentication operation counts (logins, registrations, etc.)
-       - Security metrics (rate limits, invalid credentials)
-       - Database query counts and connection stats
-       - Redis operation counts
-       - Business metrics (active users, sessions, 2FA enabled)
-
-    4. **Configuration** - Safe settings (no secrets)
-       - Environment settings (debug, log level)
-       - Database connection config (host, pool sizes)
-       - Redis connection config
-       - JWT token expiration settings
-       - Rate limiting thresholds
-       - Email service configuration
-
-    **Response Format:**
-    ```json
-    {
-        "timestamp": "2024-01-15T10:30:00.000000+00:00",
-        "system_health": {
-            "uptime_seconds": 3600.5,
-            "database": {"status": "healthy", ...},
-            "redis": {"status": "healthy", ...}
-        },
-        "database_metrics": {
-            "pool": {...},
-            "users": {...},
-            "tokens": {...},
-            "recent_users": [...],
-            "table_sizes": [...]
-        },
-        "prometheus_metrics": {...},
-        "configuration": {...}
-    }
-    ```
-
-    **Performance:**
-    - Response time: 50-200ms (depending on database size)
-    - All data collected concurrently for optimal performance
-    - Uses connection pooling for database and Redis
-
-    **Use Cases:**
-    - Integration with external monitoring (Datadog, New Relic, Grafana)
-    - Custom alerting systems
-    - CI/CD health checks
-    - Load balancer health probes
-    - Automated reporting scripts
-
-    **Example Usage:**
-    ```bash
-    # Get all data
-    curl http://localhost:8000/dashboard/api
-
-    # Check if database is healthy
-    curl -s http://localhost:8000/dashboard/api | jq '.system_health.database.status'
-
-    # Get total user count
-    curl -s http://localhost:8000/dashboard/api | jq '.database_metrics.users.total_users'
-
-    # Monitor pool utilization
-    curl -s http://localhost:8000/dashboard/api | jq '.database_metrics.pool'
-    ```
-
-    **Security Warning:**
-    ⚠️ This endpoint exposes operational data including user emails and system
-    configuration. In production, protect this endpoint with authentication!
-
-    Returns:
-        Dict: Comprehensive dashboard data with all metrics and statistics
-
-    Raises:
-        HTTPException: 500 if critical data collection fails
+    Provides complete styling for the dashboard with:
+    - GitHub-inspired dark theme optimized for long monitoring sessions
+    - Monospace fonts for technical data readability
+    - Color-coded status indicators (green/yellow/red)
+    - Responsive grid layout with smooth transitions
+    - Accessibility-friendly contrast ratios
     """
-    logger.info("dashboard_data_requested")
 
-    dashboard_service = DashboardService()
-    data = await dashboard_service.get_comprehensive_dashboard()
+    @staticmethod
+    def get_styles() -> str:
+        """
+        Get complete CSS stylesheet.
 
-    logger.info("dashboard_data_returned", sections=list(data.keys()))
-    return data
-
-
-@router.get("", response_class=HTMLResponse, summary="Dashboard UI")
-async def get_dashboard_html():
-    """
-    Serve interactive HTML dashboard with real-time monitoring.
-
-    This endpoint serves a fully self-contained HTML page with embedded CSS and JavaScript
-    that provides a real-time monitoring interface for the authentication API. The dashboard
-    auto-refreshes every 10 seconds to display the latest system metrics.
-
-    **Dashboard Sections:**
-
-    1. **System Health Card**
-       - Service uptime (days, hours, minutes)
-       - Database connection status (healthy/unhealthy)
-       - Redis cache status (healthy/unhealthy)
-       - Timestamp of current data
-
-    2. **Database Status Card**
-       - Host and database name
-       - Database size (human-readable)
-       - Total users count
-       - Total tokens count
-
-    3. **Redis Cache Card**
-       - Host and port
-       - Keys count
-       - Memory usage
-       - Connected clients
-       - Redis uptime
-
-    4. **Connection Pool Card**
-       - Active/idle/total connections
-       - Pool utilization percentage
-       - Min/max pool size
-       - Color-coded utilization (green < 50%, yellow < 80%, red >= 80%)
-
-    5. **User Statistics Card**
-       - Total users
-       - Verified/unverified users
-       - Active/inactive users
-       - New users (24h)
-       - Recent logins (24h)
-
-    6. **Token Statistics Card**
-       - Total/active/revoked tokens
-       - Valid/expired tokens
-       - Tokens created (1h)
-
-    7. **Authentication Metrics Card**
-       - Login attempts count
-       - Registrations count
-       - Email verifications count
-       - Password resets count
-       - 2FA operations count
-       - Token operations count
-
-    8. **Security Metrics Card**
-       - Rate limit hits (color-coded warning)
-       - Invalid credentials attempts (color-coded by severity)
-       - Password validation failures
-
-    9. **Configuration Card**
-       - Debug mode status (warning if enabled)
-       - Log level
-       - JWT algorithm and token TTLs
-       - 2FA enabled status
-
-    10. **Recent User Activity Table**
-        - Last 10 users created
-        - Email addresses
-        - Verification status
-        - Created timestamp
-        - Last login timestamp
-
-    11. **Database Table Sizes Card**
-        - Size of each table in human-readable format
-
-    **UI Features:**
-
-    - **Dark Theme**: Optimized for long monitoring sessions with reduced eye strain
-    - **Monospace Font**: Technical data displayed in Monaco/Courier New for readability
-    - **Color Coding**: Status indicators in green (healthy/good), yellow (warning), red (error)
-    - **Auto-refresh**: Data updates every 10 seconds automatically
-    - **Responsive Grid**: Cards organized in responsive grid layout
-    - **Real-time Clock**: Shows last update time
-    - **Error Handling**: Displays user-friendly error messages if data fetch fails
-    - **Loading State**: Shows spinner during initial data load
-
-    **Technical Details:**
-
-    - Single-page application (SPA) with vanilla JavaScript
-    - No external dependencies (self-contained)
-    - Fetches data from /dashboard/api endpoint
-    - Uses Fetch API for AJAX requests
-    - CSS Grid for responsive layout
-    - Handles partial failures gracefully
-
-    **Auto-refresh Behavior:**
-
-    - Initial load on page open
-    - Refresh every 10 seconds via setInterval
-    - Updates "Last updated" timestamp on each refresh
-    - Preserves refresh interval on navigation
-    - Shows error banner if fetch fails
-
-    **Browser Compatibility:**
-
-    - Modern browsers with ES6 support
-    - Chrome 51+, Firefox 54+, Safari 10+, Edge 15+
-    - Requires JavaScript enabled
-    - Responsive design for desktop and tablet (not optimized for mobile)
-
-    **Access:**
-
-    Open in browser: http://localhost:8000/dashboard
-
-    **Security Warning:**
-
-    ⚠️ This dashboard displays sensitive operational data including:
-    - User email addresses (last 10 recent users)
-    - Database structure and sizes
-    - System configuration details
-    - Connection pool statistics
-
-    In production environments:
-    - Add authentication middleware (API key, OAuth, etc.)
-    - Restrict to admin users only
-    - Use IP whitelist for internal access
-    - Consider VPN-only access
-    - Monitor access logs
-
-    **Use Cases:**
-
-    - Real-time system monitoring during normal operations
-    - Troubleshooting during incidents (connection pool exhaustion, etc.)
-    - Performance monitoring (query counts, response times)
-    - Security monitoring (rate limit hits, invalid credentials)
-    - Capacity planning (user growth, database size trends)
-
-    Returns:
-        HTMLResponse: Self-contained HTML page with embedded CSS/JavaScript
-
-    Example:
-        ```python
-        # Access in browser
-        http://localhost:8000/dashboard
-
-        # The page will auto-refresh every 10 seconds
-        # All metrics update in real-time
-        ```
-    """
-    logger.info("dashboard_ui_requested")
-
-    html_content = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auth API - Technical Dashboard</title>
-    <style>
-        * {
+        Returns:
+            str: Complete CSS rules for dashboard styling
+        """
+        return """        * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
@@ -544,11 +231,30 @@ async def get_dashboard_html():
         .uptime {
             color: #3fb950;
             font-weight: bold;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
+        }"""
+
+
+class DashboardHTML:
+    """
+    HTML Structure Component
+
+    Provides the semantic HTML structure for the dashboard with:
+    - Proper semantic HTML5 elements (header, main, sections)
+    - Accessibility attributes (ARIA labels where needed)
+    - Loading state management
+    - Error display container
+    - Grid-based responsive layout
+    """
+
+    @staticmethod
+    def get_structure() -> str:
+        """
+        Get HTML body structure.
+
+        Returns:
+            str: Complete HTML body structure
+        """
+        return """    <div class="container">
         <header>
             <h1>🔐 Authentication API - Technical Dashboard</h1>
             <div class="meta">
@@ -567,10 +273,37 @@ async def get_dashboard_html():
         <div class="refresh-info">
             Auto-refresh every 10 seconds | Last updated: <span id="update-time">--</span>
         </div>
-    </div>
+    </div>"""
 
-    <script>
-        let refreshInterval;
+
+class DashboardScripts:
+    """
+    JavaScript Component
+
+    Client-side logic for:
+    - Fetching dashboard data from /dashboard/api
+    - Rendering all dashboard sections dynamically
+    - Auto-refresh every 10 seconds
+    - Error handling and recovery
+    - Metric aggregation and formatting
+    - Uptime formatting
+
+    Architecture:
+    - Vanilla JavaScript (no frameworks/dependencies)
+    - Functional programming approach
+    - Separation of concerns (fetch, render, format)
+    - Defensive programming with null checks
+    """
+
+    @staticmethod
+    def get_scripts() -> str:
+        """
+        Get complete JavaScript code.
+
+        Returns:
+            str: Complete client-side JavaScript
+        """
+        return """        let refreshInterval;
 
         async function loadDashboard() {
             try {
@@ -1024,10 +757,4 @@ async def get_dashboard_html():
         loadDashboard();
 
         // Auto-refresh every 10 seconds
-        refreshInterval = setInterval(loadDashboard, 10000);
-    </script>
-</body>
-</html>
-    """
-
-    return HTMLResponse(content=html_content)
+        refreshInterval = setInterval(loadDashboard, 10000);"""
