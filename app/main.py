@@ -149,19 +149,32 @@ async def shutdown_event():
 # Add request size limit middleware (must be first to protect all routes)
 app.add_middleware(RequestSizeLimitMiddleware, settings=settings)
 
-cors_origins = [
-    origin.strip()
-    for origin in settings.CORS_ORIGINS.split(",")
-    if origin.strip()
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=cors_origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type", "Authorization"],
-)
+# CORS Configuration - Developer-friendly for local development
+if settings.DEBUG:
+    # 🔥 DEV MODE: Allow ALL origins for easy development
+    logger.info("🚀 DEBUG MODE: CORS configured to allow ALL origins")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # Allow everything in development!
+        allow_credentials=True,
+        allow_methods=["*"],  # All HTTP methods
+        allow_headers=["*"],  # All headers
+    )
+else:
+    # 🔐 PRODUCTION: Strict CORS based on settings
+    cors_origins = [
+        origin.strip()
+        for origin in settings.CORS_ORIGINS.split(",")
+        if origin.strip()
+    ]
+    logger.info(f"🔒 PRODUCTION MODE: CORS restricted to: {cors_origins}")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST"],
+        allow_headers=["Content-Type", "Authorization"],
+    )
 
 @app.middleware("http")
 async def security_headers_middleware(request: Request, call_next):

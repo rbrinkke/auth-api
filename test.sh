@@ -34,7 +34,7 @@ echo ""
 # DB PROOF 1
 echo "[3/21] DATABASE PROOF 1: User exists (full record)"
 docker exec activity-postgres-db psql -U auth_api_user -d activitydb -c "SELECT * FROM activity.users WHERE email='$EMAIL';" 2>/dev/null
-USER_ID=$(docker exec activity-postgres-db psql -U auth_api_user -d activitydb -t -c "SELECT id FROM activity.users WHERE email='$EMAIL';" 2>/dev/null | xargs)
+USER_ID=$(docker exec activity-postgres-db psql -U auth_api_user -d activitydb -t -c "SELECT user_id FROM activity.users WHERE email='$EMAIL';" 2>/dev/null | xargs)
 [ -z "$USER_ID" ] && exit 1
 echo "      ✓ User in database: ${USER_ID:0:20}..."
 echo ""
@@ -59,39 +59,46 @@ echo ""
 # DB PROOF 2
 echo "[6/21] DATABASE PROOF 2: Verified status (full record)"
 docker exec activity-postgres-db psql -U auth_api_user -d activitydb -c "SELECT * FROM activity.users WHERE email='$EMAIL';" 2>/dev/null
-VERIFIED=$(docker exec activity-postgres-db psql -U auth_api_user -d activitydb -t -c "SELECT is_verified FROM activity.users WHERE id='$USER_ID';" 2>/dev/null | xargs)
+VERIFIED=$(docker exec activity-postgres-db psql -U auth_api_user -d activitydb -t -c "SELECT is_verified FROM activity.users WHERE user_id='$USER_ID';" 2>/dev/null | xargs)
 [ "$VERIFIED" = "t" ] || exit 1
 echo "      ✓ is_verified = $VERIFIED"
 echo ""
 
 # GET PASSWORD HASH BEFORE RESET
 echo "[7/21] GET PASSWORD HASH (BEFORE RESET)"
-HASH_OLD=$(docker exec activity-postgres-db psql -U auth_api_user -d activitydb -t -c "SELECT LEFT(hashed_password, 50) FROM activity.users WHERE id='$USER_ID';" 2>/dev/null | xargs)
+HASH_OLD=$(docker exec activity-postgres-db psql -U auth_api_user -d activitydb -t -c "SELECT LEFT(password_hash, 50) FROM activity.users WHERE user_id='$USER_ID';" 2>/dev/null | xargs)
 echo "      ✓ Old hash: ${HASH_OLD:0:30}..."
 echo ""
 
-# LOGIN STEP 1: Request login code
-echo "[8/21] LOGIN STEP 1: Request code (before password change)"
+# LOGIN - Handle both SKIP_LOGIN_CODE modes
+echo "[8/21] LOGIN (before password change)"
 cat > ./login.json << JSON
-{"username": "$EMAIL", "password": "$PASS"}
+{"email": "$EMAIL", "password": "$PASS"}
 JSON
 R=$(curl -s -X POST "$API/api/auth/login" -H "Content-Type: application/json" -d @./login.json)
-echo "$R" | grep -q "requires_code" || (echo "Login code request failed: $R" && exit 1)
-echo "      ✓ Login code requested"
 
-# GET LOGIN CODE
-LOGIN_CODE=$(docker compose exec -T redis redis-cli GET "2FA:$USER_ID:login" 2>/dev/null)
-echo "      ✓ Login code: $LOGIN_CODE"
+# Check if we got tokens directly (SKIP_LOGIN_CODE=true) or need code
+if echo "$R" | grep -q "access_token"; then
+    echo "      ✓ Login successful (SKIP_LOGIN_CODE=true)"
+    ACCESS=$(echo "$R" | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
+    REFRESH=$(echo "$R" | grep -o '"refresh_token":"[^"]*' | cut -d'"' -f4)
+elif echo "$R" | grep -q "requires_code"; then
+    echo "      ✓ Login code requested (SKIP_LOGIN_CODE=false)"
+    LOGIN_CODE=$(docker compose exec -T redis redis-cli GET "2FA:$USER_ID:login" 2>/dev/null)
+    echo "      ✓ Login code: $LOGIN_CODE"
 
-# LOGIN STEP 2: Submit code
-echo "[8b/21] LOGIN STEP 2: Submit code"
-cat > ./login_with_code.json << JSON
-{"username": "$EMAIL", "password": "$PASS", "code": "$LOGIN_CODE"}
+    # LOGIN STEP 2: Submit code
+    cat > ./login_with_code.json << JSON
+{"email": "$EMAIL", "password": "$PASS", "code": "$LOGIN_CODE"}
 JSON
-R=$(curl -s -X POST "$API/api/auth/login" -H "Content-Type: application/json" -d @./login_with_code.json)
-echo "$R" | grep -q "access_token" || (echo "Login with code failed: $R" && exit 1)
-ACCESS=$(echo "$R" | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
-REFRESH=$(echo "$R" | grep -o '"refresh_token":"[^"]*' | cut -d'"' -f4)
+    R=$(curl -s -X POST "$API/api/auth/login" -H "Content-Type: application/json" -d @./login_with_code.json)
+    echo "$R" | grep -q "access_token" || (echo "Login with code failed: $R" && exit 1)
+    ACCESS=$(echo "$R" | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
+    REFRESH=$(echo "$R" | grep -o '"refresh_token":"[^"]*' | cut -d'"' -f4)
+else
+    echo "Login failed: $R"
+    exit 1
+fi
 echo "      ✓ Tokens obtained"
 echo ""
 
@@ -126,7 +133,7 @@ echo ""
 # DB PROOF 3 - FIXED LOGIC
 echo "[12/21] DATABASE PROOF 3: Password hash changed (full record)"
 docker exec activity-postgres-db psql -U auth_api_user -d activitydb -c "SELECT * FROM activity.users WHERE email='$EMAIL';" 2>/dev/null
-HASH_NEW=$(docker exec activity-postgres-db psql -U auth_api_user -d activitydb -t -c "SELECT LEFT(hashed_password, 50) FROM activity.users WHERE id='$USER_ID';" 2>/dev/null | xargs)
+HASH_NEW=$(docker exec activity-postgres-db psql -U auth_api_user -d activitydb -t -c "SELECT LEFT(password_hash, 50) FROM activity.users WHERE user_id='$USER_ID';" 2>/dev/null | xargs)
 echo "      Old hash: ${HASH_OLD:0:30}..."
 echo "      New hash: ${HASH_NEW:0:30}..."
 if [ "$HASH_OLD" != "$HASH_NEW" ]; then
@@ -138,24 +145,33 @@ fi
 echo ""
 
 # LOGIN NEW PASSWORD
-echo "[13/21] LOGIN NEW PASSWORD - Step 1: Request code"
+echo "[13/21] LOGIN NEW PASSWORD"
 cat > ./login_new.json << JSON
-{"username": "$EMAIL", "password": "NewStrongPassword2025"}
+{"email": "$EMAIL", "password": "NewStrongPassword2025"}
 JSON
 R=$(curl -s -X POST "$API/api/auth/login" -H "Content-Type: application/json" -d @./login_new.json)
-echo "$R" | grep -q "requires_code" || (echo "Login new password code request failed: $R" && exit 1)
 
-NEW_LOGIN_CODE=$(docker compose exec -T redis redis-cli GET "2FA:$USER_ID:login" 2>/dev/null)
-
-cat > ./login_new_with_code.json << JSON
-{"username": "$EMAIL", "password": "NewStrongPassword2025", "code": "$NEW_LOGIN_CODE"}
-JSON
-R=$(curl -s -X POST "$API/api/auth/login" -H "Content-Type: application/json" -d @./login_new_with_code.json)
+# Handle both SKIP_LOGIN_CODE modes
 if echo "$R" | grep -q "access_token"; then
-    echo "      ✓✓✓ LOGIN NEW PASSWORD SUCCESS ✓✓✓"
+    echo "      ✓✓✓ LOGIN NEW PASSWORD SUCCESS (direct) ✓✓✓"
     REFRESH=$(echo "$R" | grep -o '"refresh_token":"[^"]*' | cut -d'"' -f4)
+elif echo "$R" | grep -q "requires_code"; then
+    echo "      ✓ New password login code requested"
+    NEW_LOGIN_CODE=$(docker compose exec -T redis redis-cli GET "2FA:$USER_ID:login" 2>/dev/null)
+
+    cat > ./login_new_with_code.json << JSON
+{"email": "$EMAIL", "password": "NewStrongPassword2025", "code": "$NEW_LOGIN_CODE"}
+JSON
+    R=$(curl -s -X POST "$API/api/auth/login" -H "Content-Type: application/json" -d @./login_new_with_code.json)
+    if echo "$R" | grep -q "access_token"; then
+        echo "      ✓✓✓ LOGIN NEW PASSWORD SUCCESS (with code) ✓✓✓"
+        REFRESH=$(echo "$R" | grep -o '"refresh_token":"[^"]*' | cut -d'"' -f4)
+    else
+        echo "      ✗ Login new password failed: $R"
+        exit 1
+    fi
 else
-    echo "      ✗ Login new password failed"
+    echo "      ✗ Login new password failed: $R"
     exit 1
 fi
 echo ""
@@ -214,7 +230,7 @@ echo ""
 echo "[19/21] RATE LIMITS - REAL TEST (21 login attempts)"
 echo "      Testing rate limit (should hit at ~20)..."
 for i in {1..21}; do
-    curl -s -X POST "$API/api/auth/login" -H "Content-Type: application/json" -d '{"username":"fake@test.com","password":"wrong"}' > /dev/null 2>&1
+    curl -s -X POST "$API/api/auth/login" -H "Content-Type: application/json" -d '{"email":"fake@test.com","password":"wrong"}' > /dev/null 2>&1
     if [ $i -eq 20 ]; then
         sleep 1
     fi
@@ -227,15 +243,21 @@ echo "[20/21] 2FA ENDPOINTS - REAL TEST"
 echo "      Testing 2FA endpoints (requires auth token)..."
 # Get fresh tokens for 2FA testing
 cat > ./login_2fa_test.json << JSON
-{"username": "$EMAIL", "password": "NewStrongPassword2025"}
+{"email": "$EMAIL", "password": "NewStrongPassword2025"}
 JSON
 R=$(curl -s -X POST "$API/api/auth/login" -H "Content-Type: application/json" -d @./login_2fa_test.json)
-LOGIN_CODE_2FA=$(docker compose exec -T redis redis-cli GET "2FA:$USER_ID:login" 2>/dev/null)
-cat > ./login_2fa_with_code.json << JSON
-{"username": "$EMAIL", "password": "NewStrongPassword2025", "code": "$LOGIN_CODE_2FA"}
+
+# Handle both SKIP_LOGIN_CODE modes
+if echo "$R" | grep -q "access_token"; then
+    ACCESS_2FA=$(echo "$R" | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
+elif echo "$R" | grep -q "requires_code"; then
+    LOGIN_CODE_2FA=$(docker compose exec -T redis redis-cli GET "2FA:$USER_ID:login" 2>/dev/null)
+    cat > ./login_2fa_with_code.json << JSON
+{"email": "$EMAIL", "password": "NewStrongPassword2025", "code": "$LOGIN_CODE_2FA"}
 JSON
-R=$(curl -s -X POST "$API/api/auth/login" -H "Content-Type: application/json" -d @./login_2fa_with_code.json)
-ACCESS_2FA=$(echo "$R" | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
+    R=$(curl -s -X POST "$API/api/auth/login" -H "Content-Type: application/json" -d @./login_2fa_with_code.json)
+    ACCESS_2FA=$(echo "$R" | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
+fi
 
 # Test 1: Setup 2FA (should return QR code data)
 HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API/api/auth/2fa/setup" -H "Authorization: Bearer $ACCESS_2FA" 2>/dev/null)
