@@ -84,9 +84,6 @@ class Settings(BaseSettings):
     API_VERSION: str = "1.0.0"
     PROJECT_NAME: str = "Activity Platform - Authentication API"
 
-    # Testing UI (Development/Testing only)
-    ENABLE_TESTING_UI: bool = True  # Set to False in production
-
     @field_validator("JWT_SECRET_KEY", mode="after")
     @classmethod
     def validate_jwt_secret_key(cls, v: str) -> str:

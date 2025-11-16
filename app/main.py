@@ -51,10 +51,6 @@ from app.routes import (
     oauth_authorize, oauth_token, oauth_revoke, oauth_discovery
 )
 
-# Testing UI (only imported if enabled)
-if get_settings().ENABLE_TESTING_UI:
-    from testing_ui import router as testing_ui_router
-
 setup_logging()
 logger = logging.getLogger(__name__)
 
@@ -417,11 +413,6 @@ app.include_router(oauth_authorize.router, tags=["OAuth 2.0"])
 app.include_router(oauth_token.router, tags=["OAuth 2.0"])
 app.include_router(oauth_revoke.router, tags=["OAuth 2.0"])
 app.include_router(oauth_discovery.router, tags=["OAuth 2.0 Discovery"])
-
-# Testing UI (conditionally included)
-if settings.ENABLE_TESTING_UI:
-    app.include_router(testing_ui_router.router, tags=["Testing UI"])
-    logger.info("🧪 Testing UI enabled at /test/auth")
 
 # Add JWT Bearer security scheme to OpenAPI schema (best practice for API documentation)
 @app.on_event("startup")
