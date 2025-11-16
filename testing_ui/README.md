@@ -13,31 +13,44 @@ This testing UI provides a visual, interactive way to test the complete authenti
 
 ## 🚀 Quick Start
 
-### 1. Enable the Testing UI
+### Standalone Docker Container (Recommended)
 
-Ensure `ENABLE_TESTING_UI=true` in your `.env` file:
-
-```bash
-# .env
-ENABLE_TESTING_UI=true
-```
-
-### 2. Start the Auth API
+Run the testing UI as a completely separate Docker container:
 
 ```bash
-# If using Docker (recommended)
-docker compose build auth-api && docker compose restart auth-api
+# 1. Make sure auth-api is running (required)
+cd /mnt/d/activity && ./scripts/start-infra.sh
+cd auth-api && docker compose up -d
 
-# Or run locally
-uvicorn app.main:app --reload
+# 2. Start standalone testing UI container
+cd testing_ui
+./start.sh
 ```
 
-### 3. Access the Testing Page
+**What happens:**
+- Builds dedicated Docker image for testing UI
+- Starts container `auth-testing-ui` on port 8099
+- Connects to `activity-network` to communicate with auth-api
+- Runs completely independently from auth-api
 
-Open your browser and navigate to:
-
+**Access the testing page:**
 ```
-http://localhost:8000/test/auth
+http://localhost:8099/test/auth
+```
+
+**Useful commands:**
+```bash
+# View logs
+docker logs -f auth-testing-ui
+
+# Stop
+cd testing_ui && docker compose down
+
+# Rebuild after changes
+cd testing_ui && docker compose build && docker compose restart
+
+# Check status
+curl http://localhost:8099/health
 ```
 
 ## 📋 Features
@@ -143,9 +156,14 @@ With this setting, you'll receive tokens directly from the first login request.
 testing_ui/
 ├── __init__.py           # Module initialization
 ├── router.py             # FastAPI router
+├── standalone.py         # Standalone FastAPI app
+├── start.sh              # Quick start script (Docker)
+├── Dockerfile            # Docker image definition
+├── docker-compose.yml    # Docker Compose configuration
+├── requirements.txt      # Python dependencies
+├── .dockerignore         # Docker ignore file
 ├── templates/
 │   └── auth_test.html    # Jinja2 template with Tailwind CSS
-├── static/               # (Future: static assets if needed)
 └── README.md            # This file
 ```
 
@@ -157,23 +175,21 @@ testing_ui/
 - **JavaScript**: Vanilla JS (Fetch API)
 - **Storage**: Browser localStorage
 
-### Integration Points
+### Deployment Modes
 
-The testing UI is **completely standalone** and integrates with the main app via:
+The testing UI can run in two modes:
 
-1. **Conditional Import** (`app/main.py:55`):
-   ```python
-   if get_settings().ENABLE_TESTING_UI:
-       from testing_ui import router as testing_ui_router
-   ```
+#### Standalone Mode (Recommended)
+- Runs as separate FastAPI app on port 8099
+- Zero integration with main auth-api
+- Started with `./start.sh` or `python3 standalone.py`
+- Best for development and testing isolation
 
-2. **Conditional Router Mount** (`app/main.py:422`):
-   ```python
-   if settings.ENABLE_TESTING_UI:
-       app.include_router(testing_ui_router.router, tags=["Testing UI"])
-   ```
-
-This means the testing UI can be **completely removed** by simply setting `ENABLE_TESTING_UI=false`.
+#### Integrated Mode (Legacy)
+- Runs within main auth-api app
+- Shares same port (8000) and process
+- Requires conditional import in `app/main.py`
+- Can be disabled via `ENABLE_TESTING_UI=false`
 
 ## 📝 Usage Examples
 

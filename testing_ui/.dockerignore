@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Scripts (not needed in container)
+docker-start.sh
+
+# Documentation
+README.md
+
+# Git
+.git/
+.gitignore
