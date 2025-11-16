@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .response-box {
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .flow-section {
+            scroll-margin-top: 100px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <h1 class="text-3xl font-bold">🔐 Auth API Testing Interface</h1>
+            <p class="text-blue-100 mt-2">Test all authentication flows: Register, Login, Reset, Tokens</p>
+            <div class="mt-3 flex gap-2 text-sm">
+                <span class="bg-yellow-500 text-yellow-900 px-3 py-1 rounded-full font-semibold">⚠️ TESTING ONLY</span>
+                <span class="bg-white/20 px-3 py-1 rounded-full">Environment: Development</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="bg-white shadow sticky top-24 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <nav class="flex gap-4 py-3 overflow-x-auto">
+                <a href="#register" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition whitespace-nowrap">📝 Register</a>
+                <a href="#login" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition whitespace-nowrap">🔑 Login</a>
+                <a href="#reset" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition whitespace-nowrap">🔄 Reset Password</a>
+                <a href="#tokens" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition whitespace-nowrap">🎫 Tokens</a>
+                <a href="#stored" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition whitespace-nowrap">💾 Stored Data</a>
+            </nav>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- Registration Flow -->
+        <section id="register" class="flow-section bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                📝 Registration Flow
+                <span class="text-sm font-normal text-gray-500">(2 steps)</span>
+            </h2>
+
+            <!-- Step 1: Register -->
+            <div class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-800 mb-3">Step 1: Create Account</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="reg_email" placeholder="user@example.com"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input type="password" id="reg_password" placeholder="SterkWachtwoord123"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <button onclick="register()"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                        Register Account
+                    </button>
+                </div>
+                <div id="reg_response" class="mt-3"></div>
+            </div>
+
+            <!-- Step 2: Verify Email -->
+            <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-800 mb-3">Step 2: Verify Email</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Verification Token</label>
+                        <input type="text" id="verify_token" placeholder="Token from email"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <p class="text-xs text-gray-500 mt-1">Copy from email or response above</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">6-Digit Code</label>
+                        <input type="text" id="verify_code" placeholder="123456" maxlength="6"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <button onclick="verifyEmail()"
+                        class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                        Verify Email
+                    </button>
+                </div>
+                <div id="verify_response" class="mt-3"></div>
+            </div>
+        </section>
+
+        <!-- Login Flow -->
+        <section id="login" class="flow-section bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                🔑 Login Flow
+                <span class="text-sm font-normal text-gray-500">(2-3 steps)</span>
+            </h2>
+
+            <!-- Step 1: Initial Login -->
+            <div class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-800 mb-3">Step 1: Initial Login (Triggers Email Code)</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="login_email" placeholder="user@example.com"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input type="password" id="login_password" placeholder="SterkWachtwoord123"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <button onclick="loginStep1()"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                        Send Login Code
+                    </button>
+                </div>
+                <div id="login1_response" class="mt-3"></div>
+            </div>
+
+            <!-- Step 2: Login with Code -->
+            <div class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-800 mb-3">Step 2: Complete Login with Code</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">6-Digit Code</label>
+                        <input type="text" id="login_code" placeholder="123456" maxlength="6"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <button onclick="loginStep2()"
+                        class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                        Complete Login
+                    </button>
+                </div>
+                <div id="login2_response" class="mt-3"></div>
+            </div>
+
+            <!-- Step 3: Org Selection (if needed) -->
+            <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-800 mb-3">Step 3: Organization Selection (Multi-Org Users Only)</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Organization ID</label>
+                        <input type="text" id="login_org_id" placeholder="UUID from organizations list"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <p class="text-xs text-gray-500 mt-1">Only needed if Step 2 returned organization list</p>
+                    </div>
+                    <button onclick="loginStep3()"
+                        class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                        Select Organization
+                    </button>
+                </div>
+                <div id="login3_response" class="mt-3"></div>
+            </div>
+        </section>
+
+        <!-- Password Reset Flow -->
+        <section id="reset" class="flow-section bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                🔄 Password Reset Flow
+                <span class="text-sm font-normal text-gray-500">(2 steps)</span>
+            </h2>
+
+            <!-- Step 1: Request Reset -->
+            <div class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-800 mb-3">Step 1: Request Password Reset</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="reset_email" placeholder="user@example.com"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <button onclick="requestReset()"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                        Request Reset
+                    </button>
+                </div>
+                <div id="reset1_response" class="mt-3"></div>
+            </div>
+
+            <!-- Step 2: Complete Reset -->
+            <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-800 mb-3">Step 2: Complete Password Reset</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Reset Token</label>
+                        <input type="text" id="reset_token" placeholder="Token from email"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">6-Digit Code</label>
+                        <input type="text" id="reset_code" placeholder="123456" maxlength="6"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                        <input type="password" id="reset_new_password" placeholder="NieuwWachtwoord456"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <button onclick="completeReset()"
+                        class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                        Reset Password
+                    </button>
+                </div>
+                <div id="reset2_response" class="mt-3"></div>
+            </div>
+        </section>
+
+        <!-- Token Management -->
+        <section id="tokens" class="flow-section bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                🎫 Token Management
+            </h2>
+
+            <!-- Refresh Token -->
+            <div class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-800 mb-3">Refresh Access Token</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Refresh Token</label>
+                        <input type="text" id="refresh_token_input" placeholder="Refresh token from login"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <button onclick="useStoredRefreshToken()" class="mt-1 text-xs text-blue-600 hover:underline">
+                            Use stored refresh token
+                        </button>
+                    </div>
+                    <button onclick="refreshToken()"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                        Refresh Token
+                    </button>
+                </div>
+                <div id="refresh_response" class="mt-3"></div>
+            </div>
+
+            <!-- Logout -->
+            <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-800 mb-3">Logout (Invalidate Refresh Token)</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Refresh Token</label>
+                        <input type="text" id="logout_token_input" placeholder="Refresh token to invalidate"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <button onclick="useStoredRefreshTokenForLogout()" class="mt-1 text-xs text-blue-600 hover:underline">
+                            Use stored refresh token
+                        </button>
+                    </div>
+                    <button onclick="logout()"
+                        class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                        Logout
+                    </button>
+                </div>
+                <div id="logout_response" class="mt-3"></div>
+            </div>
+        </section>
+
+        <!-- Stored Data Display -->
+        <section id="stored" class="flow-section bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                💾 Stored Tokens & Data
+            </h2>
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-semibold text-gray-800">Current Session Data</h3>
+                    <button onclick="clearStoredData()"
+                        class="text-sm bg-red-100 text-red-700 px-3 py-1 rounded hover:bg-red-200 transition">
+                        Clear All
+                    </button>
+                </div>
+                <div id="stored_data" class="response-box text-sm bg-white p-3 rounded border border-gray-200"></div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-gray-300 mt-12 py-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-sm">Auth API Testing Interface v1.0.0</p>
+            <p class="text-xs text-gray-400 mt-1">For development and testing purposes only</p>
+        </div>
+    </footer>
+
+    <script>
+        // API Base URL - adjust if needed
+        const API_BASE = window.location.origin;
+
+        // Storage keys
+        const STORAGE = {
+            ACCESS_TOKEN: 'auth_test_access_token',
+            REFRESH_TOKEN: 'auth_test_refresh_token',
+            USER_ID: 'auth_test_user_id',
+            ORG_ID: 'auth_test_org_id',
+            EMAIL: 'auth_test_email',
+            PASSWORD: 'auth_test_password',
+        };
+
+        // Helper: Display response
+        function displayResponse(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            const bgColor = isError ? 'bg-red-50 border-red-300' : 'bg-green-50 border-green-300';
+            const textColor = isError ? 'text-red-900' : 'text-green-900';
+
+            element.innerHTML = `
+                <div class="p-3 rounded-lg border ${bgColor} ${textColor}">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="font-semibold">${isError ? '❌ Error' : '✅ Success'}</span>
+                        <span class="text-xs opacity-75">${new Date().toLocaleTimeString()}</span>
+                    </div>
+                    <pre class="response-box text-xs mt-2 overflow-x-auto">${JSON.stringify(data, null, 2)}</pre>
+                </div>
+            `;
+            updateStoredDataDisplay();
+        }
+
+        // Helper: Make API call
+        async function apiCall(endpoint, method = 'POST', body = null) {
+            try {
+                const options = {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+
+                if (body) {
+                    options.body = JSON.stringify(body);
+                }
+
+                const response = await fetch(`${API_BASE}${endpoint}`, options);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw { status: response.status, ...data };
+                }
+
+                return { success: true, data };
+            } catch (error) {
+                return { success: false, error };
+            }
+        }
+
+        // Registration: Step 1
+        async function register() {
+            const email = document.getElementById('reg_email').value;
+            const password = document.getElementById('reg_password').value;
+
+            if (!email || !password) {
+                displayResponse('reg_response', { error: 'Email and password required' }, true);
+                return;
+            }
+
+            const result = await apiCall('/api/auth/register', 'POST', { email, password });
+
+            if (result.success) {
+                // Store credentials for later use
+                localStorage.setItem(STORAGE.EMAIL, email);
+                localStorage.setItem(STORAGE.PASSWORD, password);
+
+                displayResponse('reg_response', result.data);
+
+                // Auto-fill verification token if present
+                if (result.data.verification_token) {
+                    document.getElementById('verify_token').value = result.data.verification_token;
+                }
+            } else {
+                displayResponse('reg_response', result.error, true);
+            }
+        }
+
+        // Registration: Step 2
+        async function verifyEmail() {
+            const token = document.getElementById('verify_token').value;
+            const code = document.getElementById('verify_code').value;
+
+            if (!token || !code) {
+                displayResponse('verify_response', { error: 'Token and code required' }, true);
+                return;
+            }
+
+            const result = await apiCall('/api/auth/verify-code', 'POST', {
+                verification_token: token,
+                code: code
+            });
+
+            if (result.success) {
+                displayResponse('verify_response', result.data);
+            } else {
+                displayResponse('verify_response', result.error, true);
+            }
+        }
+
+        // Login: Step 1
+        async function loginStep1() {
+            const email = document.getElementById('login_email').value;
+            const password = document.getElementById('login_password').value;
+
+            if (!email || !password) {
+                displayResponse('login1_response', { error: 'Email and password required' }, true);
+                return;
+            }
+
+            // Store for subsequent steps
+            localStorage.setItem(STORAGE.EMAIL, email);
+            localStorage.setItem(STORAGE.PASSWORD, password);
+
+            const result = await apiCall('/api/auth/login', 'POST', { email, password });
+
+            if (result.success) {
+                displayResponse('login1_response', result.data);
+
+                // Store user_id if present
+                if (result.data.user_id) {
+                    localStorage.setItem(STORAGE.USER_ID, result.data.user_id);
+                }
+
+                // Check if we got tokens directly (SKIP_LOGIN_CODE=true)
+                if (result.data.access_token) {
+                    localStorage.setItem(STORAGE.ACCESS_TOKEN, result.data.access_token);
+                    localStorage.setItem(STORAGE.REFRESH_TOKEN, result.data.refresh_token);
+                    if (result.data.org_id) {
+                        localStorage.setItem(STORAGE.ORG_ID, result.data.org_id);
+                    }
+                }
+            } else {
+                displayResponse('login1_response', result.error, true);
+            }
+        }
+
+        // Login: Step 2
+        async function loginStep2() {
+            const email = localStorage.getItem(STORAGE.EMAIL) || document.getElementById('login_email').value;
+            const password = localStorage.getItem(STORAGE.PASSWORD) || document.getElementById('login_password').value;
+            const code = document.getElementById('login_code').value;
+
+            if (!email || !password || !code) {
+                displayResponse('login2_response', { error: 'Email, password, and code required' }, true);
+                return;
+            }
+
+            const result = await apiCall('/api/auth/login', 'POST', { email, password, code });
+
+            if (result.success) {
+                displayResponse('login2_response', result.data);
+
+                // Check response type
+                if (result.data.access_token && result.data.refresh_token) {
+                    // Single org - got tokens directly
+                    localStorage.setItem(STORAGE.ACCESS_TOKEN, result.data.access_token);
+                    localStorage.setItem(STORAGE.REFRESH_TOKEN, result.data.refresh_token);
+                    if (result.data.org_id) {
+                        localStorage.setItem(STORAGE.ORG_ID, result.data.org_id);
+                    }
+                } else if (result.data.requires_org_selection && result.data.organizations) {
+                    // Multi-org - need to select organization
+                    // Auto-fill first org ID as suggestion
+                    if (result.data.organizations.length > 0) {
+                        document.getElementById('login_org_id').value = result.data.organizations[0].id;
+                    }
+                }
+            } else {
+                displayResponse('login2_response', result.error, true);
+            }
+        }
+
+        // Login: Step 3
+        async function loginStep3() {
+            const email = localStorage.getItem(STORAGE.EMAIL) || document.getElementById('login_email').value;
+            const password = localStorage.getItem(STORAGE.PASSWORD) || document.getElementById('login_password').value;
+            const code = document.getElementById('login_code').value;
+            const org_id = document.getElementById('login_org_id').value;
+
+            if (!email || !password || !code || !org_id) {
+                displayResponse('login3_response', { error: 'Email, password, code, and org_id required' }, true);
+                return;
+            }
+
+            const result = await apiCall('/api/auth/login', 'POST', { email, password, code, org_id });
+
+            if (result.success) {
+                // Should get tokens now
+                if (result.data.access_token && result.data.refresh_token) {
+                    localStorage.setItem(STORAGE.ACCESS_TOKEN, result.data.access_token);
+                    localStorage.setItem(STORAGE.REFRESH_TOKEN, result.data.refresh_token);
+                    if (result.data.org_id) {
+                        localStorage.setItem(STORAGE.ORG_ID, result.data.org_id);
+                    }
+                }
+                displayResponse('login3_response', result.data);
+            } else {
+                displayResponse('login3_response', result.error, true);
+            }
+        }
+
+        // Password Reset: Step 1
+        async function requestReset() {
+            const email = document.getElementById('reset_email').value;
+
+            if (!email) {
+                displayResponse('reset1_response', { error: 'Email required' }, true);
+                return;
+            }
+
+            const result = await apiCall('/api/auth/request-password-reset', 'POST', { email });
+
+            if (result.success) {
+                displayResponse('reset1_response', result.data);
+
+                // Auto-fill reset token if present
+                if (result.data.reset_token) {
+                    document.getElementById('reset_token').value = result.data.reset_token;
+                }
+            } else {
+                displayResponse('reset1_response', result.error, true);
+            }
+        }
+
+        // Password Reset: Step 2
+        async function completeReset() {
+            const token = document.getElementById('reset_token').value;
+            const code = document.getElementById('reset_code').value;
+            const newPassword = document.getElementById('reset_new_password').value;
+
+            if (!token || !code || !newPassword) {
+                displayResponse('reset2_response', { error: 'Token, code, and new password required' }, true);
+                return;
+            }
+
+            const result = await apiCall('/api/auth/reset-password', 'POST', {
+                reset_token: token,
+                code: code,
+                new_password: newPassword
+            });
+
+            if (result.success) {
+                displayResponse('reset2_response', result.data);
+            } else {
+                displayResponse('reset2_response', result.error, true);
+            }
+        }
+
+        // Token Management: Refresh
+        async function refreshToken() {
+            const refreshToken = document.getElementById('refresh_token_input').value;
+
+            if (!refreshToken) {
+                displayResponse('refresh_response', { error: 'Refresh token required' }, true);
+                return;
+            }
+
+            const result = await apiCall('/api/auth/refresh', 'POST', { refresh_token: refreshToken });
+
+            if (result.success) {
+                // Update stored tokens
+                if (result.data.access_token) {
+                    localStorage.setItem(STORAGE.ACCESS_TOKEN, result.data.access_token);
+                }
+                if (result.data.refresh_token) {
+                    localStorage.setItem(STORAGE.REFRESH_TOKEN, result.data.refresh_token);
+                }
+                displayResponse('refresh_response', result.data);
+            } else {
+                displayResponse('refresh_response', result.error, true);
+            }
+        }
+
+        // Token Management: Logout
+        async function logout() {
+            const refreshToken = document.getElementById('logout_token_input').value;
+
+            if (!refreshToken) {
+                displayResponse('logout_response', { error: 'Refresh token required' }, true);
+                return;
+            }
+
+            const result = await apiCall('/api/auth/logout', 'POST', { refresh_token: refreshToken });
+
+            if (result.success) {
+                // Clear stored tokens
+                localStorage.removeItem(STORAGE.ACCESS_TOKEN);
+                localStorage.removeItem(STORAGE.REFRESH_TOKEN);
+                displayResponse('logout_response', result.data);
+            } else {
+                displayResponse('logout_response', result.error, true);
+            }
+        }
+
+        // Helper: Use stored refresh token
+        function useStoredRefreshToken() {
+            const token = localStorage.getItem(STORAGE.REFRESH_TOKEN);
+            if (token) {
+                document.getElementById('refresh_token_input').value = token;
+            } else {
+                alert('No refresh token stored. Complete login first.');
+            }
+        }
+
+        function useStoredRefreshTokenForLogout() {
+            const token = localStorage.getItem(STORAGE.REFRESH_TOKEN);
+            if (token) {
+                document.getElementById('logout_token_input').value = token;
+            } else {
+                alert('No refresh token stored. Complete login first.');
+            }
+        }
+
+        // Display stored data
+        function updateStoredDataDisplay() {
+            const data = {
+                access_token: localStorage.getItem(STORAGE.ACCESS_TOKEN) || 'Not set',
+                refresh_token: localStorage.getItem(STORAGE.REFRESH_TOKEN) || 'Not set',
+                user_id: localStorage.getItem(STORAGE.USER_ID) || 'Not set',
+                org_id: localStorage.getItem(STORAGE.ORG_ID) || 'Not set',
+                email: localStorage.getItem(STORAGE.EMAIL) || 'Not set',
+                stored_at: new Date().toISOString()
+            };
+
+            document.getElementById('stored_data').textContent = JSON.stringify(data, null, 2);
+        }
+
+        // Clear all stored data
+        function clearStoredData() {
+            if (confirm('Clear all stored tokens and data?')) {
+                Object.values(STORAGE).forEach(key => localStorage.removeItem(key));
+                updateStoredDataDisplay();
+                alert('All stored data cleared!');
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateStoredDataDisplay();
+
+            // Auto-refresh stored data display every 5 seconds
+            setInterval(updateStoredDataDisplay, 5000);
+        });
+    </script>
+</body>
+</html>
