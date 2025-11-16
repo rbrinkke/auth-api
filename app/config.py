@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     POSTGRES_DB: str = "activitydb"
     POSTGRES_USER: str = "activity_user"
     POSTGRES_PASSWORD: str = "dev_password_change_in_prod"
+    POSTGRES_SCHEMA: str = "activity"
+    POSTGRES_POOL_MIN_SIZE: int = 10
+    POSTGRES_POOL_MAX_SIZE: int = 20
 
     DATABASE_URL: str = "postgresql://activity_user:dev_password_change_in_prod@postgres:5432/activitydb"
 

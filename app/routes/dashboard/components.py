@@ -305,16 +305,32 @@ class DashboardScripts:
         """
         return """        let refreshInterval;
 
+        // 🔍 ULTRA DEBUG MODE - See exactly what's happening
+        console.log('🚀 Dashboard script loaded at:', new Date().toISOString());
+        console.log('📍 Script location: End of body');
+        console.log('⏱️ document.readyState:', document.readyState);
+        console.log('🎯 DOMContentLoaded already fired:', document.readyState !== 'loading');
+
         async function loadDashboard() {
+            console.log('🔄 loadDashboard() called at:', new Date().toISOString());
+
             try {
+                console.log('📡 Fetching /dashboard/api...');
                 const response = await fetch('/dashboard/api');
+                console.log('✅ Response received:', response.status, response.statusText);
+
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
 
+                console.log('📦 Parsing JSON...');
                 const data = await response.json();
+                console.log('✅ Data received:', Object.keys(data));
+
+                console.log('🎨 Rendering dashboard...');
                 renderDashboard(data);
 
+                console.log('🔧 Updating DOM elements...');
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('dashboard').style.display = 'block';
                 document.getElementById('error-container').innerHTML = '';
@@ -323,11 +339,18 @@ class DashboardScripts:
                 document.getElementById('update-time').textContent = now;
                 document.getElementById('last-update').textContent = ` • Last updated: ${now}`;
 
+                console.log('✅ Dashboard loaded successfully!');
+
             } catch (error) {
-                console.error('Failed to load dashboard:', error);
+                console.error('❌ FATAL ERROR in loadDashboard():', error);
+                console.error('❌ Error name:', error.name);
+                console.error('❌ Error message:', error.message);
+                console.error('❌ Error stack:', error.stack);
+
                 document.getElementById('error-container').innerHTML = `
                     <div class="error-message">
                         ⚠️ Failed to load dashboard: ${error.message}
+                        <br><small>Check browser console (F12) for details</small>
                     </div>
                 `;
                 document.getElementById('loading').style.display = 'none';
@@ -753,8 +776,50 @@ class DashboardScripts:
             return `${secs}s`;
         }
 
-        // Initial load
-        loadDashboard();
+        // Initialize dashboard when DOM is ready
+        console.log('🔧 Initializing dashboard...');
 
-        // Auto-refresh every 10 seconds
-        refreshInterval = setInterval(loadDashboard, 10000);"""
+        if (document.readyState === 'loading') {
+            console.log('⏳ DOM still loading - waiting for DOMContentLoaded event');
+            document.addEventListener('DOMContentLoaded', initDashboard);
+        } else {
+            console.log('✅ DOM already ready - executing immediately');
+            initDashboard();
+        }
+
+        function initDashboard() {
+            console.log('🎬 initDashboard() called');
+            console.log('🔍 Checking DOM elements...');
+
+            const loading = document.getElementById('loading');
+            const dashboard = document.getElementById('dashboard');
+            const errorContainer = document.getElementById('error-container');
+
+            console.log('📋 DOM Elements found:', {
+                loading: !!loading,
+                dashboard: !!dashboard,
+                errorContainer: !!errorContainer
+            });
+
+            if (!loading || !dashboard || !errorContainer) {
+                console.error('❌ CRITICAL: Required DOM elements missing!');
+                console.error('Available elements:', {
+                    loading,
+                    dashboard,
+                    errorContainer
+                });
+                alert('FATAL ERROR: Dashboard DOM elements not found! Check console.');
+                return;
+            }
+
+            console.log('✅ All DOM elements present');
+
+            // Initial load
+            console.log('🚀 Starting initial dashboard load...');
+            loadDashboard();
+
+            // Auto-refresh every 10 seconds
+            console.log('⏰ Setting up auto-refresh (10 seconds)...');
+            refreshInterval = setInterval(loadDashboard, 10000);
+            console.log('✅ Auto-refresh enabled');
+        }"""

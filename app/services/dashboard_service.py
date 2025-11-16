@@ -195,7 +195,14 @@ class DashboardService:
     async def _check_database_health(self) -> Dict[str, Any]:
         """Check PostgreSQL database health."""
         try:
-            pool = await self.db_manager.get_pool()
+            pool = self.db_manager.pool
+            if not pool:
+                return {
+                    "status": "unhealthy",
+                    "error": "Database pool not initialized",
+                    "host": self.settings.POSTGRES_HOST,
+                }
+            
             async with pool.acquire() as conn:
                 # Test query
                 result = await conn.fetchval("SELECT 1")
@@ -218,7 +225,7 @@ class DashboardService:
                     "status": "healthy" if result == 1 else "unhealthy",
                     "host": self.settings.POSTGRES_HOST,
                     "database": self.settings.POSTGRES_DB,
-                    "schema": self.settings.POSTGRES_SCHEMA,
+                    "schema": getattr(self.settings, 'POSTGRES_SCHEMA', 'activity'),
                     "database_size": db_size,
                     "total_users": user_count,
                     "total_tokens": token_count,
@@ -331,7 +338,12 @@ class DashboardService:
             ```
         """
         try:
-            pool = await self.db_manager.get_pool()
+            pool = self.db_manager.pool
+            if not pool:
+                raise HTTPException(
+                    status_code=500, 
+                    detail="Database pool not initialized"
+                )
 
             # Connection pool stats
             pool_stats = {
@@ -372,7 +384,7 @@ class DashboardService:
                 # Recent activity - last 10 users
                 recent_users = await conn.fetch("""
                     SELECT
-                        id,
+                        user_id,
                         email,
                         is_verified,
                         created_at,
@@ -398,7 +410,7 @@ class DashboardService:
                 "tokens": dict(token_stats) if token_stats else {},
                 "recent_users": [
                     {
-                        "id": str(r["id"]),
+                        "id": str(r["user_id"]),
                         "email": r["email"],
                         "is_verified": r["is_verified"],
                         "created_at": r["created_at"].isoformat() if r["created_at"] else None,
@@ -415,7 +427,7 @@ class DashboardService:
             logger.error("database_metrics_collection_failed", error=str(e))
             raise HTTPException(status_code=500, detail=f"Failed to collect database metrics: {str(e)}")
 
-    async def get_prometheus_metrics_summary(self) -> Dict[str, Any]:
+    def get_prometheus_metrics_summary(self) -> Dict[str, Any]:
         """
         Get summary of Prometheus metrics from the collectors.
 
@@ -507,7 +519,7 @@ class DashboardService:
             logger.warning("gauge_value_extraction_failed", gauge=str(gauge), error=str(e))
             return 0.0
 
-    async def get_configuration_info(self) -> Dict[str, Any]:
+    def get_configuration_info(self) -> Dict[str, Any]:
         """
         Get safe configuration information (no secrets).
 
@@ -585,7 +597,7 @@ class DashboardService:
                 "host": self.settings.POSTGRES_HOST,
                 "port": self.settings.POSTGRES_PORT,
                 "database": self.settings.POSTGRES_DB,
-                "schema": self.settings.POSTGRES_SCHEMA,
+                "schema": getattr(self.settings, 'POSTGRES_SCHEMA', 'activity'),
                 "pool_min_size": self.settings.POSTGRES_POOL_MIN_SIZE,
                 "pool_max_size": self.settings.POSTGRES_POOL_MAX_SIZE,
             },
@@ -691,15 +703,15 @@ class DashboardService:
             - In production, protect this endpoint with authentication
         """
         try:
-            # Collect all data concurrently for performance
-            system_health, db_metrics, config_info = await asyncio.gather(
+            # Collect async data concurrently for performance
+            system_health, db_metrics = await asyncio.gather(
                 self.get_system_health(),
                 self.get_database_metrics(),
-                asyncio.to_thread(self.get_configuration_info),
                 return_exceptions=True
             )
 
-            # Get Prometheus metrics summary (sync operation)
+            # Get sync data (no await needed)
+            config_info = self.get_configuration_info()
             prometheus_metrics = self.get_prometheus_metrics_summary()
 
             dashboard = {
@@ -707,7 +719,7 @@ class DashboardService:
                 "system_health": system_health if not isinstance(system_health, Exception) else {"error": str(system_health)},
                 "database_metrics": db_metrics if not isinstance(db_metrics, Exception) else {"error": str(db_metrics)},
                 "prometheus_metrics": prometheus_metrics,
-                "configuration": config_info if not isinstance(config_info, Exception) else {"error": str(config_info)},
+                "configuration": config_info,
             }
 
             return dashboard

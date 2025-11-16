@@ -7,12 +7,20 @@ async def add_security_headers(request: Request, call_next) -> Response:
     response = await call_next(request)
     settings = get_settings()
 
+    # Relaxed CSP for dashboard (allows inline scripts/styles for monitoring UI)
+    # Dashboard is internal tooling, not user-facing, so this is acceptable
+    if request.url.path.startswith("/dashboard"):
+        csp_policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+    else:
+        # Strict CSP for all API endpoints (security)
+        csp_policy = "default-src 'self'"
+
     headers = {
         "X-Content-Type-Options": "nosniff",
         "X-XSS-Protection": "1; mode=block",
         "X-Frame-Options": "DENY",
         "Referrer-Policy": "strict-origin-when-cross-origin",
-        "Content-Security-Policy": "default-src 'self'",
+        "Content-Security-Policy": csp_policy,
         "Server": "",
     }
 
