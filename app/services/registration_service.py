@@ -9,6 +9,7 @@ from app.core.redis_utils import store_code_with_token, retrieve_and_verify_code
 from app.services.password_service import PasswordService
 from app.services.email_service import EmailService
 from app.core.redis_client import get_redis_client
+from app.config import get_settings
 import redis
 from app.schemas.user import UserCreate
 from app.core.logging_config import get_logger
@@ -28,6 +29,7 @@ class RegistrationService:
         self.password_service = password_service
         self.email_service = email_service
         self.redis_client = redis_client
+        self.settings = get_settings()
 
     async def register_user(self, user: UserCreate) -> dict:
         logger.info("user_registration_start", email=user.email)
@@ -50,6 +52,40 @@ class RegistrationService:
                    user_id=str(new_user.id),
                    email=new_user.email)
         logger.debug("registration_user_created_db", user_id=str(new_user.id))
+
+        # Auto-assign to default organization if configured
+        if self.settings.DEFAULT_ORGANIZATION_ID:
+            try:
+                org_id = UUID(self.settings.DEFAULT_ORGANIZATION_ID)
+                logger.debug("registration_auto_assigning_to_org",
+                           user_id=str(new_user.id),
+                           org_id=str(org_id))
+
+                await procedures.sp_add_organization_member(
+                    self.db,
+                    user_id=new_user.id,
+                    organization_id=org_id,
+                    role="member",
+                    invited_by=None  # Auto-assignment, no inviter
+                )
+
+                logger.info("user_auto_assigned_to_org",
+                           user_id=str(new_user.id),
+                           org_id=str(org_id),
+                           role="member")
+            except ValueError as e:
+                # Invalid UUID format in config
+                logger.error("auto_org_assignment_failed",
+                            user_id=str(new_user.id),
+                            error="invalid_org_id_format",
+                            details=str(e))
+            except Exception as e:
+                # Database error (org doesn't exist, constraint violation, etc.)
+                # Continue registration even if org assignment fails
+                logger.warning("auto_org_assignment_failed",
+                              user_id=str(new_user.id),
+                              error=str(e),
+                              error_type=type(e).__name__)
 
         verification_code = generate_verification_code()
         logger.debug("registration_verification_code_generated", user_id=str(new_user.id))

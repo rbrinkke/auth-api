@@ -79,6 +79,11 @@ class Settings(BaseSettings):
 
     LOG_LEVEL: str = "INFO"
 
+    # Organization Settings
+    # Default organization UUID for auto-assigning new users during registration
+    # Leave empty/None to disable auto-assignment
+    DEFAULT_ORGANIZATION_ID: str | None = None
+
     # API Documentation Settings
     ENABLE_DOCS: bool = True
     API_VERSION: str = "1.0.0"

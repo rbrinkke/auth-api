@@ -34,6 +34,7 @@ services:
       - RATE_LIMIT_PASSWORD_RESET_PER_5MIN=1000
       - LOG_LEVEL=DEBUG
       - ENABLE_METRICS=true
+      - DEFAULT_ORGANIZATION_ID=019a9259-b2b9-7db6-b918-0e30e34e2834
     labels:
       # Prometheus service discovery
       prometheus.scrape: "true"

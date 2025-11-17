@@ -20,6 +20,17 @@ class UserRecord:
         self.last_login_at = record.get("last_login_at")
 
 
+class OrganizationMemberRecord:
+    """Record representing a user's membership in an organization."""
+    def __init__(self, record: asyncpg.Record):
+        self.id: UUID = record["id"]
+        self.user_id: UUID = record["user_id"]
+        self.organization_id: UUID = record["organization_id"]
+        self.role: str = record["role"]  # 'owner', 'admin', or 'member'
+        self.joined_at = record["joined_at"]
+        self.invited_by: Optional[UUID] = record.get("invited_by")
+
+
 @log_stored_procedure
 async def sp_create_user(
     conn: asyncpg.Connection,
@@ -165,3 +176,43 @@ async def check_email_exists(
 ) -> bool:
     user = await sp_get_user_by_email(conn, email)
     return user is not None
+
+
+@log_stored_procedure
+async def sp_add_organization_member(
+    conn: asyncpg.Connection,
+    user_id: UUID,
+    organization_id: UUID,
+    role: str = "member",
+    invited_by: Optional[UUID] = None
+) -> OrganizationMemberRecord:
+    """Add a user to an organization with specified role.
+
+    Args:
+        conn: Database connection
+        user_id: UUID of the user to add
+        organization_id: UUID of the organization
+        role: Role to assign ('owner', 'admin', or 'member'). Defaults to 'member'
+        invited_by: UUID of the user who invited this member (DEPRECATED - not used by v2 procedure)
+
+    Returns:
+        OrganizationMemberRecord with membership details
+
+    Note:
+        This procedure is idempotent (uses ON CONFLICT DO NOTHING).
+        Calling it multiple times with the same user_id and organization_id is safe.
+
+        Uses sp_add_organization_member_v2 which doesn't require the invited_by parameter
+        since the database table doesn't have that column.
+    """
+    result = await conn.fetchrow(
+        "SELECT * FROM activity.sp_add_organization_member_v2($1, $2, $3)",
+        user_id,
+        organization_id,
+        role
+    )
+
+    if not result:
+        raise RuntimeError("sp_add_organization_member_v2 returned no data")
+
+    return OrganizationMemberRecord(result)
