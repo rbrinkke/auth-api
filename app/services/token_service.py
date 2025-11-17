@@ -176,7 +176,9 @@ class TokenService:
         return TokenResponse(
             access_token=new_access_token,
             refresh_token=new_refresh_token,
-            token_type="bearer"
+            token_type="bearer",
+            user_id=user_id,
+            org_id=org_id
         )
 
     def get_user_id_from_token(self, token: str, expected_type: str) -> UUID:

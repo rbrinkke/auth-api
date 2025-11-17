@@ -41,6 +41,7 @@ class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+    user_id: UUID = Field(..., description="User ID")
     org_id: UUID | None = Field(None, description="Organization ID if org-scoped token")
 
 
