@@ -32,10 +32,10 @@ COMMENT ON COLUMN activity.permissions.action IS 'Action on resource (e.g., crea
 -- Groups belong to organizations and contain users
 CREATE TABLE IF NOT EXISTS activity.groups (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    organization_id UUID NOT NULL REFERENCES activity.organizations(id) ON DELETE CASCADE,
+    organization_id UUID NOT NULL REFERENCES activity.organizations(organization_id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
     description TEXT,
-    created_by UUID NOT NULL REFERENCES activity.users(id) ON DELETE RESTRICT,
+    created_by UUID NOT NULL REFERENCES activity.users(user_id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT uq_group_name_per_org UNIQUE (organization_id, name),
@@ -49,9 +49,9 @@ COMMENT ON COLUMN activity.groups.created_by IS 'User who created the group (mus
 -- Table: user_groups (many-to-many)
 -- Links users to groups (users inherit permissions from their groups)
 CREATE TABLE IF NOT EXISTS activity.user_groups (
-    user_id UUID NOT NULL REFERENCES activity.users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES activity.users(user_id) ON DELETE CASCADE,
     group_id UUID NOT NULL REFERENCES activity.groups(id) ON DELETE CASCADE,
-    added_by UUID NOT NULL REFERENCES activity.users(id) ON DELETE RESTRICT,
+    added_by UUID NOT NULL REFERENCES activity.users(user_id) ON DELETE RESTRICT,
     added_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (user_id, group_id)
 );
@@ -64,7 +64,7 @@ COMMENT ON COLUMN activity.user_groups.added_by IS 'User who added this member t
 CREATE TABLE IF NOT EXISTS activity.group_permissions (
     group_id UUID NOT NULL REFERENCES activity.groups(id) ON DELETE CASCADE,
     permission_id UUID NOT NULL REFERENCES activity.permissions(id) ON DELETE CASCADE,
-    granted_by UUID NOT NULL REFERENCES activity.users(id) ON DELETE RESTRICT,
+    granted_by UUID NOT NULL REFERENCES activity.users(user_id) ON DELETE RESTRICT,
     granted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (group_id, permission_id)
 );
@@ -77,11 +77,11 @@ COMMENT ON COLUMN activity.group_permissions.granted_by IS 'User who granted thi
 CREATE TABLE IF NOT EXISTS activity.permission_audit_log (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     action_type VARCHAR(20) NOT NULL CHECK (action_type IN ('grant', 'revoke', 'group_created', 'group_deleted', 'member_added', 'member_removed')),
-    organization_id UUID NOT NULL REFERENCES activity.organizations(id) ON DELETE CASCADE,
+    organization_id UUID NOT NULL REFERENCES activity.organizations(organization_id) ON DELETE CASCADE,
     group_id UUID REFERENCES activity.groups(id) ON DELETE SET NULL,
     permission_id UUID REFERENCES activity.permissions(id) ON DELETE SET NULL,
-    user_id UUID REFERENCES activity.users(id) ON DELETE SET NULL,
-    actor_user_id UUID NOT NULL REFERENCES activity.users(id) ON DELETE RESTRICT,
+    user_id UUID REFERENCES activity.users(user_id) ON DELETE SET NULL,
+    actor_user_id UUID NOT NULL REFERENCES activity.users(user_id) ON DELETE RESTRICT,
     details JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -451,7 +451,7 @@ BEGIN
     RETURN QUERY
     SELECT ug.user_id, u.email, ug.added_by, ug.added_at
     FROM activity.user_groups ug
-    JOIN activity.users u ON ug.user_id = u.id
+    JOIN activity.users u ON ug.user_id = u.user_id
     WHERE ug.group_id = p_group_id
     ORDER BY ug.added_at DESC;
 END;
@@ -734,6 +734,5 @@ BEGIN
       AND p.proname LIKE 'sp_%permission%' OR p.proname LIKE 'sp_%group%';
 
     RAISE NOTICE 'Migration 002: Created % RBAC stored procedures', v_proc_count;
+    RAISE NOTICE 'Migration 002: RBAC schema migration completed successfully! 🚀';
 END $$;
-
-RAISE NOTICE 'Migration 002: RBAC schema migration completed successfully! 🚀';
