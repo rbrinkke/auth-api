@@ -655,6 +655,10 @@ class AuthorizationService:
         - User removed from group
         - User permissions change
 
+        Invalidates BOTH:
+        - L1 cache: Individual permission checks (auth:check:*)
+        - L2 cache: All user permissions (auth:perms:*)
+
         Args:
             user_id: User ID
             org_id: Organization ID
@@ -663,16 +667,29 @@ class AuthorizationService:
             return
 
         try:
-            # Delete all permission check caches for this user in this org
-            pattern = f"auth:check:{user_id}:{org_id}:*"
-            keys = self.redis.keys(pattern)
+            total_keys_deleted = 0
 
-            if keys:
-                self.redis.delete(*keys)
+            # Delete L1 cache: Individual permission checks
+            l1_pattern = f"auth:check:{user_id}:{org_id}:*"
+            l1_keys = self.redis.keys(l1_pattern)
+            if l1_keys:
+                self.redis.delete(*l1_keys)
+                total_keys_deleted += len(l1_keys)
+
+            # Delete L2 cache: All user permissions (critical for matched_groups!)
+            l2_key = f"auth:perms:{user_id}:{org_id}"
+            l2_existed = self.redis.exists(l2_key)
+            if l2_existed:
+                self.redis.delete(l2_key)
+                total_keys_deleted += 1
+
+            if total_keys_deleted > 0:
                 logger.info("cache_invalidated_user",
                            user_id=str(user_id),
                            org_id=str(org_id),
-                           keys_deleted=len(keys))
+                           l1_keys_deleted=len(l1_keys) if l1_keys else 0,
+                           l2_cache_deleted=l2_existed,
+                           total_keys_deleted=total_keys_deleted)
             else:
                 logger.debug("cache_invalidation_no_keys",
                             user_id=str(user_id),
@@ -720,6 +737,61 @@ class AuthorizationService:
                         group_id=str(group_id),
                         org_id=str(org_id),
                         error=str(e))
+
+    def flush_all_authz_caches(self) -> dict:
+        """
+        Flush ALL authorization caches (L1 and L2) across the entire system.
+
+        WARNING: This is a DESTRUCTIVE operation that clears all cached
+        authorization data. Use only for:
+        - Testing/debugging
+        - Post-deployment cache resets
+        - Emergency cache invalidation
+
+        Returns:
+            dict with flush statistics (l1_keys_deleted, l2_keys_deleted, total)
+
+        Example:
+            stats = auth_service.flush_all_authz_caches()
+            # stats = {"l1_keys_deleted": 1234, "l2_keys_deleted": 56, "total": 1290}
+        """
+        if not self.cache_enabled or not self.redis:
+            logger.warning("flush_all_authz_caches_called_but_cache_disabled")
+            return {"l1_keys_deleted": 0, "l2_keys_deleted": 0, "total": 0}
+
+        try:
+            l1_keys_deleted = 0
+            l2_keys_deleted = 0
+
+            # Flush L1 cache: Individual permission checks (auth:check:*)
+            l1_pattern = "auth:check:*"
+            l1_keys = self.redis.keys(l1_pattern)
+            if l1_keys:
+                self.redis.delete(*l1_keys)
+                l1_keys_deleted = len(l1_keys)
+
+            # Flush L2 cache: All user permissions (auth:perms:*)
+            l2_pattern = "auth:perms:*"
+            l2_keys = self.redis.keys(l2_pattern)
+            if l2_keys:
+                self.redis.delete(*l2_keys)
+                l2_keys_deleted = len(l2_keys)
+
+            total = l1_keys_deleted + l2_keys_deleted
+
+            logger.info("flush_all_authz_caches_completed",
+                       l1_keys_deleted=l1_keys_deleted,
+                       l2_keys_deleted=l2_keys_deleted,
+                       total_keys_deleted=total)
+
+            return {
+                "l1_keys_deleted": l1_keys_deleted,
+                "l2_keys_deleted": l2_keys_deleted,
+                "total": total
+            }
+        except Exception as e:
+            logger.error("flush_all_authz_caches_error", error=str(e))
+            raise
 
 
 # ============================================================================
