@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict nobbgSzeAg1RfFrkJ3bvM7wA2HcL8mycUEbd4ZBzmgf23F6dDK1jR2mT9fomim5
+\restrict 2kUYPNGabxbPmfg5Zdr7xLveJ6NXIfZicBUH0pP95QUGVDCXWFyMf7mAkDeVaZx
 
 -- Dumped from database version 16.10
 -- Dumped by pg_dump version 16.10
@@ -19,16 +19,14 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- Name: activity; Type: SCHEMA; Schema: -; Owner: postgres
+-- Name: activity; Type: SCHEMA; Schema: -; Owner: -
 --
 
 CREATE SCHEMA activity;
 
 
-ALTER SCHEMA activity OWNER TO postgres;
-
 --
--- Name: activity_privacy_level; Type: TYPE; Schema: activity; Owner: postgres
+-- Name: activity_privacy_level; Type: TYPE; Schema: activity; Owner: -
 --
 
 CREATE TYPE activity.activity_privacy_level AS ENUM (
@@ -38,10 +36,8 @@ CREATE TYPE activity.activity_privacy_level AS ENUM (
 );
 
 
-ALTER TYPE activity.activity_privacy_level OWNER TO postgres;
-
 --
--- Name: activity_status; Type: TYPE; Schema: activity; Owner: postgres
+-- Name: activity_status; Type: TYPE; Schema: activity; Owner: -
 --
 
 CREATE TYPE activity.activity_status AS ENUM (
@@ -52,10 +48,8 @@ CREATE TYPE activity.activity_status AS ENUM (
 );
 
 
-ALTER TYPE activity.activity_status OWNER TO postgres;
-
 --
--- Name: activity_type; Type: TYPE; Schema: activity; Owner: postgres
+-- Name: activity_type; Type: TYPE; Schema: activity; Owner: -
 --
 
 CREATE TYPE activity.activity_type AS ENUM (
@@ -66,10 +60,8 @@ CREATE TYPE activity.activity_type AS ENUM (
 );
 
 
-ALTER TYPE activity.activity_type OWNER TO postgres;
-
 --
--- Name: attendance_status; Type: TYPE; Schema: activity; Owner: postgres
+-- Name: attendance_status; Type: TYPE; Schema: activity; Owner: -
 --
 
 CREATE TYPE activity.attendance_status AS ENUM (
@@ -79,10 +71,8 @@ CREATE TYPE activity.attendance_status AS ENUM (
 );
 
 
-ALTER TYPE activity.attendance_status OWNER TO postgres;
-
 --
--- Name: badge_category; Type: TYPE; Schema: activity; Owner: postgres
+-- Name: badge_category; Type: TYPE; Schema: activity; Owner: -
 --
 
 CREATE TYPE activity.badge_category AS ENUM (
@@ -94,10 +84,8 @@ CREATE TYPE activity.badge_category AS ENUM (
 );
 
 
-ALTER TYPE activity.badge_category OWNER TO postgres;
-
 --
--- Name: community_status; Type: TYPE; Schema: activity; Owner: postgres
+-- Name: community_status; Type: TYPE; Schema: activity; Owner: -
 --
 
 CREATE TYPE activity.community_status AS ENUM (
@@ -107,10 +95,8 @@ CREATE TYPE activity.community_status AS ENUM (
 );
 
 
-ALTER TYPE activity.community_status OWNER TO postgres;
-
 --
--- Name: community_type; Type: TYPE; Schema: activity; Owner: postgres
+-- Name: community_type; Type: TYPE; Schema: activity; Owner: -
 --
 
 CREATE TYPE activity.community_type AS ENUM (
@@ -120,10 +106,8 @@ CREATE TYPE activity.community_type AS ENUM (
 );
 
 
-ALTER TYPE activity.community_type OWNER TO postgres;
-
 --
--- Name: content_status; Type: TYPE; Schema: activity; Owner: postgres
+-- Name: content_status; Type: TYPE; Schema: activity; Owner: -
 --
 
 CREATE TYPE activity.content_status AS ENUM (
@@ -135,10 +119,8 @@ CREATE TYPE activity.content_status AS ENUM (
 );
 
 
-ALTER TYPE activity.content_status OWNER TO postgres;
-
 --
--- Name: content_type; Type: TYPE; Schema: activity; Owner: postgres
+-- Name: content_type; Type: TYPE; Schema: activity; Owner: -
 --
 
 CREATE TYPE activity.content_type AS ENUM (
@@ -150,10 +132,8 @@ CREATE TYPE activity.content_type AS ENUM (
 );
 
 
-ALTER TYPE activity.content_type OWNER TO postgres;
-
 --
--- Name: invitation_status; Type: TYPE; Schema: activity; Owner: postgres
+-- Name: invitation_status; Type: TYPE; Schema: activity; Owner: -
 --
 
 CREATE TYPE activity.invitation_status AS ENUM (
@@ -164,10 +144,8 @@ CREATE TYPE activity.invitation_status AS ENUM (
 );
 
 
-ALTER TYPE activity.invitation_status OWNER TO postgres;
-
 --
--- Name: membership_status; Type: TYPE; Schema: activity; Owner: postgres
+-- Name: membership_status; Type: TYPE; Schema: activity; Owner: -
 --
 
 CREATE TYPE activity.membership_status AS ENUM (
@@ -178,10 +156,8 @@ CREATE TYPE activity.membership_status AS ENUM (
 );
 
 
-ALTER TYPE activity.membership_status OWNER TO postgres;
-
 --
--- Name: notification_status; Type: TYPE; Schema: activity; Owner: postgres
+-- Name: notification_status; Type: TYPE; Schema: activity; Owner: -
 --
 
 CREATE TYPE activity.notification_status AS ENUM (
@@ -191,10 +167,8 @@ CREATE TYPE activity.notification_status AS ENUM (
 );
 
 
-ALTER TYPE activity.notification_status OWNER TO postgres;
-
 --
--- Name: notification_type; Type: TYPE; Schema: activity; Owner: postgres
+-- Name: notification_type; Type: TYPE; Schema: activity; Owner: -
 --
 
 CREATE TYPE activity.notification_type AS ENUM (
@@ -213,10 +187,8 @@ CREATE TYPE activity.notification_type AS ENUM (
 );
 
 
-ALTER TYPE activity.notification_type OWNER TO postgres;
-
 --
--- Name: organization_role; Type: TYPE; Schema: activity; Owner: postgres
+-- Name: organization_role; Type: TYPE; Schema: activity; Owner: -
 --
 
 CREATE TYPE activity.organization_role AS ENUM (
@@ -227,10 +199,8 @@ CREATE TYPE activity.organization_role AS ENUM (
 );
 
 
-ALTER TYPE activity.organization_role OWNER TO postgres;
-
 --
--- Name: organization_status; Type: TYPE; Schema: activity; Owner: postgres
+-- Name: organization_status; Type: TYPE; Schema: activity; Owner: -
 --
 
 CREATE TYPE activity.organization_status AS ENUM (
@@ -240,10 +210,8 @@ CREATE TYPE activity.organization_status AS ENUM (
 );
 
 
-ALTER TYPE activity.organization_status OWNER TO postgres;
-
 --
--- Name: participant_role; Type: TYPE; Schema: activity; Owner: postgres
+-- Name: participant_role; Type: TYPE; Schema: activity; Owner: -
 --
 
 CREATE TYPE activity.participant_role AS ENUM (
@@ -253,10 +221,8 @@ CREATE TYPE activity.participant_role AS ENUM (
 );
 
 
-ALTER TYPE activity.participant_role OWNER TO postgres;
-
 --
--- Name: participation_status; Type: TYPE; Schema: activity; Owner: postgres
+-- Name: participation_status; Type: TYPE; Schema: activity; Owner: -
 --
 
 CREATE TYPE activity.participation_status AS ENUM (
@@ -267,10 +233,8 @@ CREATE TYPE activity.participation_status AS ENUM (
 );
 
 
-ALTER TYPE activity.participation_status OWNER TO postgres;
-
 --
--- Name: photo_moderation_status; Type: TYPE; Schema: activity; Owner: postgres
+-- Name: photo_moderation_status; Type: TYPE; Schema: activity; Owner: -
 --
 
 CREATE TYPE activity.photo_moderation_status AS ENUM (
@@ -280,10 +244,8 @@ CREATE TYPE activity.photo_moderation_status AS ENUM (
 );
 
 
-ALTER TYPE activity.photo_moderation_status OWNER TO postgres;
-
 --
--- Name: reaction_type; Type: TYPE; Schema: activity; Owner: postgres
+-- Name: reaction_type; Type: TYPE; Schema: activity; Owner: -
 --
 
 CREATE TYPE activity.reaction_type AS ENUM (
@@ -295,10 +257,8 @@ CREATE TYPE activity.reaction_type AS ENUM (
 );
 
 
-ALTER TYPE activity.reaction_type OWNER TO postgres;
-
 --
--- Name: report_status; Type: TYPE; Schema: activity; Owner: postgres
+-- Name: report_status; Type: TYPE; Schema: activity; Owner: -
 --
 
 CREATE TYPE activity.report_status AS ENUM (
@@ -309,10 +269,8 @@ CREATE TYPE activity.report_status AS ENUM (
 );
 
 
-ALTER TYPE activity.report_status OWNER TO postgres;
-
 --
--- Name: report_type; Type: TYPE; Schema: activity; Owner: postgres
+-- Name: report_type; Type: TYPE; Schema: activity; Owner: -
 --
 
 CREATE TYPE activity.report_type AS ENUM (
@@ -325,10 +283,8 @@ CREATE TYPE activity.report_type AS ENUM (
 );
 
 
-ALTER TYPE activity.report_type OWNER TO postgres;
-
 --
--- Name: subscription_level; Type: TYPE; Schema: activity; Owner: postgres
+-- Name: subscription_level; Type: TYPE; Schema: activity; Owner: -
 --
 
 CREATE TYPE activity.subscription_level AS ENUM (
@@ -338,10 +294,8 @@ CREATE TYPE activity.subscription_level AS ENUM (
 );
 
 
-ALTER TYPE activity.subscription_level OWNER TO postgres;
-
 --
--- Name: user_status; Type: TYPE; Schema: activity; Owner: postgres
+-- Name: user_status; Type: TYPE; Schema: activity; Owner: -
 --
 
 CREATE TYPE activity.user_status AS ENUM (
@@ -351,10 +305,8 @@ CREATE TYPE activity.user_status AS ENUM (
 );
 
 
-ALTER TYPE activity.user_status OWNER TO postgres;
-
 --
--- Name: sp_accept_invitation(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_accept_invitation(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_accept_invitation(p_invitation_id uuid, p_user_id uuid) RETURNS TABLE(success boolean, activity_id uuid, participation_status activity.participation_status, waitlist_position integer, error_code character varying, error_message text)
@@ -481,17 +433,15 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_accept_invitation(p_invitation_id uuid, p_user_id uuid) OWNER TO postgres;
-
 --
--- Name: FUNCTION sp_accept_invitation(p_invitation_id uuid, p_user_id uuid); Type: COMMENT; Schema: activity; Owner: postgres
+-- Name: FUNCTION sp_accept_invitation(p_invitation_id uuid, p_user_id uuid); Type: COMMENT; Schema: activity; Owner: -
 --
 
 COMMENT ON FUNCTION activity.sp_accept_invitation(p_invitation_id uuid, p_user_id uuid) IS 'Accept invitation and join activity or waitlist';
 
 
 --
--- Name: sp_activity_cancel(uuid, uuid, text); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_activity_cancel(uuid, uuid, text); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_activity_cancel(p_activity_id uuid, p_user_id uuid, p_cancellation_reason text) RETURNS TABLE(activity_id uuid, status activity.activity_status, cancelled_at timestamp with time zone, participants_notified_count integer)
@@ -563,10 +513,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_activity_cancel(p_activity_id uuid, p_user_id uuid, p_cancellation_reason text) OWNER TO postgres;
-
 --
--- Name: sp_activity_category_create(character varying, character varying, text, character varying, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_activity_category_create(character varying, character varying, text, character varying, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_activity_category_create(p_name character varying, p_slug character varying, p_description text, p_icon_url character varying, p_display_order integer) RETURNS TABLE(category_id uuid, name character varying, slug character varying, description text, icon_url character varying, display_order integer, is_active boolean, created_at timestamp with time zone)
@@ -639,17 +587,15 @@ END;
 $_$;
 
 
-ALTER FUNCTION activity.sp_activity_category_create(p_name character varying, p_slug character varying, p_description text, p_icon_url character varying, p_display_order integer) OWNER TO postgres;
-
 --
--- Name: FUNCTION sp_activity_category_create(p_name character varying, p_slug character varying, p_description text, p_icon_url character varying, p_display_order integer); Type: COMMENT; Schema: activity; Owner: postgres
+-- Name: FUNCTION sp_activity_category_create(p_name character varying, p_slug character varying, p_description text, p_icon_url character varying, p_display_order integer); Type: COMMENT; Schema: activity; Owner: -
 --
 
 COMMENT ON FUNCTION activity.sp_activity_category_create(p_name character varying, p_slug character varying, p_description text, p_icon_url character varying, p_display_order integer) IS 'Create a new activity category (admin only)';
 
 
 --
--- Name: sp_activity_category_list(); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_activity_category_list(); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_activity_category_list() RETURNS TABLE(category_id uuid, name character varying, slug character varying, description text, icon_url character varying, display_order integer, is_active boolean, created_at timestamp with time zone)
@@ -675,17 +621,15 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_activity_category_list() OWNER TO postgres;
-
 --
--- Name: FUNCTION sp_activity_category_list(); Type: COMMENT; Schema: activity; Owner: postgres
+-- Name: FUNCTION sp_activity_category_list(); Type: COMMENT; Schema: activity; Owner: -
 --
 
 COMMENT ON FUNCTION activity.sp_activity_category_list() IS 'List all active categories sorted by display order';
 
 
 --
--- Name: sp_activity_category_update(uuid, character varying, character varying, text, character varying, integer, boolean); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_activity_category_update(uuid, character varying, character varying, text, character varying, integer, boolean); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_activity_category_update(p_category_id uuid, p_name character varying, p_slug character varying, p_description text, p_icon_url character varying, p_display_order integer, p_is_active boolean) RETURNS TABLE(category_id uuid, name character varying, slug character varying, description text, icon_url character varying, display_order integer, is_active boolean, created_at timestamp with time zone, updated_at timestamp with time zone)
@@ -768,17 +712,15 @@ END;
 $_$;
 
 
-ALTER FUNCTION activity.sp_activity_category_update(p_category_id uuid, p_name character varying, p_slug character varying, p_description text, p_icon_url character varying, p_display_order integer, p_is_active boolean) OWNER TO postgres;
-
 --
--- Name: FUNCTION sp_activity_category_update(p_category_id uuid, p_name character varying, p_slug character varying, p_description text, p_icon_url character varying, p_display_order integer, p_is_active boolean); Type: COMMENT; Schema: activity; Owner: postgres
+-- Name: FUNCTION sp_activity_category_update(p_category_id uuid, p_name character varying, p_slug character varying, p_description text, p_icon_url character varying, p_display_order integer, p_is_active boolean); Type: COMMENT; Schema: activity; Owner: -
 --
 
 COMMENT ON FUNCTION activity.sp_activity_category_update(p_category_id uuid, p_name character varying, p_slug character varying, p_description text, p_icon_url character varying, p_display_order integer, p_is_active boolean) IS 'Update an existing category (admin only)';
 
 
 --
--- Name: sp_activity_create(uuid, uuid, character varying, text, activity.activity_type, activity.activity_privacy_level, timestamp with time zone, integer, timestamp with time zone, integer, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, numeric, numeric, character varying, jsonb); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_activity_create(uuid, uuid, character varying, text, activity.activity_type, activity.activity_privacy_level, timestamp with time zone, integer, timestamp with time zone, integer, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, numeric, numeric, character varying, jsonb); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_activity_create(p_organizer_user_id uuid, p_category_id uuid, p_title character varying, p_description text, p_activity_type activity.activity_type, p_activity_privacy_level activity.activity_privacy_level, p_scheduled_at timestamp with time zone, p_duration_minutes integer, p_joinable_at_free timestamp with time zone, p_max_participants integer, p_language character varying, p_external_chat_id character varying, p_venue_name character varying, p_address_line1 character varying, p_address_line2 character varying, p_city character varying, p_state_province character varying, p_postal_code character varying, p_country character varying, p_latitude numeric, p_longitude numeric, p_place_id character varying, p_tags jsonb) RETURNS TABLE(activity_id uuid, organizer_user_id uuid, category_id uuid, title character varying, description text, activity_type activity.activity_type, activity_privacy_level activity.activity_privacy_level, status activity.activity_status, scheduled_at timestamp with time zone, duration_minutes integer, joinable_at_free timestamp with time zone, max_participants integer, current_participants_count integer, waitlist_count integer, location_name character varying, city character varying, language character varying, external_chat_id character varying, created_at timestamp with time zone, location jsonb, tags text[])
@@ -962,10 +904,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_activity_create(p_organizer_user_id uuid, p_category_id uuid, p_title character varying, p_description text, p_activity_type activity.activity_type, p_activity_privacy_level activity.activity_privacy_level, p_scheduled_at timestamp with time zone, p_duration_minutes integer, p_joinable_at_free timestamp with time zone, p_max_participants integer, p_language character varying, p_external_chat_id character varying, p_venue_name character varying, p_address_line1 character varying, p_address_line2 character varying, p_city character varying, p_state_province character varying, p_postal_code character varying, p_country character varying, p_latitude numeric, p_longitude numeric, p_place_id character varying, p_tags jsonb) OWNER TO postgres;
-
 --
--- Name: sp_activity_delete(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_activity_delete(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_activity_delete(p_activity_id uuid, p_user_id uuid) RETURNS TABLE(deleted boolean, message text)
@@ -1012,10 +952,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_activity_delete(p_activity_id uuid, p_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_activity_get_by_id(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_activity_get_by_id(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_activity_get_by_id(p_activity_id uuid, p_requesting_user_id uuid) RETURNS TABLE(activity_id uuid, organizer_user_id uuid, organizer_username character varying, organizer_first_name character varying, organizer_main_photo_url character varying, organizer_is_verified boolean, category_id uuid, category_name character varying, title character varying, description text, activity_type activity.activity_type, activity_privacy_level activity.activity_privacy_level, status activity.activity_status, scheduled_at timestamp with time zone, duration_minutes integer, joinable_at_free timestamp with time zone, max_participants integer, current_participants_count integer, waitlist_count integer, location jsonb, tags text[], language character varying, external_chat_id character varying, created_at timestamp with time zone, updated_at timestamp with time zone, completed_at timestamp with time zone, cancelled_at timestamp with time zone, user_participation_status character varying, user_can_join boolean, user_can_edit boolean, is_blocked boolean)
@@ -1172,10 +1110,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_activity_get_by_id(p_activity_id uuid, p_requesting_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_activity_get_feed(uuid, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_activity_get_feed(uuid, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_activity_get_feed(p_user_id uuid, p_limit integer) RETURNS TABLE(activity_id uuid, title character varying, description text, activity_type activity.activity_type, scheduled_at timestamp with time zone, duration_minutes integer, max_participants integer, current_participants_count integer, city character varying, language character varying, tags text[], organizer_username character varying, organizer_is_verified boolean, category_name character varying)
@@ -1259,10 +1195,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_activity_get_feed(p_user_id uuid, p_limit integer) OWNER TO postgres;
-
 --
--- Name: sp_activity_get_nearby(uuid, numeric, numeric, numeric, uuid, timestamp with time zone, integer, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_activity_get_nearby(uuid, numeric, numeric, numeric, uuid, timestamp with time zone, integer, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_activity_get_nearby(p_user_id uuid, p_latitude numeric, p_longitude numeric, p_radius_km numeric, p_category_id uuid, p_date_from timestamp with time zone, p_limit integer, p_offset integer) RETURNS TABLE(total_count bigint, activity_id uuid, title character varying, description text, activity_type activity.activity_type, scheduled_at timestamp with time zone, duration_minutes integer, max_participants integer, current_participants_count integer, city character varying, language character varying, tags text[], organizer_username character varying, organizer_is_verified boolean, category_name character varying, distance_km numeric)
@@ -1388,10 +1322,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_activity_get_nearby(p_user_id uuid, p_latitude numeric, p_longitude numeric, p_radius_km numeric, p_category_id uuid, p_date_from timestamp with time zone, p_limit integer, p_offset integer) OWNER TO postgres;
-
 --
--- Name: sp_activity_get_participants(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_activity_get_participants(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_activity_get_participants(p_activity_id uuid, p_requesting_user_id uuid) RETURNS TABLE(activity_id uuid, total_participants integer, max_participants integer, user_id uuid, username character varying, first_name character varying, main_photo_url character varying, is_verified boolean, role activity.participant_role, participation_status activity.participation_status, attendance_status activity.attendance_status, joined_at timestamp with time zone)
@@ -1495,10 +1427,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_activity_get_participants(p_activity_id uuid, p_requesting_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_activity_get_recommendations(uuid, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_activity_get_recommendations(uuid, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_activity_get_recommendations(p_user_id uuid, p_limit integer) RETURNS TABLE(activity_id uuid, title character varying, description text, activity_type activity.activity_type, scheduled_at timestamp with time zone, duration_minutes integer, max_participants integer, current_participants_count integer, city character varying, language character varying, tags text[], organizer_username character varying, organizer_is_verified boolean, category_name character varying)
@@ -1575,10 +1505,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_activity_get_recommendations(p_user_id uuid, p_limit integer) OWNER TO postgres;
-
 --
--- Name: sp_activity_get_waitlist(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_activity_get_waitlist(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_activity_get_waitlist(p_activity_id uuid, p_requesting_user_id uuid) RETURNS TABLE(activity_id uuid, total_waitlist integer, user_id uuid, username character varying, first_name character varying, main_photo_url character varying, is_verified boolean, waitlist_position integer, created_at timestamp with time zone, notified_at timestamp with time zone)
@@ -1636,10 +1564,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_activity_get_waitlist(p_activity_id uuid, p_requesting_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_activity_review_create(uuid, uuid, integer, text, boolean); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_activity_review_create(uuid, uuid, integer, text, boolean); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_activity_review_create(p_activity_id uuid, p_reviewer_user_id uuid, p_rating integer, p_review_text text, p_is_anonymous boolean) RETURNS TABLE(review_id uuid, activity_id uuid, reviewer_user_id uuid, reviewer_username character varying, reviewer_first_name character varying, reviewer_main_photo_url character varying, reviewer_is_verified boolean, rating integer, review_text text, is_anonymous boolean, created_at timestamp with time zone, updated_at timestamp with time zone, is_own_review boolean)
@@ -1735,10 +1661,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_activity_review_create(p_activity_id uuid, p_reviewer_user_id uuid, p_rating integer, p_review_text text, p_is_anonymous boolean) OWNER TO postgres;
-
 --
--- Name: sp_activity_review_delete(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_activity_review_delete(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_activity_review_delete(p_review_id uuid, p_user_id uuid) RETURNS TABLE(deleted boolean, message text)
@@ -1776,10 +1700,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_activity_review_delete(p_review_id uuid, p_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_activity_review_get_list(uuid, uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_activity_review_get_list(uuid, uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_activity_review_get_list(p_activity_id uuid, p_requesting_user_id uuid, p_limit integer, p_offset integer) RETURNS TABLE(activity_id uuid, total_reviews bigint, average_rating numeric, review_id uuid, reviewer_user_id uuid, reviewer_username character varying, reviewer_first_name character varying, reviewer_main_photo_url character varying, reviewer_is_verified boolean, rating integer, review_text text, is_anonymous boolean, created_at timestamp with time zone, updated_at timestamp with time zone, is_own_review boolean)
@@ -1838,10 +1760,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_activity_review_get_list(p_activity_id uuid, p_requesting_user_id uuid, p_limit integer, p_offset integer) OWNER TO postgres;
-
 --
--- Name: sp_activity_review_update(uuid, uuid, integer, text, boolean); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_activity_review_update(uuid, uuid, integer, text, boolean); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_activity_review_update(p_review_id uuid, p_user_id uuid, p_rating integer, p_review_text text, p_is_anonymous boolean) RETURNS TABLE(review_id uuid, activity_id uuid, reviewer_user_id uuid, reviewer_username character varying, reviewer_first_name character varying, reviewer_main_photo_url character varying, reviewer_is_verified boolean, rating integer, review_text text, is_anonymous boolean, created_at timestamp with time zone, updated_at timestamp with time zone, is_own_review boolean)
@@ -1908,10 +1828,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_activity_review_update(p_review_id uuid, p_user_id uuid, p_rating integer, p_review_text text, p_is_anonymous boolean) OWNER TO postgres;
-
 --
--- Name: sp_activity_search(uuid, character varying, uuid, activity.activity_type, character varying, character varying, jsonb, timestamp with time zone, timestamp with time zone, boolean, integer, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_activity_search(uuid, character varying, uuid, activity.activity_type, character varying, character varying, jsonb, timestamp with time zone, timestamp with time zone, boolean, integer, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_activity_search(p_user_id uuid, p_query character varying, p_category_id uuid, p_activity_type activity.activity_type, p_city character varying, p_language character varying, p_tags jsonb, p_date_from timestamp with time zone, p_date_to timestamp with time zone, p_has_spots_available boolean, p_limit integer, p_offset integer) RETURNS TABLE(total_count bigint, activity_id uuid, title character varying, description text, activity_type activity.activity_type, scheduled_at timestamp with time zone, duration_minutes integer, max_participants integer, current_participants_count integer, city character varying, language character varying, tags text[], organizer_username character varying, organizer_is_verified boolean, category_name character varying)
@@ -2023,10 +1941,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_activity_search(p_user_id uuid, p_query character varying, p_category_id uuid, p_activity_type activity.activity_type, p_city character varying, p_language character varying, p_tags jsonb, p_date_from timestamp with time zone, p_date_to timestamp with time zone, p_has_spots_available boolean, p_limit integer, p_offset integer) OWNER TO postgres;
-
 --
--- Name: sp_activity_tag_get_popular(integer, character varying); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_activity_tag_get_popular(integer, character varying); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_activity_tag_get_popular(p_limit integer, p_prefix character varying) RETURNS TABLE(tag character varying, usage_count bigint)
@@ -2049,10 +1965,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_activity_tag_get_popular(p_limit integer, p_prefix character varying) OWNER TO postgres;
-
 --
--- Name: sp_activity_update(uuid, uuid, uuid, character varying, text, activity.activity_type, activity.activity_privacy_level, timestamp with time zone, integer, timestamp with time zone, integer, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, numeric, numeric, character varying, jsonb); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_activity_update(uuid, uuid, uuid, character varying, text, activity.activity_type, activity.activity_privacy_level, timestamp with time zone, integer, timestamp with time zone, integer, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, numeric, numeric, character varying, jsonb); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_activity_update(p_activity_id uuid, p_user_id uuid, p_category_id uuid, p_title character varying, p_description text, p_activity_type activity.activity_type, p_activity_privacy_level activity.activity_privacy_level, p_scheduled_at timestamp with time zone, p_duration_minutes integer, p_joinable_at_free timestamp with time zone, p_max_participants integer, p_language character varying, p_external_chat_id character varying, p_venue_name character varying, p_address_line1 character varying, p_address_line2 character varying, p_city character varying, p_state_province character varying, p_postal_code character varying, p_country character varying, p_latitude numeric, p_longitude numeric, p_place_id character varying, p_tags jsonb) RETURNS TABLE(activity_id uuid, title character varying, description text, scheduled_at timestamp with time zone, updated_at timestamp with time zone)
@@ -2197,10 +2111,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_activity_update(p_activity_id uuid, p_user_id uuid, p_category_id uuid, p_title character varying, p_description text, p_activity_type activity.activity_type, p_activity_privacy_level activity.activity_privacy_level, p_scheduled_at timestamp with time zone, p_duration_minutes integer, p_joinable_at_free timestamp with time zone, p_max_participants integer, p_language character varying, p_external_chat_id character varying, p_venue_name character varying, p_address_line1 character varying, p_address_line2 character varying, p_city character varying, p_state_province character varying, p_postal_code character varying, p_country character varying, p_latitude numeric, p_longitude numeric, p_place_id character varying, p_tags jsonb) OWNER TO postgres;
-
 --
--- Name: sp_add_organization_member(uuid, uuid, text, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_add_organization_member(uuid, uuid, text, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_add_organization_member(p_user_id uuid, p_org_id uuid, p_role text, p_invited_by uuid) RETURNS TABLE(id uuid, user_email text, role text, joined_at timestamp with time zone)
@@ -2227,10 +2139,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_add_organization_member(p_user_id uuid, p_org_id uuid, p_role text, p_invited_by uuid) OWNER TO postgres;
-
 --
--- Name: sp_add_organization_member_v2(uuid, uuid, text); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_add_organization_member_v2(uuid, uuid, text); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_add_organization_member_v2(p_user_id uuid, p_org_id uuid, p_role text) RETURNS TABLE(ret_user_id uuid, ret_organization_id uuid, ret_user_email character varying, ret_role character varying, ret_joined_at timestamp with time zone)
@@ -2259,10 +2169,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_add_organization_member_v2(p_user_id uuid, p_org_id uuid, p_role text) OWNER TO postgres;
-
 --
--- Name: sp_add_profile_photo(uuid, character varying); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_add_profile_photo(uuid, character varying); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_add_profile_photo(p_user_id uuid, p_photo_url character varying) RETURNS TABLE(success boolean, message text, photo_count integer)
@@ -2308,10 +2216,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_add_profile_photo(p_user_id uuid, p_photo_url character varying) OWNER TO postgres;
-
 --
--- Name: sp_add_user_interest(uuid, character varying, numeric); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_add_user_interest(uuid, character varying, numeric); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_add_user_interest(p_user_id uuid, p_interest_tag character varying, p_weight numeric DEFAULT 1.0) RETURNS TABLE(success boolean, message text)
@@ -2346,10 +2252,51 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_add_user_interest(p_user_id uuid, p_interest_tag character varying, p_weight numeric) OWNER TO postgres;
+--
+-- Name: sp_add_user_to_group(uuid, uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
+--
+
+CREATE FUNCTION activity.sp_add_user_to_group(p_user_id uuid, p_group_id uuid, p_adder_user_id uuid) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_org_id UUID;
+BEGIN
+    -- Get organization ID
+    SELECT organization_id INTO v_org_id
+    FROM activity.groups
+    WHERE id = p_group_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Group not found';
+    END IF;
+
+    -- Insert membership (ON CONFLICT DO NOTHING to handle duplicates gracefully)
+    INSERT INTO activity.user_groups (user_id, group_id, added_by)
+    VALUES (p_user_id, p_group_id, p_adder_user_id)
+    ON CONFLICT (user_id, group_id) DO NOTHING;
+
+    -- Audit log
+    INSERT INTO activity.permission_audit_log (
+        action_type, organization_id, group_id, user_id, actor_user_id
+    ) VALUES (
+        'member_added', v_org_id, p_group_id, p_user_id, p_adder_user_id
+    );
+
+    RETURN TRUE;
+END;
+$$;
+
 
 --
--- Name: sp_ban_user(uuid, text, timestamp with time zone); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: FUNCTION sp_add_user_to_group(p_user_id uuid, p_group_id uuid, p_adder_user_id uuid); Type: COMMENT; Schema: activity; Owner: -
+--
+
+COMMENT ON FUNCTION activity.sp_add_user_to_group(p_user_id uuid, p_group_id uuid, p_adder_user_id uuid) IS 'Add a user to a group (admin/owner only)';
+
+
+--
+-- Name: sp_ban_user(uuid, text, timestamp with time zone); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_ban_user(p_user_id uuid, p_ban_reason text, p_ban_expires_at timestamp with time zone DEFAULT NULL::timestamp with time zone) RETURNS TABLE(success boolean)
@@ -2387,10 +2334,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_ban_user(p_user_id uuid, p_ban_reason text, p_ban_expires_at timestamp with time zone) OWNER TO postgres;
-
 --
--- Name: sp_cancel_invitation(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_cancel_invitation(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_cancel_invitation(p_invitation_id uuid, p_cancelling_user_id uuid) RETURNS TABLE(success boolean, activity_id uuid, error_code character varying, error_message text)
@@ -2467,17 +2412,15 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_cancel_invitation(p_invitation_id uuid, p_cancelling_user_id uuid) OWNER TO postgres;
-
 --
--- Name: FUNCTION sp_cancel_invitation(p_invitation_id uuid, p_cancelling_user_id uuid); Type: COMMENT; Schema: activity; Owner: postgres
+-- Name: FUNCTION sp_cancel_invitation(p_invitation_id uuid, p_cancelling_user_id uuid); Type: COMMENT; Schema: activity; Owner: -
 --
 
 COMMENT ON FUNCTION activity.sp_cancel_invitation(p_invitation_id uuid, p_cancelling_user_id uuid) IS 'Cancel invitation (organizer/co-organizer/sender only)';
 
 
 --
--- Name: sp_cancel_participation(uuid, uuid, text); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_cancel_participation(uuid, uuid, text); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_cancel_participation(p_activity_id uuid, p_user_id uuid, p_reason text DEFAULT NULL::text) RETURNS TABLE(success boolean, promoted_user_id uuid, error_code character varying, error_message text)
@@ -2600,17 +2543,15 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_cancel_participation(p_activity_id uuid, p_user_id uuid, p_reason text) OWNER TO postgres;
-
 --
--- Name: FUNCTION sp_cancel_participation(p_activity_id uuid, p_user_id uuid, p_reason text); Type: COMMENT; Schema: activity; Owner: postgres
+-- Name: FUNCTION sp_cancel_participation(p_activity_id uuid, p_user_id uuid, p_reason text); Type: COMMENT; Schema: activity; Owner: -
 --
 
 COMMENT ON FUNCTION activity.sp_cancel_participation(p_activity_id uuid, p_user_id uuid, p_reason text) IS 'Cancel participation with reason tracking and waitlist promotion';
 
 
 --
--- Name: sp_check_org_permission(uuid, uuid, text[]); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_check_org_permission(uuid, uuid, text[]); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_check_org_permission(p_user_id uuid, p_org_id uuid, p_required_roles text[]) RETURNS boolean
@@ -2634,10 +2575,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_check_org_permission(p_user_id uuid, p_org_id uuid, p_required_roles text[]) OWNER TO postgres;
-
 --
--- Name: sp_cleanup_unverified_users(integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_cleanup_unverified_users(integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_cleanup_unverified_users(p_days_old integer DEFAULT 7) RETURNS integer
@@ -2656,10 +2595,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_cleanup_unverified_users(p_days_old integer) OWNER TO postgres;
-
 --
--- Name: FUNCTION sp_cleanup_unverified_users(p_days_old integer); Type: COMMENT; Schema: activity; Owner: postgres
+-- Name: FUNCTION sp_cleanup_unverified_users(p_days_old integer); Type: COMMENT; Schema: activity; Owner: -
 --
 
 COMMENT ON FUNCTION activity.sp_cleanup_unverified_users(p_days_old integer) IS 'Delete users who have not verified their email after specified days.
@@ -2668,7 +2605,7 @@ This should be run as a scheduled job (cron/pg_cron).';
 
 
 --
--- Name: sp_community_comment_create(uuid, uuid, uuid, text); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_community_comment_create(uuid, uuid, uuid, text); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_community_comment_create(p_post_id uuid, p_author_user_id uuid, p_parent_comment_id uuid, p_content text) RETURNS TABLE(comment_id uuid, post_id uuid, parent_comment_id uuid, author_user_id uuid, created_at timestamp with time zone)
@@ -2748,10 +2685,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_community_comment_create(p_post_id uuid, p_author_user_id uuid, p_parent_comment_id uuid, p_content text) OWNER TO postgres;
-
 --
--- Name: sp_community_comment_delete(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_community_comment_delete(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_community_comment_delete(p_comment_id uuid, p_deleting_user_id uuid) RETURNS TABLE(comment_id uuid, deleted_at timestamp with time zone)
@@ -2810,10 +2745,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_community_comment_delete(p_comment_id uuid, p_deleting_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_community_comment_update(uuid, uuid, text); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_community_comment_update(uuid, uuid, text); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_community_comment_update(p_comment_id uuid, p_updating_user_id uuid, p_content text) RETURNS TABLE(comment_id uuid, updated_at timestamp with time zone)
@@ -2856,10 +2789,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_community_comment_update(p_comment_id uuid, p_updating_user_id uuid, p_content text) OWNER TO postgres;
-
 --
--- Name: sp_community_create(uuid, uuid, character varying, character varying, text, activity.community_type, character varying, character varying, integer, text[]); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_community_create(uuid, uuid, character varying, character varying, text, activity.community_type, character varying, character varying, integer, text[]); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_community_create(p_creator_user_id uuid, p_organization_id uuid, p_name character varying, p_slug character varying, p_description text, p_community_type activity.community_type, p_cover_image_url character varying, p_icon_url character varying, p_max_members integer, p_tags text[]) RETURNS TABLE(community_id uuid, slug character varying, created_at timestamp with time zone, member_count integer)
@@ -2960,10 +2891,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_community_create(p_creator_user_id uuid, p_organization_id uuid, p_name character varying, p_slug character varying, p_description text, p_community_type activity.community_type, p_cover_image_url character varying, p_icon_url character varying, p_max_members integer, p_tags text[]) OWNER TO postgres;
-
 --
--- Name: sp_community_get_by_id(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_community_get_by_id(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_community_get_by_id(p_community_id uuid, p_requesting_user_id uuid) RETURNS TABLE(community_id uuid, organization_id uuid, creator_user_id uuid, name character varying, slug character varying, description text, community_type activity.community_type, status activity.community_status, member_count integer, max_members integer, is_featured boolean, cover_image_url character varying, icon_url character varying, created_at timestamp with time zone, updated_at timestamp with time zone, is_member boolean, user_role activity.participant_role, user_status activity.membership_status, tags text[])
@@ -3008,10 +2937,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_community_get_by_id(p_community_id uuid, p_requesting_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_community_get_members(uuid, uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_community_get_members(uuid, uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_community_get_members(p_community_id uuid, p_requesting_user_id uuid, p_limit integer DEFAULT 50, p_offset integer DEFAULT 0) RETURNS TABLE(user_id uuid, username character varying, first_name character varying, last_name character varying, main_photo_url character varying, role activity.participant_role, status activity.membership_status, joined_at timestamp with time zone, is_verified boolean, total_count bigint)
@@ -3072,10 +2999,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_community_get_members(p_community_id uuid, p_requesting_user_id uuid, p_limit integer, p_offset integer) OWNER TO postgres;
-
 --
--- Name: sp_community_join(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_community_join(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_community_join(p_community_id uuid, p_user_id uuid) RETURNS TABLE(community_id uuid, user_id uuid, role activity.participant_role, status activity.membership_status, joined_at timestamp with time zone)
@@ -3150,10 +3075,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_community_join(p_community_id uuid, p_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_community_leave(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_community_leave(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_community_leave(p_community_id uuid, p_user_id uuid) RETURNS TABLE(community_id uuid, user_id uuid, left_at timestamp with time zone)
@@ -3204,10 +3127,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_community_leave(p_community_id uuid, p_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_community_link_activity(uuid, uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_community_link_activity(uuid, uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_community_link_activity(p_community_id uuid, p_activity_id uuid, p_linking_user_id uuid) RETURNS TABLE(community_id uuid, activity_id uuid, created_at timestamp with time zone)
@@ -3294,10 +3215,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_community_link_activity(p_community_id uuid, p_activity_id uuid, p_linking_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_community_post_create(uuid, uuid, uuid, character varying, text, activity.content_type); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_community_post_create(uuid, uuid, uuid, character varying, text, activity.content_type); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_community_post_create(p_community_id uuid, p_author_user_id uuid, p_activity_id uuid, p_title character varying, p_content text, p_content_type activity.content_type DEFAULT 'post'::activity.content_type) RETURNS TABLE(post_id uuid, community_id uuid, author_user_id uuid, created_at timestamp with time zone, status activity.content_status)
@@ -3373,10 +3292,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_community_post_create(p_community_id uuid, p_author_user_id uuid, p_activity_id uuid, p_title character varying, p_content text, p_content_type activity.content_type) OWNER TO postgres;
-
 --
--- Name: sp_community_post_delete(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_community_post_delete(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_community_post_delete(p_post_id uuid, p_deleting_user_id uuid) RETURNS TABLE(post_id uuid, deleted_at timestamp with time zone)
@@ -3424,10 +3341,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_community_post_delete(p_post_id uuid, p_deleting_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_community_post_get_comments(uuid, uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_community_post_get_comments(uuid, uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_community_post_get_comments(p_post_id uuid, p_parent_comment_id uuid, p_limit integer DEFAULT 50, p_offset integer DEFAULT 0) RETURNS TABLE(comment_id uuid, parent_comment_id uuid, author_user_id uuid, author_username character varying, author_first_name character varying, author_main_photo_url character varying, content text, reaction_count integer, is_deleted boolean, created_at timestamp with time zone, updated_at timestamp with time zone, total_count bigint)
@@ -3468,10 +3383,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_community_post_get_comments(p_post_id uuid, p_parent_comment_id uuid, p_limit integer, p_offset integer) OWNER TO postgres;
-
 --
--- Name: sp_community_post_get_feed(uuid, uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_community_post_get_feed(uuid, uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_community_post_get_feed(p_community_id uuid, p_requesting_user_id uuid, p_limit integer DEFAULT 20, p_offset integer DEFAULT 0) RETURNS TABLE(post_id uuid, author_user_id uuid, author_username character varying, author_first_name character varying, author_main_photo_url character varying, activity_id uuid, title character varying, content text, content_type activity.content_type, view_count integer, comment_count integer, reaction_count integer, is_pinned boolean, created_at timestamp with time zone, updated_at timestamp with time zone, total_count bigint)
@@ -3532,10 +3445,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_community_post_get_feed(p_community_id uuid, p_requesting_user_id uuid, p_limit integer, p_offset integer) OWNER TO postgres;
-
 --
--- Name: sp_community_post_update(uuid, uuid, character varying, text); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_community_post_update(uuid, uuid, character varying, text); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_community_post_update(p_post_id uuid, p_updating_user_id uuid, p_title character varying, p_content text) RETURNS TABLE(post_id uuid, updated_at timestamp with time zone)
@@ -3582,10 +3493,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_community_post_update(p_post_id uuid, p_updating_user_id uuid, p_title character varying, p_content text) OWNER TO postgres;
-
 --
--- Name: sp_community_reaction_create(uuid, character varying, uuid, activity.reaction_type); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_community_reaction_create(uuid, character varying, uuid, activity.reaction_type); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_community_reaction_create(p_user_id uuid, p_target_type character varying, p_target_id uuid, p_reaction_type activity.reaction_type) RETURNS TABLE(reaction_id uuid, target_type character varying, target_id uuid, reaction_type activity.reaction_type, created_at timestamp with time zone)
@@ -3675,10 +3584,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_community_reaction_create(p_user_id uuid, p_target_type character varying, p_target_id uuid, p_reaction_type activity.reaction_type) OWNER TO postgres;
-
 --
--- Name: sp_community_reaction_delete(uuid, character varying, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_community_reaction_delete(uuid, character varying, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_community_reaction_delete(p_user_id uuid, p_target_type character varying, p_target_id uuid) RETURNS TABLE(deleted boolean)
@@ -3724,10 +3631,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_community_reaction_delete(p_user_id uuid, p_target_type character varying, p_target_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_community_search(text, uuid, text[], uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_community_search(text, uuid, text[], uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_community_search(p_search_text text, p_organization_id uuid, p_tags text[], p_requesting_user_id uuid, p_limit integer DEFAULT 20, p_offset integer DEFAULT 0) RETURNS TABLE(community_id uuid, organization_id uuid, name character varying, slug character varying, description text, community_type activity.community_type, member_count integer, max_members integer, is_featured boolean, cover_image_url character varying, icon_url character varying, created_at timestamp with time zone, is_member boolean, tags text[], total_count bigint)
@@ -3780,10 +3685,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_community_search(p_search_text text, p_organization_id uuid, p_tags text[], p_requesting_user_id uuid, p_limit integer, p_offset integer) OWNER TO postgres;
-
 --
--- Name: sp_community_update(uuid, uuid, character varying, text, character varying, character varying, integer, text[]); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_community_update(uuid, uuid, character varying, text, character varying, character varying, integer, text[]); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_community_update(p_community_id uuid, p_updating_user_id uuid, p_name character varying, p_description text, p_cover_image_url character varying, p_icon_url character varying, p_max_members integer, p_tags text[]) RETURNS TABLE(community_id uuid, updated_at timestamp with time zone)
@@ -3844,10 +3747,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_community_update(p_community_id uuid, p_updating_user_id uuid, p_name character varying, p_description text, p_cover_image_url character varying, p_icon_url character varying, p_max_members integer, p_tags text[]) OWNER TO postgres;
-
 --
--- Name: sp_confirm_attendance(uuid, uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_confirm_attendance(uuid, uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_confirm_attendance(p_activity_id uuid, p_confirmed_user_id uuid, p_confirmer_user_id uuid) RETURNS TABLE(success boolean, confirmation_id uuid, new_verification_count integer, error_code character varying, error_message text)
@@ -3955,17 +3856,50 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_confirm_attendance(p_activity_id uuid, p_confirmed_user_id uuid, p_confirmer_user_id uuid) OWNER TO postgres;
-
 --
--- Name: FUNCTION sp_confirm_attendance(p_activity_id uuid, p_confirmed_user_id uuid, p_confirmer_user_id uuid); Type: COMMENT; Schema: activity; Owner: postgres
+-- Name: FUNCTION sp_confirm_attendance(p_activity_id uuid, p_confirmed_user_id uuid, p_confirmer_user_id uuid); Type: COMMENT; Schema: activity; Owner: -
 --
 
 COMMENT ON FUNCTION activity.sp_confirm_attendance(p_activity_id uuid, p_confirmed_user_id uuid, p_confirmer_user_id uuid) IS 'Peer verification of attendance with verification count increment';
 
 
 --
--- Name: sp_create_notification(uuid, uuid, character varying, character varying, uuid, character varying, text, jsonb); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_create_group(uuid, character varying, text, uuid); Type: FUNCTION; Schema: activity; Owner: -
+--
+
+CREATE FUNCTION activity.sp_create_group(p_organization_id uuid, p_name character varying, p_description text, p_creator_user_id uuid) RETURNS uuid
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_group_id UUID;
+BEGIN
+    -- Insert group
+    INSERT INTO activity.groups (organization_id, name, description, created_by)
+    VALUES (p_organization_id, p_name, p_description, p_creator_user_id)
+    RETURNING id INTO v_group_id;
+
+    -- Audit log
+    INSERT INTO activity.permission_audit_log (
+        action_type, organization_id, group_id, actor_user_id, details
+    ) VALUES (
+        'group_created', p_organization_id, v_group_id, p_creator_user_id,
+        jsonb_build_object('group_name', p_name)
+    );
+
+    RETURN v_group_id;
+END;
+$$;
+
+
+--
+-- Name: FUNCTION sp_create_group(p_organization_id uuid, p_name character varying, p_description text, p_creator_user_id uuid); Type: COMMENT; Schema: activity; Owner: -
+--
+
+COMMENT ON FUNCTION activity.sp_create_group(p_organization_id uuid, p_name character varying, p_description text, p_creator_user_id uuid) IS 'Create a new group (owner/admin only)';
+
+
+--
+-- Name: sp_create_notification(uuid, uuid, character varying, character varying, uuid, character varying, text, jsonb); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_create_notification(p_user_id uuid, p_actor_user_id uuid, p_notification_type character varying, p_target_type character varying, p_target_id uuid, p_title character varying, p_message text DEFAULT NULL::text, p_payload jsonb DEFAULT NULL::jsonb) RETURNS TABLE(notification_id uuid, created_at timestamp with time zone)
@@ -4030,10 +3964,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_create_notification(p_user_id uuid, p_actor_user_id uuid, p_notification_type character varying, p_target_type character varying, p_target_id uuid, p_title character varying, p_message text, p_payload jsonb) OWNER TO postgres;
-
 --
--- Name: sp_create_organization(text, text, text, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_create_organization(text, text, text, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_create_organization(p_name text, p_slug text, p_description text, p_creator_user_id uuid) RETURNS TABLE(id uuid, name text, slug text, description text, created_at timestamp with time zone)
@@ -4065,10 +3997,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_create_organization(p_name text, p_slug text, p_description text, p_creator_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_create_organization(uuid, text, text, text); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_create_organization(uuid, text, text, text); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_create_organization(p_owner_user_id uuid, p_name text, p_slug text, p_description text DEFAULT NULL::text) RETURNS TABLE(id uuid, name text, slug text, description text, created_at timestamp with time zone)
@@ -4100,10 +4030,34 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_create_organization(p_owner_user_id uuid, p_name text, p_slug text, p_description text) OWNER TO postgres;
+--
+-- Name: sp_create_permission(character varying, character varying, text); Type: FUNCTION; Schema: activity; Owner: -
+--
+
+CREATE FUNCTION activity.sp_create_permission(p_resource character varying, p_action character varying, p_description text DEFAULT NULL::text) RETURNS uuid
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_permission_id UUID;
+BEGIN
+    INSERT INTO activity.permissions (resource, action, description)
+    VALUES (LOWER(p_resource), LOWER(p_action), p_description)
+    RETURNING id INTO v_permission_id;
+
+    RETURN v_permission_id;
+END;
+$$;
+
 
 --
--- Name: sp_create_user(character varying, character varying); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: FUNCTION sp_create_permission(p_resource character varying, p_action character varying, p_description text); Type: COMMENT; Schema: activity; Owner: -
+--
+
+COMMENT ON FUNCTION activity.sp_create_permission(p_resource character varying, p_action character varying, p_description text) IS 'Create a new permission (admin-only operation)';
+
+
+--
+-- Name: sp_create_user(character varying, character varying); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_create_user(p_email character varying, p_hashed_password character varying) RETURNS TABLE(id uuid, email character varying, hashed_password character varying, is_verified boolean, is_active boolean, created_at timestamp with time zone, verified_at timestamp with time zone, last_login_at timestamp with time zone)
@@ -4139,10 +4093,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_create_user(p_email character varying, p_hashed_password character varying) OWNER TO postgres;
-
 --
--- Name: sp_deactivate_user(uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_deactivate_user(uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_deactivate_user(p_user_id uuid) RETURNS boolean
@@ -4158,10 +4110,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_deactivate_user(p_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_decline_invitation(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_decline_invitation(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_decline_invitation(p_invitation_id uuid, p_user_id uuid) RETURNS TABLE(success boolean, activity_id uuid, error_code character varying, error_message text)
@@ -4219,17 +4169,58 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_decline_invitation(p_invitation_id uuid, p_user_id uuid) OWNER TO postgres;
-
 --
--- Name: FUNCTION sp_decline_invitation(p_invitation_id uuid, p_user_id uuid); Type: COMMENT; Schema: activity; Owner: postgres
+-- Name: FUNCTION sp_decline_invitation(p_invitation_id uuid, p_user_id uuid); Type: COMMENT; Schema: activity; Owner: -
 --
 
 COMMENT ON FUNCTION activity.sp_decline_invitation(p_invitation_id uuid, p_user_id uuid) IS 'Decline invitation';
 
 
 --
--- Name: sp_delete_notification(uuid, uuid, boolean); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_delete_group(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
+--
+
+CREATE FUNCTION activity.sp_delete_group(p_group_id uuid, p_deleter_user_id uuid) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_org_id UUID;
+    v_group_name VARCHAR(100);
+BEGIN
+    -- Get group info for audit log
+    SELECT organization_id, name INTO v_org_id, v_group_name
+    FROM activity.groups
+    WHERE id = p_group_id;
+
+    IF NOT FOUND THEN
+        RETURN FALSE;
+    END IF;
+
+    -- Audit log before deletion
+    INSERT INTO activity.permission_audit_log (
+        action_type, organization_id, group_id, actor_user_id, details
+    ) VALUES (
+        'group_deleted', v_org_id, p_group_id, p_deleter_user_id,
+        jsonb_build_object('group_name', v_group_name)
+    );
+
+    -- Delete group (cascades to user_groups and group_permissions)
+    DELETE FROM activity.groups WHERE id = p_group_id;
+
+    RETURN TRUE;
+END;
+$$;
+
+
+--
+-- Name: FUNCTION sp_delete_group(p_group_id uuid, p_deleter_user_id uuid); Type: COMMENT; Schema: activity; Owner: -
+--
+
+COMMENT ON FUNCTION activity.sp_delete_group(p_group_id uuid, p_deleter_user_id uuid) IS 'Delete a group and all its memberships/permissions (owner only)';
+
+
+--
+-- Name: sp_delete_notification(uuid, uuid, boolean); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_delete_notification(p_user_id uuid, p_notification_id uuid, p_permanent boolean DEFAULT false) RETURNS TABLE(success boolean, message text)
@@ -4271,10 +4262,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_delete_notification(p_user_id uuid, p_notification_id uuid, p_permanent boolean) OWNER TO postgres;
-
 --
--- Name: sp_delete_user_account(uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_delete_user_account(uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_delete_user_account(p_user_id uuid) RETURNS TABLE(success boolean)
@@ -4310,10 +4299,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_delete_user_account(p_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_demote_participant(uuid, uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_demote_participant(uuid, uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_demote_participant(p_activity_id uuid, p_organizer_user_id uuid, p_target_user_id uuid) RETURNS TABLE(success boolean, error_code character varying, error_message text)
@@ -4382,17 +4369,31 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_demote_participant(p_activity_id uuid, p_organizer_user_id uuid, p_target_user_id uuid) OWNER TO postgres;
-
 --
--- Name: FUNCTION sp_demote_participant(p_activity_id uuid, p_organizer_user_id uuid, p_target_user_id uuid); Type: COMMENT; Schema: activity; Owner: postgres
+-- Name: FUNCTION sp_demote_participant(p_activity_id uuid, p_organizer_user_id uuid, p_target_user_id uuid); Type: COMMENT; Schema: activity; Owner: -
 --
 
 COMMENT ON FUNCTION activity.sp_demote_participant(p_activity_id uuid, p_organizer_user_id uuid, p_target_user_id uuid) IS 'Demote co-organizer to member (organizer only)';
 
 
 --
--- Name: sp_get_notification_by_id(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_get_group_by_id(uuid); Type: FUNCTION; Schema: activity; Owner: -
+--
+
+CREATE FUNCTION activity.sp_get_group_by_id(p_group_id uuid) RETURNS TABLE(id uuid, organization_id uuid, name character varying, description text, created_by uuid, created_at timestamp with time zone, updated_at timestamp with time zone)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT g.id, g.organization_id, g.name, g.description, g.created_by, g.created_at, g.updated_at
+    FROM activity.groups g
+    WHERE g.id = p_group_id;
+END;
+$$;
+
+
+--
+-- Name: sp_get_notification_by_id(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_get_notification_by_id(p_user_id uuid, p_notification_id uuid) RETURNS TABLE(notification_id uuid, user_id uuid, actor_user_id uuid, actor_username character varying, actor_first_name character varying, actor_last_name character varying, actor_main_photo_url character varying, notification_type character varying, target_type character varying, target_id uuid, title character varying, message text, status character varying, created_at timestamp with time zone, read_at timestamp with time zone, payload jsonb)
@@ -4425,10 +4426,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_get_notification_by_id(p_user_id uuid, p_notification_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_get_notification_settings(uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_get_notification_settings(uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_get_notification_settings(p_user_id uuid) RETURNS TABLE(email_enabled boolean, push_enabled boolean, in_app_enabled boolean, enabled_types jsonb, quiet_hours_start time without time zone, quiet_hours_end time without time zone)
@@ -4454,10 +4453,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_get_notification_settings(p_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_get_organization_by_id(uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_get_organization_by_id(uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_get_organization_by_id(p_org_id uuid) RETURNS TABLE(id uuid, name text, slug text, description text, created_at timestamp with time zone, updated_at timestamp with time zone, member_count bigint)
@@ -4480,10 +4477,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_get_organization_by_id(p_org_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_get_organization_members(uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_get_organization_members(uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_get_organization_members(p_organization_id uuid) RETURNS TABLE(user_id uuid, email text, role text, joined_at timestamp with time zone)
@@ -4504,10 +4499,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_get_organization_members(p_organization_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_get_organization_members(uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_get_organization_members(uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_get_organization_members(p_org_id uuid, p_limit integer DEFAULT 100, p_offset integer DEFAULT 0) RETURNS TABLE(user_id uuid, email text, role text, joined_at timestamp with time zone, invited_by_email text)
@@ -4532,10 +4525,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_get_organization_members(p_org_id uuid, p_limit integer, p_offset integer) OWNER TO postgres;
-
 --
--- Name: sp_get_pending_photo_moderations(integer, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_get_pending_photo_moderations(integer, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_get_pending_photo_moderations(p_limit integer DEFAULT 50, p_offset integer DEFAULT 0) RETURNS TABLE(user_id uuid, username character varying, email character varying, main_photo_url character varying, created_at timestamp with time zone)
@@ -4558,10 +4549,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_get_pending_photo_moderations(p_limit integer, p_offset integer) OWNER TO postgres;
-
 --
--- Name: sp_get_pending_verifications(uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_get_pending_verifications(uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_get_pending_verifications(p_user_id uuid, p_limit integer DEFAULT 20, p_offset integer DEFAULT 0) RETURNS TABLE(activity_id uuid, title character varying, scheduled_at timestamp with time zone, participants_to_confirm jsonb, total_count bigint)
@@ -4637,17 +4626,47 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_get_pending_verifications(p_user_id uuid, p_limit integer, p_offset integer) OWNER TO postgres;
-
 --
--- Name: FUNCTION sp_get_pending_verifications(p_user_id uuid, p_limit integer, p_offset integer); Type: COMMENT; Schema: activity; Owner: postgres
+-- Name: FUNCTION sp_get_pending_verifications(p_user_id uuid, p_limit integer, p_offset integer); Type: COMMENT; Schema: activity; Owner: -
 --
 
 COMMENT ON FUNCTION activity.sp_get_pending_verifications(p_user_id uuid, p_limit integer, p_offset integer) IS 'Get activities with unconfirmed attendances for peer verification';
 
 
 --
--- Name: sp_get_received_invitations(uuid, activity.invitation_status, integer, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_get_permission_by_id(uuid); Type: FUNCTION; Schema: activity; Owner: -
+--
+
+CREATE FUNCTION activity.sp_get_permission_by_id(p_permission_id uuid) RETURNS TABLE(id uuid, resource character varying, action character varying, description text, created_at timestamp with time zone)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT p.id, p.resource, p.action, p.description, p.created_at
+    FROM activity.permissions p
+    WHERE p.id = p_permission_id;
+END;
+$$;
+
+
+--
+-- Name: sp_get_permission_by_resource_action(character varying, character varying); Type: FUNCTION; Schema: activity; Owner: -
+--
+
+CREATE FUNCTION activity.sp_get_permission_by_resource_action(p_resource character varying, p_action character varying) RETURNS TABLE(id uuid, resource character varying, action character varying, description text, created_at timestamp with time zone)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT p.id, p.resource, p.action, p.description, p.created_at
+    FROM activity.permissions p
+    WHERE p.resource = LOWER(p_resource) AND p.action = LOWER(p_action);
+END;
+$$;
+
+
+--
+-- Name: sp_get_received_invitations(uuid, activity.invitation_status, integer, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_get_received_invitations(p_user_id uuid, p_status activity.invitation_status DEFAULT NULL::activity.invitation_status, p_limit integer DEFAULT 20, p_offset integer DEFAULT 0) RETURNS TABLE(invitation_id uuid, activity_id uuid, activity_title character varying, activity_scheduled_at timestamp with time zone, invited_by_user_id uuid, invited_by_username character varying, status activity.invitation_status, message text, invited_at timestamp with time zone, expires_at timestamp with time zone, responded_at timestamp with time zone, total_count bigint)
@@ -4688,17 +4707,15 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_get_received_invitations(p_user_id uuid, p_status activity.invitation_status, p_limit integer, p_offset integer) OWNER TO postgres;
-
 --
--- Name: FUNCTION sp_get_received_invitations(p_user_id uuid, p_status activity.invitation_status, p_limit integer, p_offset integer); Type: COMMENT; Schema: activity; Owner: postgres
+-- Name: FUNCTION sp_get_received_invitations(p_user_id uuid, p_status activity.invitation_status, p_limit integer, p_offset integer); Type: COMMENT; Schema: activity; Owner: -
 --
 
 COMMENT ON FUNCTION activity.sp_get_received_invitations(p_user_id uuid, p_status activity.invitation_status, p_limit integer, p_offset integer) IS 'Get received invitations with expired status handling';
 
 
 --
--- Name: sp_get_sent_invitations(uuid, uuid, activity.invitation_status, integer, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_get_sent_invitations(uuid, uuid, activity.invitation_status, integer, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_get_sent_invitations(p_inviting_user_id uuid, p_activity_id uuid DEFAULT NULL::uuid, p_status activity.invitation_status DEFAULT NULL::activity.invitation_status, p_limit integer DEFAULT 20, p_offset integer DEFAULT 0) RETURNS TABLE(invitation_id uuid, activity_id uuid, activity_title character varying, user_id uuid, username character varying, status activity.invitation_status, invited_at timestamp with time zone, expires_at timestamp with time zone, responded_at timestamp with time zone, total_count bigint)
@@ -4738,17 +4755,15 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_get_sent_invitations(p_inviting_user_id uuid, p_activity_id uuid, p_status activity.invitation_status, p_limit integer, p_offset integer) OWNER TO postgres;
-
 --
--- Name: FUNCTION sp_get_sent_invitations(p_inviting_user_id uuid, p_activity_id uuid, p_status activity.invitation_status, p_limit integer, p_offset integer); Type: COMMENT; Schema: activity; Owner: postgres
+-- Name: FUNCTION sp_get_sent_invitations(p_inviting_user_id uuid, p_activity_id uuid, p_status activity.invitation_status, p_limit integer, p_offset integer); Type: COMMENT; Schema: activity; Owner: -
 --
 
 COMMENT ON FUNCTION activity.sp_get_sent_invitations(p_inviting_user_id uuid, p_activity_id uuid, p_status activity.invitation_status, p_limit integer, p_offset integer) IS 'Get sent invitations with expired status handling';
 
 
 --
--- Name: sp_get_unread_count(uuid, boolean); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_get_unread_count(uuid, boolean); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_get_unread_count(p_user_id uuid, p_include_premium_only boolean DEFAULT false) RETURNS TABLE(total_unread bigint, activity_invite_count bigint, activity_reminder_count bigint, activity_update_count bigint, community_invite_count bigint, new_member_count bigint, new_post_count bigint, comment_count bigint, reaction_count bigint, mention_count bigint, profile_view_count bigint, new_favorite_count bigint, system_count bigint)
@@ -4781,10 +4796,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_get_unread_count(p_user_id uuid, p_include_premium_only boolean) OWNER TO postgres;
-
 --
--- Name: sp_get_user_activities(uuid, uuid, character varying, activity.participation_status, integer, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_get_user_activities(uuid, uuid, character varying, activity.participation_status, integer, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_get_user_activities(p_target_user_id uuid, p_requesting_user_id uuid, p_type character varying DEFAULT NULL::character varying, p_status activity.participation_status DEFAULT NULL::activity.participation_status, p_limit integer DEFAULT 20, p_offset integer DEFAULT 0) RETURNS TABLE(activity_id uuid, title character varying, scheduled_at timestamp with time zone, location_name character varying, city character varying, organizer_user_id uuid, organizer_username character varying, current_participants_count integer, max_participants integer, activity_type activity.activity_type, role activity.participant_role, participation_status activity.participation_status, attendance_status activity.attendance_status, joined_at timestamp with time zone, total_count bigint)
@@ -4852,17 +4865,15 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_get_user_activities(p_target_user_id uuid, p_requesting_user_id uuid, p_type character varying, p_status activity.participation_status, p_limit integer, p_offset integer) OWNER TO postgres;
-
 --
--- Name: FUNCTION sp_get_user_activities(p_target_user_id uuid, p_requesting_user_id uuid, p_type character varying, p_status activity.participation_status, p_limit integer, p_offset integer); Type: COMMENT; Schema: activity; Owner: postgres
+-- Name: FUNCTION sp_get_user_activities(p_target_user_id uuid, p_requesting_user_id uuid, p_type character varying, p_status activity.participation_status, p_limit integer, p_offset integer); Type: COMMENT; Schema: activity; Owner: -
 --
 
 COMMENT ON FUNCTION activity.sp_get_user_activities(p_target_user_id uuid, p_requesting_user_id uuid, p_type character varying, p_status activity.participation_status, p_limit integer, p_offset integer) IS 'Get user activity history with privacy and blocking checks';
 
 
 --
--- Name: sp_get_user_by_email(character varying); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_get_user_by_email(character varying); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_get_user_by_email(p_email character varying) RETURNS TABLE(id uuid, email character varying, hashed_password character varying, is_verified boolean, is_active boolean, created_at timestamp with time zone, verified_at timestamp with time zone, last_login_at timestamp with time zone)
@@ -4878,10 +4889,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_get_user_by_email(p_email character varying) OWNER TO postgres;
-
 --
--- Name: sp_get_user_by_id(uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_get_user_by_id(uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_get_user_by_id(p_user_id uuid) RETURNS TABLE(id uuid, email character varying, hashed_password character varying, is_verified boolean, is_active boolean, created_at timestamp with time zone, verified_at timestamp with time zone, last_login_at timestamp with time zone)
@@ -4897,10 +4906,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_get_user_by_id(p_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_get_user_notifications(uuid, character varying, character varying, integer, integer, boolean); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_get_user_notifications(uuid, character varying, character varying, integer, integer, boolean); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_get_user_notifications(p_user_id uuid, p_status character varying DEFAULT NULL::character varying, p_notification_type character varying DEFAULT NULL::character varying, p_limit integer DEFAULT 20, p_offset integer DEFAULT 0, p_include_premium_only boolean DEFAULT false) RETURNS TABLE(notification_id uuid, user_id uuid, actor_user_id uuid, actor_username character varying, actor_first_name character varying, actor_last_name character varying, actor_main_photo_url character varying, notification_type character varying, target_type character varying, target_id uuid, title character varying, message text, status character varying, created_at timestamp with time zone, read_at timestamp with time zone, payload jsonb, total_count bigint)
@@ -4974,10 +4981,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_get_user_notifications(p_user_id uuid, p_status character varying, p_notification_type character varying, p_limit integer, p_offset integer, p_include_premium_only boolean) OWNER TO postgres;
-
 --
--- Name: sp_get_user_org_role(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_get_user_org_role(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_get_user_org_role(p_user_id uuid, p_org_id uuid) RETURNS text
@@ -4996,10 +5001,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_get_user_org_role(p_user_id uuid, p_org_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_get_user_organizations(uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_get_user_organizations(uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_get_user_organizations(p_user_id uuid) RETURNS TABLE(id uuid, name text, slug text, description text, role text, member_count bigint, joined_at timestamp with time zone)
@@ -5023,10 +5026,43 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_get_user_organizations(p_user_id uuid) OWNER TO postgres;
+--
+-- Name: sp_get_user_permissions(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
+--
+
+CREATE FUNCTION activity.sp_get_user_permissions(p_user_id uuid, p_organization_id uuid) RETURNS TABLE(permission_id uuid, resource character varying, action character varying, description text, via_group_id uuid, via_group_name character varying, granted_at timestamp with time zone)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        p.id AS permission_id,
+        p.resource,
+        p.action,
+        p.description,
+        g.id AS via_group_id,
+        g.name AS via_group_name,
+        gp.granted_at
+    FROM activity.user_groups ug
+    JOIN activity.groups g ON ug.group_id = g.id
+    JOIN activity.group_permissions gp ON g.id = gp.group_id
+    JOIN activity.permissions p ON gp.permission_id = p.id
+    WHERE ug.user_id = p_user_id
+      AND g.organization_id = p_organization_id
+    ORDER BY p.resource, p.action, g.name;
+END;
+$$;
+
 
 --
--- Name: sp_get_user_profile(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: FUNCTION sp_get_user_permissions(p_user_id uuid, p_organization_id uuid); Type: COMMENT; Schema: activity; Owner: -
+--
+
+COMMENT ON FUNCTION activity.sp_get_user_permissions(p_user_id uuid, p_organization_id uuid) IS 'Get all permissions user has via groups (for UI display)';
+
+
+--
+-- Name: sp_get_user_profile(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_get_user_profile(p_user_id uuid, p_requesting_user_id uuid) RETURNS TABLE(user_id uuid, email character varying, username character varying, first_name character varying, last_name character varying, profile_description text, main_photo_url character varying, main_photo_moderation_status activity.photo_moderation_status, profile_photos_extra jsonb, date_of_birth date, gender character varying, subscription_level activity.subscription_level, subscription_expires_at timestamp with time zone, is_captain boolean, captain_since timestamp with time zone, is_verified boolean, verification_count integer, no_show_count integer, activities_created_count integer, activities_attended_count integer, created_at timestamp with time zone, last_seen_at timestamp with time zone, interests jsonb, settings jsonb)
@@ -5099,10 +5135,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_get_user_profile(p_user_id uuid, p_requesting_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_get_user_role_in_organization(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_get_user_role_in_organization(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_get_user_role_in_organization(p_user_id uuid, p_organization_id uuid) RETURNS text
@@ -5120,10 +5154,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_get_user_role_in_organization(p_user_id uuid, p_organization_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_get_user_settings(uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_get_user_settings(uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_get_user_settings(p_user_id uuid) RETURNS TABLE(email_notifications boolean, push_notifications boolean, activity_reminders boolean, community_updates boolean, friend_requests boolean, marketing_emails boolean, ghost_mode boolean, language character varying, timezone character varying)
@@ -5153,10 +5185,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_get_user_settings(p_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_get_valid_refresh_token(character varying); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_get_valid_refresh_token(character varying); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_get_valid_refresh_token(p_token character varying) RETURNS TABLE(id integer, user_id uuid, token character varying, jti character varying, expires_at timestamp without time zone, created_at timestamp without time zone, revoked boolean)
@@ -5180,10 +5210,51 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_get_valid_refresh_token(p_token character varying) OWNER TO postgres;
+--
+-- Name: sp_grant_permission_to_group(uuid, uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
+--
+
+CREATE FUNCTION activity.sp_grant_permission_to_group(p_group_id uuid, p_permission_id uuid, p_granter_user_id uuid) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_org_id UUID;
+BEGIN
+    -- Get organization ID
+    SELECT organization_id INTO v_org_id
+    FROM activity.groups
+    WHERE id = p_group_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Group not found';
+    END IF;
+
+    -- Insert permission (ON CONFLICT DO NOTHING to handle duplicates)
+    INSERT INTO activity.group_permissions (group_id, permission_id, granted_by)
+    VALUES (p_group_id, p_permission_id, p_granter_user_id)
+    ON CONFLICT (group_id, permission_id) DO NOTHING;
+
+    -- Audit log
+    INSERT INTO activity.permission_audit_log (
+        action_type, organization_id, group_id, permission_id, actor_user_id
+    ) VALUES (
+        'grant', v_org_id, p_group_id, p_permission_id, p_granter_user_id
+    );
+
+    RETURN TRUE;
+END;
+$$;
+
 
 --
--- Name: sp_increment_no_show_count(uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: FUNCTION sp_grant_permission_to_group(p_group_id uuid, p_permission_id uuid, p_granter_user_id uuid); Type: COMMENT; Schema: activity; Owner: -
+--
+
+COMMENT ON FUNCTION activity.sp_grant_permission_to_group(p_group_id uuid, p_permission_id uuid, p_granter_user_id uuid) IS 'Grant a permission to a group (owner only)';
+
+
+--
+-- Name: sp_increment_no_show_count(uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_increment_no_show_count(p_user_id uuid) RETURNS TABLE(new_count integer)
@@ -5208,10 +5279,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_increment_no_show_count(p_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_increment_verification_count(uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_increment_verification_count(uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_increment_verification_count(p_user_id uuid) RETURNS TABLE(new_count integer)
@@ -5236,10 +5305,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_increment_verification_count(p_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_is_organization_member(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_is_organization_member(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_is_organization_member(p_user_id uuid, p_org_id uuid) RETURNS boolean
@@ -5260,10 +5327,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_is_organization_member(p_user_id uuid, p_org_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_join_activity(uuid, uuid, activity.subscription_level); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_join_activity(uuid, uuid, activity.subscription_level); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_join_activity(p_activity_id uuid, p_user_id uuid, p_subscription_level activity.subscription_level) RETURNS TABLE(success boolean, participation_status activity.participation_status, waitlist_position integer, error_code character varying, error_message text)
@@ -5498,17 +5563,15 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_join_activity(p_activity_id uuid, p_user_id uuid, p_subscription_level activity.subscription_level) OWNER TO postgres;
-
 --
--- Name: FUNCTION sp_join_activity(p_activity_id uuid, p_user_id uuid, p_subscription_level activity.subscription_level); Type: COMMENT; Schema: activity; Owner: postgres
+-- Name: FUNCTION sp_join_activity(p_activity_id uuid, p_user_id uuid, p_subscription_level activity.subscription_level); Type: COMMENT; Schema: activity; Owner: -
 --
 
 COMMENT ON FUNCTION activity.sp_join_activity(p_activity_id uuid, p_user_id uuid, p_subscription_level activity.subscription_level) IS 'Join activity or add to waitlist with comprehensive validation including blocking, privacy, and premium priority checks';
 
 
 --
--- Name: sp_leave_activity(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_leave_activity(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_leave_activity(p_activity_id uuid, p_user_id uuid) RETURNS TABLE(success boolean, was_participant boolean, was_waitlisted boolean, promoted_user_id uuid, error_code character varying, error_message text)
@@ -5650,17 +5713,112 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_leave_activity(p_activity_id uuid, p_user_id uuid) OWNER TO postgres;
-
 --
--- Name: FUNCTION sp_leave_activity(p_activity_id uuid, p_user_id uuid); Type: COMMENT; Schema: activity; Owner: postgres
+-- Name: FUNCTION sp_leave_activity(p_activity_id uuid, p_user_id uuid); Type: COMMENT; Schema: activity; Owner: -
 --
 
 COMMENT ON FUNCTION activity.sp_leave_activity(p_activity_id uuid, p_user_id uuid) IS 'Leave activity with automatic waitlist promotion';
 
 
 --
--- Name: sp_mark_attendance(uuid, uuid, jsonb); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_list_group_members(uuid); Type: FUNCTION; Schema: activity; Owner: -
+--
+
+CREATE FUNCTION activity.sp_list_group_members(p_group_id uuid) RETURNS TABLE(user_id uuid, email character varying, added_by uuid, added_at timestamp with time zone)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT ug.user_id, u.email, ug.added_by, ug.added_at
+    FROM activity.user_groups ug
+    JOIN activity.users u ON ug.user_id = u.user_id
+    WHERE ug.group_id = p_group_id
+    ORDER BY ug.added_at DESC;
+END;
+$$;
+
+
+--
+-- Name: sp_list_group_permissions(uuid); Type: FUNCTION; Schema: activity; Owner: -
+--
+
+CREATE FUNCTION activity.sp_list_group_permissions(p_group_id uuid) RETURNS TABLE(permission_id uuid, resource character varying, action character varying, description text, granted_by uuid, granted_at timestamp with time zone)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT p.id, p.resource, p.action, p.description, gp.granted_by, gp.granted_at
+    FROM activity.group_permissions gp
+    JOIN activity.permissions p ON gp.permission_id = p.id
+    WHERE gp.group_id = p_group_id
+    ORDER BY p.resource, p.action;
+END;
+$$;
+
+
+--
+-- Name: sp_list_organization_groups(uuid); Type: FUNCTION; Schema: activity; Owner: -
+--
+
+CREATE FUNCTION activity.sp_list_organization_groups(p_organization_id uuid) RETURNS TABLE(id uuid, organization_id uuid, name character varying, description text, created_by uuid, created_at timestamp with time zone, updated_at timestamp with time zone, member_count bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        g.id,
+        g.organization_id,
+        g.name,
+        g.description,
+        g.created_by,
+        g.created_at,
+        g.updated_at,
+        COUNT(DISTINCT ug.user_id) AS member_count
+    FROM activity.groups g
+    LEFT JOIN activity.user_groups ug ON g.id = ug.group_id
+    WHERE g.organization_id = p_organization_id
+    GROUP BY g.id, g.organization_id, g.name, g.description, g.created_by, g.created_at, g.updated_at
+    ORDER BY g.name;
+END;
+$$;
+
+
+--
+-- Name: sp_list_permissions(); Type: FUNCTION; Schema: activity; Owner: -
+--
+
+CREATE FUNCTION activity.sp_list_permissions() RETURNS TABLE(id uuid, resource character varying, action character varying, description text, created_at timestamp with time zone)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT p.id, p.resource, p.action, p.description, p.created_at
+    FROM activity.permissions p
+    ORDER BY p.resource, p.action;
+END;
+$$;
+
+
+--
+-- Name: sp_list_user_groups(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
+--
+
+CREATE FUNCTION activity.sp_list_user_groups(p_user_id uuid, p_organization_id uuid) RETURNS TABLE(group_id uuid, group_name character varying, group_description text, added_at timestamp with time zone)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT g.id, g.name, g.description, ug.added_at
+    FROM activity.user_groups ug
+    JOIN activity.groups g ON ug.group_id = g.id
+    WHERE ug.user_id = p_user_id AND g.organization_id = p_organization_id
+    ORDER BY g.name;
+END;
+$$;
+
+
+--
+-- Name: sp_mark_attendance(uuid, uuid, jsonb); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_mark_attendance(p_activity_id uuid, p_marking_user_id uuid, p_attendances jsonb) RETURNS TABLE(success boolean, updated_count integer, failed_updates jsonb, error_code character varying, error_message text)
@@ -5774,17 +5932,15 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_mark_attendance(p_activity_id uuid, p_marking_user_id uuid, p_attendances jsonb) OWNER TO postgres;
-
 --
--- Name: FUNCTION sp_mark_attendance(p_activity_id uuid, p_marking_user_id uuid, p_attendances jsonb); Type: COMMENT; Schema: activity; Owner: postgres
+-- Name: FUNCTION sp_mark_attendance(p_activity_id uuid, p_marking_user_id uuid, p_attendances jsonb); Type: COMMENT; Schema: activity; Owner: -
 --
 
 COMMENT ON FUNCTION activity.sp_mark_attendance(p_activity_id uuid, p_marking_user_id uuid, p_attendances jsonb) IS 'Bulk mark attendance after activity completion (organizer/co-organizer only)';
 
 
 --
--- Name: sp_mark_notification_as_read(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_mark_notification_as_read(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_mark_notification_as_read(p_user_id uuid, p_notification_id uuid) RETURNS TABLE(notification_id uuid, status character varying, read_at timestamp with time zone)
@@ -5811,10 +5967,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_mark_notification_as_read(p_user_id uuid, p_notification_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_mark_notifications_as_read_bulk(uuid, uuid[], character varying); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_mark_notifications_as_read_bulk(uuid, uuid[], character varying); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_mark_notifications_as_read_bulk(p_user_id uuid, p_notification_ids uuid[] DEFAULT NULL::uuid[], p_notification_type character varying DEFAULT NULL::character varying) RETURNS TABLE(updated_count bigint)
@@ -5864,10 +6018,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_mark_notifications_as_read_bulk(p_user_id uuid, p_notification_ids uuid[], p_notification_type character varying) OWNER TO postgres;
-
 --
--- Name: sp_mod_ban_user(uuid, uuid, character varying, text, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_mod_ban_user(uuid, uuid, character varying, text, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_mod_ban_user(p_admin_user_id uuid, p_user_id uuid, p_ban_type character varying, p_ban_reason text, p_ban_duration_hours integer DEFAULT NULL::integer) RETURNS json
@@ -5951,10 +6103,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_mod_ban_user(p_admin_user_id uuid, p_user_id uuid, p_ban_type character varying, p_ban_reason text, p_ban_duration_hours integer) OWNER TO postgres;
-
 --
--- Name: sp_mod_create_report(uuid, uuid, character varying, uuid, character varying, text); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_mod_create_report(uuid, uuid, character varying, uuid, character varying, text); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_mod_create_report(p_reporter_user_id uuid, p_reported_user_id uuid, p_target_type character varying, p_target_id uuid, p_report_type character varying, p_description text) RETURNS json
@@ -6076,10 +6226,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_mod_create_report(p_reporter_user_id uuid, p_reported_user_id uuid, p_target_type character varying, p_target_id uuid, p_report_type character varying, p_description text) OWNER TO postgres;
-
 --
--- Name: sp_mod_get_pending_photos(uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_mod_get_pending_photos(uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_mod_get_pending_photos(p_admin_user_id uuid, p_limit integer DEFAULT 50, p_offset integer DEFAULT 0) RETURNS TABLE(user_id uuid, username character varying, email character varying, main_photo_url character varying, created_at timestamp with time zone, updated_at timestamp with time zone)
@@ -6116,10 +6264,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_mod_get_pending_photos(p_admin_user_id uuid, p_limit integer, p_offset integer) OWNER TO postgres;
-
 --
--- Name: sp_mod_get_report_by_id(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_mod_get_report_by_id(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_mod_get_report_by_id(p_admin_user_id uuid, p_report_id uuid) RETURNS json
@@ -6194,10 +6340,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_mod_get_report_by_id(p_admin_user_id uuid, p_report_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_mod_get_reports(uuid, character varying, character varying, character varying, integer, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_mod_get_reports(uuid, character varying, character varying, character varying, integer, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_mod_get_reports(p_admin_user_id uuid, p_status character varying DEFAULT NULL::character varying, p_target_type character varying DEFAULT NULL::character varying, p_report_type character varying DEFAULT NULL::character varying, p_limit integer DEFAULT 50, p_offset integer DEFAULT 0) RETURNS TABLE(report_id uuid, reporter_user_id uuid, reporter_username character varying, reporter_email character varying, reported_user_id uuid, reported_username character varying, reported_email character varying, target_type character varying, target_id uuid, report_type character varying, description text, status character varying, reviewed_by_user_id uuid, reviewed_by_username character varying, reviewed_at timestamp with time zone, resolution_notes text, created_at timestamp with time zone, updated_at timestamp with time zone)
@@ -6268,10 +6412,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_mod_get_reports(p_admin_user_id uuid, p_status character varying, p_target_type character varying, p_report_type character varying, p_limit integer, p_offset integer) OWNER TO postgres;
-
 --
--- Name: sp_mod_get_statistics(uuid, timestamp with time zone, timestamp with time zone); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_mod_get_statistics(uuid, timestamp with time zone, timestamp with time zone); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_mod_get_statistics(p_admin_user_id uuid, p_date_from timestamp with time zone DEFAULT NULL::timestamp with time zone, p_date_to timestamp with time zone DEFAULT NULL::timestamp with time zone) RETURNS json
@@ -6410,10 +6552,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_mod_get_statistics(p_admin_user_id uuid, p_date_from timestamp with time zone, p_date_to timestamp with time zone) OWNER TO postgres;
-
 --
--- Name: sp_mod_get_user_moderation_history(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_mod_get_user_moderation_history(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_mod_get_user_moderation_history(p_admin_user_id uuid, p_target_user_id uuid) RETURNS json
@@ -6497,10 +6637,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_mod_get_user_moderation_history(p_admin_user_id uuid, p_target_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_mod_moderate_main_photo(uuid, uuid, character varying, text); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_mod_moderate_main_photo(uuid, uuid, character varying, text); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_mod_moderate_main_photo(p_admin_user_id uuid, p_user_id uuid, p_moderation_status character varying, p_rejection_reason text DEFAULT NULL::text) RETURNS json
@@ -6571,10 +6709,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_mod_moderate_main_photo(p_admin_user_id uuid, p_user_id uuid, p_moderation_status character varying, p_rejection_reason text) OWNER TO postgres;
-
 --
--- Name: sp_mod_remove_content(uuid, character varying, uuid, text); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_mod_remove_content(uuid, character varying, uuid, text); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_mod_remove_content(p_admin_user_id uuid, p_content_type character varying, p_content_id uuid, p_removal_reason text) RETURNS json
@@ -6670,10 +6806,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_mod_remove_content(p_admin_user_id uuid, p_content_type character varying, p_content_id uuid, p_removal_reason text) OWNER TO postgres;
-
 --
--- Name: sp_mod_unban_user(uuid, uuid, text); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_mod_unban_user(uuid, uuid, text); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_mod_unban_user(p_admin_user_id uuid, p_user_id uuid, p_unban_reason text) RETURNS json
@@ -6738,10 +6872,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_mod_unban_user(p_admin_user_id uuid, p_user_id uuid, p_unban_reason text) OWNER TO postgres;
-
 --
--- Name: sp_mod_update_report_status(uuid, uuid, character varying, text); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_mod_update_report_status(uuid, uuid, character varying, text); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_mod_update_report_status(p_admin_user_id uuid, p_report_id uuid, p_new_status character varying, p_resolution_notes text DEFAULT NULL::text) RETURNS json
@@ -6803,10 +6935,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_mod_update_report_status(p_admin_user_id uuid, p_report_id uuid, p_new_status character varying, p_resolution_notes text) OWNER TO postgres;
-
 --
--- Name: sp_moderate_main_photo(uuid, activity.photo_moderation_status, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_moderate_main_photo(uuid, activity.photo_moderation_status, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_moderate_main_photo(p_user_id uuid, p_moderation_status activity.photo_moderation_status, p_moderator_user_id uuid) RETURNS TABLE(success boolean)
@@ -6830,10 +6960,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_moderate_main_photo(p_user_id uuid, p_moderation_status activity.photo_moderation_status, p_moderator_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_promote_participant(uuid, uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_promote_participant(uuid, uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_promote_participant(p_activity_id uuid, p_organizer_user_id uuid, p_target_user_id uuid) RETURNS TABLE(success boolean, error_code character varying, error_message text)
@@ -6916,17 +7044,15 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_promote_participant(p_activity_id uuid, p_organizer_user_id uuid, p_target_user_id uuid) OWNER TO postgres;
-
 --
--- Name: FUNCTION sp_promote_participant(p_activity_id uuid, p_organizer_user_id uuid, p_target_user_id uuid); Type: COMMENT; Schema: activity; Owner: postgres
+-- Name: FUNCTION sp_promote_participant(p_activity_id uuid, p_organizer_user_id uuid, p_target_user_id uuid); Type: COMMENT; Schema: activity; Owner: -
 --
 
 COMMENT ON FUNCTION activity.sp_promote_participant(p_activity_id uuid, p_organizer_user_id uuid, p_target_user_id uuid) IS 'Promote member to co-organizer (organizer only)';
 
 
 --
--- Name: sp_remove_organization_member(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_remove_organization_member(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_remove_organization_member(p_user_id uuid, p_org_id uuid) RETURNS boolean
@@ -6945,10 +7071,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_remove_organization_member(p_user_id uuid, p_org_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_remove_profile_photo(uuid, character varying); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_remove_profile_photo(uuid, character varying); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_remove_profile_photo(p_user_id uuid, p_photo_url character varying) RETURNS TABLE(success boolean, photo_count integer)
@@ -6991,10 +7115,43 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_remove_profile_photo(p_user_id uuid, p_photo_url character varying) OWNER TO postgres;
+--
+-- Name: sp_remove_user_from_group(uuid, uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
+--
+
+CREATE FUNCTION activity.sp_remove_user_from_group(p_user_id uuid, p_group_id uuid, p_remover_user_id uuid) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_org_id UUID;
+BEGIN
+    -- Get organization ID
+    SELECT organization_id INTO v_org_id
+    FROM activity.groups
+    WHERE id = p_group_id;
+
+    -- Delete membership
+    DELETE FROM activity.user_groups
+    WHERE user_id = p_user_id AND group_id = p_group_id;
+
+    IF NOT FOUND THEN
+        RETURN FALSE;
+    END IF;
+
+    -- Audit log
+    INSERT INTO activity.permission_audit_log (
+        action_type, organization_id, group_id, user_id, actor_user_id
+    ) VALUES (
+        'member_removed', v_org_id, p_group_id, p_user_id, p_remover_user_id
+    );
+
+    RETURN TRUE;
+END;
+$$;
+
 
 --
--- Name: sp_remove_user_interest(uuid, character varying); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_remove_user_interest(uuid, character varying); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_remove_user_interest(p_user_id uuid, p_interest_tag character varying) RETURNS TABLE(success boolean)
@@ -7010,10 +7167,43 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_remove_user_interest(p_user_id uuid, p_interest_tag character varying) OWNER TO postgres;
+--
+-- Name: sp_revoke_permission_from_group(uuid, uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
+--
+
+CREATE FUNCTION activity.sp_revoke_permission_from_group(p_group_id uuid, p_permission_id uuid, p_revoker_user_id uuid) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_org_id UUID;
+BEGIN
+    -- Get organization ID
+    SELECT organization_id INTO v_org_id
+    FROM activity.groups
+    WHERE id = p_group_id;
+
+    -- Delete permission
+    DELETE FROM activity.group_permissions
+    WHERE group_id = p_group_id AND permission_id = p_permission_id;
+
+    IF NOT FOUND THEN
+        RETURN FALSE;
+    END IF;
+
+    -- Audit log
+    INSERT INTO activity.permission_audit_log (
+        action_type, organization_id, group_id, permission_id, actor_user_id
+    ) VALUES (
+        'revoke', v_org_id, p_group_id, p_permission_id, p_revoker_user_id
+    );
+
+    RETURN TRUE;
+END;
+$$;
+
 
 --
--- Name: sp_revoke_refresh_token(uuid, character varying); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_revoke_refresh_token(uuid, character varying); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_revoke_refresh_token(p_user_id uuid, p_token character varying) RETURNS boolean
@@ -7032,10 +7222,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_revoke_refresh_token(p_user_id uuid, p_token character varying) OWNER TO postgres;
-
 --
--- Name: sp_save_refresh_token(uuid, character varying, character varying, timestamp without time zone); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_save_refresh_token(uuid, character varying, character varying, timestamp without time zone); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_save_refresh_token(p_user_id uuid, p_token character varying, p_jti character varying, p_expires_at timestamp without time zone) RETURNS boolean
@@ -7053,10 +7241,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_save_refresh_token(p_user_id uuid, p_token character varying, p_jti character varying, p_expires_at timestamp without time zone) OWNER TO postgres;
-
 --
--- Name: sp_search_users(text, uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_search_users(text, uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_search_users(p_query text, p_requesting_user_id uuid, p_limit integer DEFAULT 20, p_offset integer DEFAULT 0) RETURNS TABLE(user_id uuid, username character varying, first_name character varying, last_name character varying, main_photo_url character varying, is_verified boolean, verification_count integer)
@@ -7093,10 +7279,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_search_users(p_query text, p_requesting_user_id uuid, p_limit integer, p_offset integer) OWNER TO postgres;
-
 --
--- Name: sp_send_invitations(uuid, uuid, uuid[], text, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_send_invitations(uuid, uuid, uuid[], text, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_send_invitations(p_activity_id uuid, p_inviting_user_id uuid, p_user_ids uuid[], p_message text DEFAULT NULL::text, p_expires_in_hours integer DEFAULT 72) RETURNS TABLE(success boolean, invited_count integer, failed_count integer, invitations jsonb, failed_invitations jsonb, error_code character varying, error_message text)
@@ -7271,17 +7455,15 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_send_invitations(p_activity_id uuid, p_inviting_user_id uuid, p_user_ids uuid[], p_message text, p_expires_in_hours integer) OWNER TO postgres;
-
 --
--- Name: FUNCTION sp_send_invitations(p_activity_id uuid, p_inviting_user_id uuid, p_user_ids uuid[], p_message text, p_expires_in_hours integer); Type: COMMENT; Schema: activity; Owner: postgres
+-- Name: FUNCTION sp_send_invitations(p_activity_id uuid, p_inviting_user_id uuid, p_user_ids uuid[], p_message text, p_expires_in_hours integer); Type: COMMENT; Schema: activity; Owner: -
 --
 
 COMMENT ON FUNCTION activity.sp_send_invitations(p_activity_id uuid, p_inviting_user_id uuid, p_user_ids uuid[], p_message text, p_expires_in_hours integer) IS 'Bulk send invitations with validation and blocking checks';
 
 
 --
--- Name: sp_set_captain_status(uuid, boolean); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_set_captain_status(uuid, boolean); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_set_captain_status(p_user_id uuid, p_is_captain boolean) RETURNS TABLE(success boolean)
@@ -7320,10 +7502,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_set_captain_status(p_user_id uuid, p_is_captain boolean) OWNER TO postgres;
-
 --
--- Name: sp_set_main_photo(uuid, character varying); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_set_main_photo(uuid, character varying); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_set_main_photo(p_user_id uuid, p_photo_url character varying) RETURNS TABLE(success boolean, moderation_status activity.photo_moderation_status)
@@ -7353,10 +7533,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_set_main_photo(p_user_id uuid, p_photo_url character varying) OWNER TO postgres;
-
 --
--- Name: sp_set_user_interests(uuid, jsonb); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_set_user_interests(uuid, jsonb); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_set_user_interests(p_user_id uuid, p_interests jsonb) RETURNS TABLE(success boolean, interest_count integer)
@@ -7407,10 +7585,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_set_user_interests(p_user_id uuid, p_interests jsonb) OWNER TO postgres;
-
 --
--- Name: sp_social_accept_friend_request(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_social_accept_friend_request(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_social_accept_friend_request(p_accepting_user_id uuid, p_requester_user_id uuid) RETURNS jsonb
@@ -7467,10 +7643,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_social_accept_friend_request(p_accepting_user_id uuid, p_requester_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_social_block_user(uuid, uuid, text); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_social_block_user(uuid, uuid, text); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_social_block_user(p_blocker_user_id uuid, p_blocked_user_id uuid, p_reason text DEFAULT NULL::text) RETURNS jsonb
@@ -7529,10 +7703,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_social_block_user(p_blocker_user_id uuid, p_blocked_user_id uuid, p_reason text) OWNER TO postgres;
-
 --
--- Name: sp_social_check_block_status(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_social_check_block_status(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_social_check_block_status(p_user_id_1 uuid, p_user_id_2 uuid) RETURNS jsonb
@@ -7569,10 +7741,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_social_check_block_status(p_user_id_1 uuid, p_user_id_2 uuid) OWNER TO postgres;
-
 --
--- Name: sp_social_check_can_interact(uuid, uuid, text); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_social_check_can_interact(uuid, uuid, text); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_social_check_can_interact(p_user_id_1 uuid, p_user_id_2 uuid, p_activity_type text DEFAULT 'standard'::text) RETURNS jsonb
@@ -7618,10 +7788,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_social_check_can_interact(p_user_id_1 uuid, p_user_id_2 uuid, p_activity_type text) OWNER TO postgres;
-
 --
--- Name: sp_social_check_favorite_status(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_social_check_favorite_status(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_social_check_favorite_status(p_favoriting_user_id uuid, p_favorited_user_id uuid) RETURNS jsonb
@@ -7650,10 +7818,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_social_check_favorite_status(p_favoriting_user_id uuid, p_favorited_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_social_check_friendship_status(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_social_check_friendship_status(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_social_check_friendship_status(p_user_id_1 uuid, p_user_id_2 uuid) RETURNS jsonb
@@ -7694,10 +7860,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_social_check_friendship_status(p_user_id_1 uuid, p_user_id_2 uuid) OWNER TO postgres;
-
 --
--- Name: sp_social_decline_friend_request(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_social_decline_friend_request(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_social_decline_friend_request(p_declining_user_id uuid, p_requester_user_id uuid) RETURNS jsonb
@@ -7744,10 +7908,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_social_decline_friend_request(p_declining_user_id uuid, p_requester_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_social_favorite_user(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_social_favorite_user(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_social_favorite_user(p_favoriting_user_id uuid, p_favorited_user_id uuid) RETURNS jsonb
@@ -7813,10 +7975,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_social_favorite_user(p_favoriting_user_id uuid, p_favorited_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_social_get_blocked_users(uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_social_get_blocked_users(uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_social_get_blocked_users(p_blocker_user_id uuid, p_limit integer DEFAULT 100, p_offset integer DEFAULT 0) RETURNS jsonb
@@ -7864,10 +8024,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_social_get_blocked_users(p_blocker_user_id uuid, p_limit integer, p_offset integer) OWNER TO postgres;
-
 --
--- Name: sp_social_get_friends_list(uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_social_get_friends_list(uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_social_get_friends_list(p_user_id uuid, p_limit integer DEFAULT 100, p_offset integer DEFAULT 0) RETURNS jsonb
@@ -7922,10 +8080,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_social_get_friends_list(p_user_id uuid, p_limit integer, p_offset integer) OWNER TO postgres;
-
 --
--- Name: sp_social_get_my_favorites(uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_social_get_my_favorites(uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_social_get_my_favorites(p_user_id uuid, p_limit integer DEFAULT 100, p_offset integer DEFAULT 0) RETURNS jsonb
@@ -7973,10 +8129,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_social_get_my_favorites(p_user_id uuid, p_limit integer, p_offset integer) OWNER TO postgres;
-
 --
--- Name: sp_social_get_pending_friend_requests(uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_social_get_pending_friend_requests(uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_social_get_pending_friend_requests(p_user_id uuid, p_limit integer DEFAULT 50, p_offset integer DEFAULT 0) RETURNS jsonb
@@ -8028,10 +8182,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_social_get_pending_friend_requests(p_user_id uuid, p_limit integer, p_offset integer) OWNER TO postgres;
-
 --
--- Name: sp_social_get_profile_view_count(uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_social_get_profile_view_count(uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_social_get_profile_view_count(p_user_id uuid) RETURNS jsonb
@@ -8065,10 +8217,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_social_get_profile_view_count(p_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_social_get_sent_friend_requests(uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_social_get_sent_friend_requests(uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_social_get_sent_friend_requests(p_user_id uuid, p_limit integer DEFAULT 50, p_offset integer DEFAULT 0) RETURNS jsonb
@@ -8123,10 +8273,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_social_get_sent_friend_requests(p_user_id uuid, p_limit integer, p_offset integer) OWNER TO postgres;
-
 --
--- Name: sp_social_get_who_favorited_me(uuid, text, integer, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_social_get_who_favorited_me(uuid, text, integer, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_social_get_who_favorited_me(p_user_id uuid, p_subscription_level text, p_limit integer DEFAULT 100, p_offset integer DEFAULT 0) RETURNS jsonb
@@ -8179,10 +8327,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_social_get_who_favorited_me(p_user_id uuid, p_subscription_level text, p_limit integer, p_offset integer) OWNER TO postgres;
-
 --
--- Name: sp_social_get_who_viewed_my_profile(uuid, text, integer, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_social_get_who_viewed_my_profile(uuid, text, integer, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_social_get_who_viewed_my_profile(p_user_id uuid, p_subscription_level text, p_limit integer DEFAULT 100, p_offset integer DEFAULT 0) RETURNS jsonb
@@ -8248,10 +8394,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_social_get_who_viewed_my_profile(p_user_id uuid, p_subscription_level text, p_limit integer, p_offset integer) OWNER TO postgres;
-
 --
--- Name: sp_social_record_profile_view(uuid, uuid, boolean); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_social_record_profile_view(uuid, uuid, boolean); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_social_record_profile_view(p_viewer_user_id uuid, p_viewed_user_id uuid, p_ghost_mode boolean) RETURNS jsonb
@@ -8318,10 +8462,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_social_record_profile_view(p_viewer_user_id uuid, p_viewed_user_id uuid, p_ghost_mode boolean) OWNER TO postgres;
-
 --
--- Name: sp_social_remove_friend(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_social_remove_friend(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_social_remove_friend(p_user_id uuid, p_friend_user_id uuid) RETURNS jsonb
@@ -8362,10 +8504,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_social_remove_friend(p_user_id uuid, p_friend_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_social_search_users(uuid, text, integer, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_social_search_users(uuid, text, integer, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_social_search_users(p_searcher_user_id uuid, p_search_query text, p_limit integer DEFAULT 20, p_offset integer DEFAULT 0) RETURNS jsonb
@@ -8454,10 +8594,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_social_search_users(p_searcher_user_id uuid, p_search_query text, p_limit integer, p_offset integer) OWNER TO postgres;
-
 --
--- Name: sp_social_send_friend_request(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_social_send_friend_request(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_social_send_friend_request(p_requester_user_id uuid, p_target_user_id uuid) RETURNS jsonb
@@ -8551,10 +8689,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_social_send_friend_request(p_requester_user_id uuid, p_target_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_social_unblock_user(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_social_unblock_user(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_social_unblock_user(p_blocker_user_id uuid, p_blocked_user_id uuid) RETURNS jsonb
@@ -8585,10 +8721,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_social_unblock_user(p_blocker_user_id uuid, p_blocked_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_social_unfavorite_user(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_social_unfavorite_user(uuid, uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_social_unfavorite_user(p_favoriting_user_id uuid, p_favorited_user_id uuid) RETURNS jsonb
@@ -8619,10 +8753,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_social_unfavorite_user(p_favoriting_user_id uuid, p_favorited_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_unban_user(uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_unban_user(uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_unban_user(p_user_id uuid) RETURNS TABLE(success boolean)
@@ -8642,10 +8774,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_unban_user(p_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_update_activity_counts(uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_update_activity_counts(uuid, integer, integer); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_update_activity_counts(p_user_id uuid, p_created_delta integer, p_attended_delta integer) RETURNS TABLE(new_created_count integer, new_attended_count integer)
@@ -8678,10 +8808,28 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_update_activity_counts(p_user_id uuid, p_created_delta integer, p_attended_delta integer) OWNER TO postgres;
+--
+-- Name: sp_update_group(uuid, character varying, text); Type: FUNCTION; Schema: activity; Owner: -
+--
+
+CREATE FUNCTION activity.sp_update_group(p_group_id uuid, p_name character varying DEFAULT NULL::character varying, p_description text DEFAULT NULL::text) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    UPDATE activity.groups
+    SET
+        name = COALESCE(p_name, name),
+        description = COALESCE(p_description, description),
+        updated_at = NOW()
+    WHERE id = p_group_id;
+
+    RETURN FOUND;
+END;
+$$;
+
 
 --
--- Name: sp_update_last_login(uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_update_last_login(uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_update_last_login(p_user_id uuid) RETURNS void
@@ -8693,10 +8841,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_update_last_login(p_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_update_last_seen(uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_update_last_seen(uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_update_last_seen(p_user_id uuid) RETURNS TABLE(success boolean)
@@ -8712,10 +8858,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_update_last_seen(p_user_id uuid) OWNER TO postgres;
-
 --
--- Name: sp_update_member_role(uuid, uuid, text); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_update_member_role(uuid, uuid, text); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_update_member_role(p_user_id uuid, p_org_id uuid, p_new_role text) RETURNS boolean
@@ -8735,10 +8879,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_update_member_role(p_user_id uuid, p_org_id uuid, p_new_role text) OWNER TO postgres;
-
 --
--- Name: sp_update_notification_settings(uuid, boolean, boolean, boolean, jsonb, time without time zone, time without time zone); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_update_notification_settings(uuid, boolean, boolean, boolean, jsonb, time without time zone, time without time zone); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_update_notification_settings(p_user_id uuid, p_email_enabled boolean DEFAULT NULL::boolean, p_push_enabled boolean DEFAULT NULL::boolean, p_in_app_enabled boolean DEFAULT NULL::boolean, p_enabled_types jsonb DEFAULT NULL::jsonb, p_quiet_hours_start time without time zone DEFAULT NULL::time without time zone, p_quiet_hours_end time without time zone DEFAULT NULL::time without time zone) RETURNS TABLE(email_enabled boolean, push_enabled boolean, in_app_enabled boolean, enabled_types jsonb, quiet_hours_start time without time zone, quiet_hours_end time without time zone)
@@ -8777,10 +8919,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_update_notification_settings(p_user_id uuid, p_email_enabled boolean, p_push_enabled boolean, p_in_app_enabled boolean, p_enabled_types jsonb, p_quiet_hours_start time without time zone, p_quiet_hours_end time without time zone) OWNER TO postgres;
-
 --
--- Name: sp_update_password(uuid, character varying); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_update_password(uuid, character varying); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_update_password(p_user_id uuid, p_new_hashed_password character varying) RETURNS boolean
@@ -8796,10 +8936,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_update_password(p_user_id uuid, p_new_hashed_password character varying) OWNER TO postgres;
-
 --
--- Name: sp_update_subscription(uuid, activity.subscription_level, timestamp with time zone); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_update_subscription(uuid, activity.subscription_level, timestamp with time zone); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_update_subscription(p_user_id uuid, p_subscription_level activity.subscription_level, p_subscription_expires_at timestamp with time zone DEFAULT NULL::timestamp with time zone) RETURNS TABLE(success boolean)
@@ -8840,10 +8978,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_update_subscription(p_user_id uuid, p_subscription_level activity.subscription_level, p_subscription_expires_at timestamp with time zone) OWNER TO postgres;
-
 --
--- Name: sp_update_user_profile(uuid, character varying, character varying, text, date, character varying); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_update_user_profile(uuid, character varying, character varying, text, date, character varying); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_update_user_profile(p_user_id uuid, p_first_name character varying DEFAULT NULL::character varying, p_last_name character varying DEFAULT NULL::character varying, p_profile_description text DEFAULT NULL::text, p_date_of_birth date DEFAULT NULL::date, p_gender character varying DEFAULT NULL::character varying) RETURNS TABLE(success boolean, updated_at timestamp with time zone)
@@ -8893,10 +9029,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_update_user_profile(p_user_id uuid, p_first_name character varying, p_last_name character varying, p_profile_description text, p_date_of_birth date, p_gender character varying) OWNER TO postgres;
-
 --
--- Name: sp_update_user_settings(uuid, boolean, boolean, boolean, boolean, boolean, boolean, boolean, character varying, character varying); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_update_user_settings(uuid, boolean, boolean, boolean, boolean, boolean, boolean, boolean, character varying, character varying); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_update_user_settings(p_user_id uuid, p_email_notifications boolean DEFAULT NULL::boolean, p_push_notifications boolean DEFAULT NULL::boolean, p_activity_reminders boolean DEFAULT NULL::boolean, p_community_updates boolean DEFAULT NULL::boolean, p_friend_requests boolean DEFAULT NULL::boolean, p_marketing_emails boolean DEFAULT NULL::boolean, p_ghost_mode boolean DEFAULT NULL::boolean, p_language character varying DEFAULT NULL::character varying, p_timezone character varying DEFAULT NULL::character varying) RETURNS TABLE(success boolean)
@@ -8941,10 +9075,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_update_user_settings(p_user_id uuid, p_email_notifications boolean, p_push_notifications boolean, p_activity_reminders boolean, p_community_updates boolean, p_friend_requests boolean, p_marketing_emails boolean, p_ghost_mode boolean, p_language character varying, p_timezone character varying) OWNER TO postgres;
-
 --
--- Name: sp_update_username(uuid, character varying); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: sp_update_username(uuid, character varying); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_update_username(p_user_id uuid, p_new_username character varying) RETURNS TABLE(success boolean, message text)
@@ -8985,10 +9117,55 @@ END;
 $_$;
 
 
-ALTER FUNCTION activity.sp_update_username(p_user_id uuid, p_new_username character varying) OWNER TO postgres;
+--
+-- Name: sp_user_has_permission(uuid, uuid, character varying, character varying); Type: FUNCTION; Schema: activity; Owner: -
+--
+
+CREATE FUNCTION activity.sp_user_has_permission(p_user_id uuid, p_organization_id uuid, p_resource character varying, p_action character varying) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_is_member BOOLEAN;
+    v_has_permission BOOLEAN;
+BEGIN
+    -- Step 1: Check if user is a member of the organization
+    SELECT EXISTS (
+        SELECT 1
+        FROM activity.organization_members om
+        WHERE om.user_id = p_user_id AND om.organization_id = p_organization_id
+    ) INTO v_is_member;
+
+    IF NOT v_is_member THEN
+        RETURN FALSE;
+    END IF;
+
+    -- Step 2: Check if user has the permission via any group
+    SELECT EXISTS (
+        SELECT 1
+        FROM activity.user_groups ug
+        JOIN activity.groups g ON ug.group_id = g.id
+        JOIN activity.group_permissions gp ON g.id = gp.group_id
+        JOIN activity.permissions p ON gp.permission_id = p.id
+        WHERE ug.user_id = p_user_id
+          AND g.organization_id = p_organization_id
+          AND p.resource = LOWER(p_resource)
+          AND p.action = LOWER(p_action)
+    ) INTO v_has_permission;
+
+    RETURN v_has_permission;
+END;
+$$;
+
 
 --
--- Name: sp_verify_user_email(uuid); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: FUNCTION sp_user_has_permission(p_user_id uuid, p_organization_id uuid, p_resource character varying, p_action character varying); Type: COMMENT; Schema: activity; Owner: -
+--
+
+COMMENT ON FUNCTION activity.sp_user_has_permission(p_user_id uuid, p_organization_id uuid, p_resource character varying, p_action character varying) IS 'Check if user has permission (THE CORE authorization function)';
+
+
+--
+-- Name: sp_verify_user_email(uuid); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.sp_verify_user_email(p_user_id uuid) RETURNS boolean
@@ -9004,10 +9181,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.sp_verify_user_email(p_user_id uuid) OWNER TO postgres;
-
 --
--- Name: update_organizations_updated_at(); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: update_organizations_updated_at(); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.update_organizations_updated_at() RETURNS trigger
@@ -9020,10 +9195,8 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.update_organizations_updated_at() OWNER TO postgres;
-
 --
--- Name: update_timestamp(); Type: FUNCTION; Schema: activity; Owner: postgres
+-- Name: update_timestamp(); Type: FUNCTION; Schema: activity; Owner: -
 --
 
 CREATE FUNCTION activity.update_timestamp() RETURNS trigger
@@ -9036,14 +9209,12 @@ END;
 $$;
 
 
-ALTER FUNCTION activity.update_timestamp() OWNER TO postgres;
-
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
 
 --
--- Name: activities; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: activities; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.activities (
@@ -9080,10 +9251,8 @@ CREATE TABLE activity.activities (
 );
 
 
-ALTER TABLE activity.activities OWNER TO postgres;
-
 --
--- Name: activity_invitations; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: activity_invitations; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.activity_invitations (
@@ -9104,10 +9273,8 @@ CREATE TABLE activity.activity_invitations (
 );
 
 
-ALTER TABLE activity.activity_invitations OWNER TO postgres;
-
 --
--- Name: activity_locations; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: activity_locations; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.activity_locations (
@@ -9131,10 +9298,8 @@ CREATE TABLE activity.activity_locations (
 );
 
 
-ALTER TABLE activity.activity_locations OWNER TO postgres;
-
 --
--- Name: activity_reviews; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: activity_reviews; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.activity_reviews (
@@ -9152,10 +9317,8 @@ CREATE TABLE activity.activity_reviews (
 );
 
 
-ALTER TABLE activity.activity_reviews OWNER TO postgres;
-
 --
--- Name: activity_tags; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: activity_tags; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.activity_tags (
@@ -9165,10 +9328,8 @@ CREATE TABLE activity.activity_tags (
 );
 
 
-ALTER TABLE activity.activity_tags OWNER TO postgres;
-
 --
--- Name: attendance_confirmations; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: attendance_confirmations; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.attendance_confirmations (
@@ -9182,10 +9343,8 @@ CREATE TABLE activity.attendance_confirmations (
 );
 
 
-ALTER TABLE activity.attendance_confirmations OWNER TO postgres;
-
 --
--- Name: categories; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: categories; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.categories (
@@ -9203,10 +9362,8 @@ CREATE TABLE activity.categories (
 );
 
 
-ALTER TABLE activity.categories OWNER TO postgres;
-
 --
--- Name: comments; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: comments; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.comments (
@@ -9225,10 +9382,8 @@ CREATE TABLE activity.comments (
 );
 
 
-ALTER TABLE activity.comments OWNER TO postgres;
-
 --
--- Name: communities; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: communities; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.communities (
@@ -9254,10 +9409,8 @@ CREATE TABLE activity.communities (
 );
 
 
-ALTER TABLE activity.communities OWNER TO postgres;
-
 --
--- Name: community_activities; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: community_activities; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.community_activities (
@@ -9271,10 +9424,8 @@ CREATE TABLE activity.community_activities (
 );
 
 
-ALTER TABLE activity.community_activities OWNER TO postgres;
-
 --
--- Name: community_members; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: community_members; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.community_members (
@@ -9292,10 +9443,8 @@ CREATE TABLE activity.community_members (
 );
 
 
-ALTER TABLE activity.community_members OWNER TO postgres;
-
 --
--- Name: community_tags; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: community_tags; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.community_tags (
@@ -9305,10 +9454,8 @@ CREATE TABLE activity.community_tags (
 );
 
 
-ALTER TABLE activity.community_tags OWNER TO postgres;
-
 --
--- Name: friendships; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: friendships; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.friendships (
@@ -9326,10 +9473,71 @@ CREATE TABLE activity.friendships (
 );
 
 
-ALTER TABLE activity.friendships OWNER TO postgres;
+--
+-- Name: group_permissions; Type: TABLE; Schema: activity; Owner: -
+--
+
+CREATE TABLE activity.group_permissions (
+    group_id uuid NOT NULL,
+    permission_id uuid NOT NULL,
+    granted_by uuid NOT NULL,
+    granted_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
 
 --
--- Name: media_assets; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: TABLE group_permissions; Type: COMMENT; Schema: activity; Owner: -
+--
+
+COMMENT ON TABLE activity.group_permissions IS 'Many-to-many: Groups have permissions';
+
+
+--
+-- Name: COLUMN group_permissions.granted_by; Type: COMMENT; Schema: activity; Owner: -
+--
+
+COMMENT ON COLUMN activity.group_permissions.granted_by IS 'User who granted this permission (must be owner)';
+
+
+--
+-- Name: groups; Type: TABLE; Schema: activity; Owner: -
+--
+
+CREATE TABLE activity.groups (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    organization_id uuid NOT NULL,
+    name character varying(100) NOT NULL,
+    description text,
+    created_by uuid NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_group_name_length CHECK ((length(TRIM(BOTH FROM name)) > 0))
+);
+
+
+--
+-- Name: TABLE groups; Type: COMMENT; Schema: activity; Owner: -
+--
+
+COMMENT ON TABLE activity.groups IS 'Permission groups within organizations';
+
+
+--
+-- Name: COLUMN groups.organization_id; Type: COMMENT; Schema: activity; Owner: -
+--
+
+COMMENT ON COLUMN activity.groups.organization_id IS 'Organization this group belongs to';
+
+
+--
+-- Name: COLUMN groups.created_by; Type: COMMENT; Schema: activity; Owner: -
+--
+
+COMMENT ON COLUMN activity.groups.created_by IS 'User who created the group (must be owner/admin)';
+
+
+--
+-- Name: media_assets; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.media_assets (
@@ -9354,10 +9562,8 @@ CREATE TABLE activity.media_assets (
 );
 
 
-ALTER TABLE activity.media_assets OWNER TO postgres;
-
 --
--- Name: notification_preferences; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: notification_preferences; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.notification_preferences (
@@ -9373,10 +9579,8 @@ CREATE TABLE activity.notification_preferences (
 );
 
 
-ALTER TABLE activity.notification_preferences OWNER TO postgres;
-
 --
--- Name: notifications; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: notifications; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.notifications (
@@ -9396,10 +9600,8 @@ CREATE TABLE activity.notifications (
 );
 
 
-ALTER TABLE activity.notifications OWNER TO postgres;
-
 --
--- Name: organization_members; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: organization_members; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.organization_members (
@@ -9414,10 +9616,8 @@ CREATE TABLE activity.organization_members (
 );
 
 
-ALTER TABLE activity.organization_members OWNER TO postgres;
-
 --
--- Name: organizations; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: organizations; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.organizations (
@@ -9437,10 +9637,8 @@ CREATE TABLE activity.organizations (
 );
 
 
-ALTER TABLE activity.organizations OWNER TO postgres;
-
 --
--- Name: participants; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: participants; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.participants (
@@ -9458,10 +9656,83 @@ CREATE TABLE activity.participants (
 );
 
 
-ALTER TABLE activity.participants OWNER TO postgres;
+--
+-- Name: permission_audit_log; Type: TABLE; Schema: activity; Owner: -
+--
+
+CREATE TABLE activity.permission_audit_log (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    action_type character varying(20) NOT NULL,
+    organization_id uuid NOT NULL,
+    group_id uuid,
+    permission_id uuid,
+    user_id uuid,
+    actor_user_id uuid NOT NULL,
+    details jsonb,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT permission_audit_log_action_type_check CHECK (((action_type)::text = ANY ((ARRAY['grant'::character varying, 'revoke'::character varying, 'group_created'::character varying, 'group_deleted'::character varying, 'member_added'::character varying, 'member_removed'::character varying])::text[])))
+);
+
 
 --
--- Name: posts; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: TABLE permission_audit_log; Type: COMMENT; Schema: activity; Owner: -
+--
+
+COMMENT ON TABLE activity.permission_audit_log IS 'Audit trail for all permission-related changes';
+
+
+--
+-- Name: COLUMN permission_audit_log.actor_user_id; Type: COMMENT; Schema: activity; Owner: -
+--
+
+COMMENT ON COLUMN activity.permission_audit_log.actor_user_id IS 'User who performed the action';
+
+
+--
+-- Name: COLUMN permission_audit_log.details; Type: COMMENT; Schema: activity; Owner: -
+--
+
+COMMENT ON COLUMN activity.permission_audit_log.details IS 'Additional context (JSON)';
+
+
+--
+-- Name: permissions; Type: TABLE; Schema: activity; Owner: -
+--
+
+CREATE TABLE activity.permissions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    resource character varying(50) NOT NULL,
+    action character varying(50) NOT NULL,
+    description text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT permissions_action_check CHECK (((action)::text ~ '^[a-z_]+$'::text)),
+    CONSTRAINT permissions_resource_check CHECK (((resource)::text ~ '^[a-z_]+$'::text))
+);
+
+
+--
+-- Name: TABLE permissions; Type: COMMENT; Schema: activity; Owner: -
+--
+
+COMMENT ON TABLE activity.permissions IS 'Master list of available permissions (resource:action pairs)';
+
+
+--
+-- Name: COLUMN permissions.resource; Type: COMMENT; Schema: activity; Owner: -
+--
+
+COMMENT ON COLUMN activity.permissions.resource IS 'Resource type (e.g., activity, user, group)';
+
+
+--
+-- Name: COLUMN permissions.action; Type: COMMENT; Schema: activity; Owner: -
+--
+
+COMMENT ON COLUMN activity.permissions.action IS 'Action on resource (e.g., create, read, update, delete)';
+
+
+--
+-- Name: posts; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.posts (
@@ -9486,10 +9757,8 @@ CREATE TABLE activity.posts (
 );
 
 
-ALTER TABLE activity.posts OWNER TO postgres;
-
 --
--- Name: private_chats; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: private_chats; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.private_chats (
@@ -9504,10 +9773,8 @@ CREATE TABLE activity.private_chats (
 );
 
 
-ALTER TABLE activity.private_chats OWNER TO postgres;
-
 --
--- Name: profile_views; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: profile_views; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.profile_views (
@@ -9520,10 +9787,8 @@ CREATE TABLE activity.profile_views (
 );
 
 
-ALTER TABLE activity.profile_views OWNER TO postgres;
-
 --
--- Name: reactions; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: reactions; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.reactions (
@@ -9537,10 +9802,8 @@ CREATE TABLE activity.reactions (
 );
 
 
-ALTER TABLE activity.reactions OWNER TO postgres;
-
 --
--- Name: refresh_tokens; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: refresh_tokens; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.refresh_tokens (
@@ -9554,10 +9817,8 @@ CREATE TABLE activity.refresh_tokens (
 );
 
 
-ALTER TABLE activity.refresh_tokens OWNER TO postgres;
-
 --
--- Name: refresh_tokens_id_seq; Type: SEQUENCE; Schema: activity; Owner: postgres
+-- Name: refresh_tokens_id_seq; Type: SEQUENCE; Schema: activity; Owner: -
 --
 
 CREATE SEQUENCE activity.refresh_tokens_id_seq
@@ -9569,17 +9830,15 @@ CREATE SEQUENCE activity.refresh_tokens_id_seq
     CACHE 1;
 
 
-ALTER SEQUENCE activity.refresh_tokens_id_seq OWNER TO postgres;
-
 --
--- Name: refresh_tokens_id_seq; Type: SEQUENCE OWNED BY; Schema: activity; Owner: postgres
+-- Name: refresh_tokens_id_seq; Type: SEQUENCE OWNED BY; Schema: activity; Owner: -
 --
 
 ALTER SEQUENCE activity.refresh_tokens_id_seq OWNED BY activity.refresh_tokens.id;
 
 
 --
--- Name: reports; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: reports; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.reports (
@@ -9602,10 +9861,8 @@ CREATE TABLE activity.reports (
 );
 
 
-ALTER TABLE activity.reports OWNER TO postgres;
-
 --
--- Name: user_badges; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: user_badges; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.user_badges (
@@ -9623,10 +9880,8 @@ CREATE TABLE activity.user_badges (
 );
 
 
-ALTER TABLE activity.user_badges OWNER TO postgres;
-
 --
--- Name: user_blocks; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: user_blocks; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.user_blocks (
@@ -9639,10 +9894,8 @@ CREATE TABLE activity.user_blocks (
 );
 
 
-ALTER TABLE activity.user_blocks OWNER TO postgres;
-
 --
--- Name: user_favorites; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: user_favorites; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.user_favorites (
@@ -9654,10 +9907,34 @@ CREATE TABLE activity.user_favorites (
 );
 
 
-ALTER TABLE activity.user_favorites OWNER TO postgres;
+--
+-- Name: user_groups; Type: TABLE; Schema: activity; Owner: -
+--
+
+CREATE TABLE activity.user_groups (
+    user_id uuid NOT NULL,
+    group_id uuid NOT NULL,
+    added_by uuid NOT NULL,
+    added_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
 
 --
--- Name: user_interests; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: TABLE user_groups; Type: COMMENT; Schema: activity; Owner: -
+--
+
+COMMENT ON TABLE activity.user_groups IS 'Many-to-many: Users belong to groups';
+
+
+--
+-- Name: COLUMN user_groups.added_by; Type: COMMENT; Schema: activity; Owner: -
+--
+
+COMMENT ON COLUMN activity.user_groups.added_by IS 'User who added this member to the group';
+
+
+--
+-- Name: user_interests; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.user_interests (
@@ -9670,10 +9947,8 @@ CREATE TABLE activity.user_interests (
 );
 
 
-ALTER TABLE activity.user_interests OWNER TO postgres;
-
 --
--- Name: user_settings; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: user_settings; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.user_settings (
@@ -9694,10 +9969,8 @@ CREATE TABLE activity.user_settings (
 );
 
 
-ALTER TABLE activity.user_settings OWNER TO postgres;
-
 --
--- Name: users; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: users; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.users (
@@ -9739,17 +10012,15 @@ CREATE TABLE activity.users (
 );
 
 
-ALTER TABLE activity.users OWNER TO postgres;
-
 --
--- Name: COLUMN users.roles; Type: COMMENT; Schema: activity; Owner: postgres
+-- Name: COLUMN users.roles; Type: COMMENT; Schema: activity; Owner: -
 --
 
 COMMENT ON COLUMN activity.users.roles IS 'User roles for authorization (e.g., ["admin", "moderator"])';
 
 
 --
--- Name: waitlist_entries; Type: TABLE; Schema: activity; Owner: postgres
+-- Name: waitlist_entries; Type: TABLE; Schema: activity; Owner: -
 --
 
 CREATE TABLE activity.waitlist_entries (
@@ -9767,17 +10038,15 @@ CREATE TABLE activity.waitlist_entries (
 );
 
 
-ALTER TABLE activity.waitlist_entries OWNER TO postgres;
-
 --
--- Name: refresh_tokens id; Type: DEFAULT; Schema: activity; Owner: postgres
+-- Name: refresh_tokens id; Type: DEFAULT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.refresh_tokens ALTER COLUMN id SET DEFAULT nextval('activity.refresh_tokens_id_seq'::regclass);
 
 
 --
--- Name: activities activities_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: activities activities_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.activities
@@ -9785,7 +10054,7 @@ ALTER TABLE ONLY activity.activities
 
 
 --
--- Name: activity_invitations activity_invitations_activity_id_user_id_key; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: activity_invitations activity_invitations_activity_id_user_id_key; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.activity_invitations
@@ -9793,7 +10062,7 @@ ALTER TABLE ONLY activity.activity_invitations
 
 
 --
--- Name: activity_invitations activity_invitations_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: activity_invitations activity_invitations_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.activity_invitations
@@ -9801,7 +10070,7 @@ ALTER TABLE ONLY activity.activity_invitations
 
 
 --
--- Name: activity_locations activity_locations_activity_id_key; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: activity_locations activity_locations_activity_id_key; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.activity_locations
@@ -9809,7 +10078,7 @@ ALTER TABLE ONLY activity.activity_locations
 
 
 --
--- Name: activity_locations activity_locations_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: activity_locations activity_locations_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.activity_locations
@@ -9817,7 +10086,7 @@ ALTER TABLE ONLY activity.activity_locations
 
 
 --
--- Name: activity_reviews activity_reviews_activity_id_reviewer_user_id_key; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: activity_reviews activity_reviews_activity_id_reviewer_user_id_key; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.activity_reviews
@@ -9825,7 +10094,7 @@ ALTER TABLE ONLY activity.activity_reviews
 
 
 --
--- Name: activity_reviews activity_reviews_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: activity_reviews activity_reviews_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.activity_reviews
@@ -9833,7 +10102,7 @@ ALTER TABLE ONLY activity.activity_reviews
 
 
 --
--- Name: activity_tags activity_tags_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: activity_tags activity_tags_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.activity_tags
@@ -9841,7 +10110,7 @@ ALTER TABLE ONLY activity.activity_tags
 
 
 --
--- Name: attendance_confirmations attendance_confirmations_activity_id_confirmed_user_id_conf_key; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: attendance_confirmations attendance_confirmations_activity_id_confirmed_user_id_conf_key; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.attendance_confirmations
@@ -9849,7 +10118,7 @@ ALTER TABLE ONLY activity.attendance_confirmations
 
 
 --
--- Name: attendance_confirmations attendance_confirmations_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: attendance_confirmations attendance_confirmations_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.attendance_confirmations
@@ -9857,7 +10126,7 @@ ALTER TABLE ONLY activity.attendance_confirmations
 
 
 --
--- Name: categories categories_name_key; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: categories categories_name_key; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.categories
@@ -9865,7 +10134,7 @@ ALTER TABLE ONLY activity.categories
 
 
 --
--- Name: categories categories_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: categories categories_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.categories
@@ -9873,7 +10142,7 @@ ALTER TABLE ONLY activity.categories
 
 
 --
--- Name: categories categories_slug_key; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: categories categories_slug_key; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.categories
@@ -9881,7 +10150,7 @@ ALTER TABLE ONLY activity.categories
 
 
 --
--- Name: comments comments_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: comments comments_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.comments
@@ -9889,7 +10158,7 @@ ALTER TABLE ONLY activity.comments
 
 
 --
--- Name: communities communities_organization_id_slug_key; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: communities communities_organization_id_slug_key; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.communities
@@ -9897,7 +10166,7 @@ ALTER TABLE ONLY activity.communities
 
 
 --
--- Name: communities communities_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: communities communities_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.communities
@@ -9905,7 +10174,7 @@ ALTER TABLE ONLY activity.communities
 
 
 --
--- Name: community_activities community_activities_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: community_activities community_activities_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.community_activities
@@ -9913,7 +10182,7 @@ ALTER TABLE ONLY activity.community_activities
 
 
 --
--- Name: community_members community_members_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: community_members community_members_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.community_members
@@ -9921,7 +10190,7 @@ ALTER TABLE ONLY activity.community_members
 
 
 --
--- Name: community_tags community_tags_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: community_tags community_tags_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.community_tags
@@ -9929,7 +10198,7 @@ ALTER TABLE ONLY activity.community_tags
 
 
 --
--- Name: friendships friendships_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: friendships friendships_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.friendships
@@ -9937,7 +10206,23 @@ ALTER TABLE ONLY activity.friendships
 
 
 --
--- Name: media_assets media_assets_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: group_permissions group_permissions_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
+--
+
+ALTER TABLE ONLY activity.group_permissions
+    ADD CONSTRAINT group_permissions_pkey PRIMARY KEY (group_id, permission_id);
+
+
+--
+-- Name: groups groups_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
+--
+
+ALTER TABLE ONLY activity.groups
+    ADD CONSTRAINT groups_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: media_assets media_assets_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.media_assets
@@ -9945,7 +10230,7 @@ ALTER TABLE ONLY activity.media_assets
 
 
 --
--- Name: notification_preferences notification_preferences_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: notification_preferences notification_preferences_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.notification_preferences
@@ -9953,7 +10238,7 @@ ALTER TABLE ONLY activity.notification_preferences
 
 
 --
--- Name: notifications notifications_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: notifications notifications_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.notifications
@@ -9961,7 +10246,7 @@ ALTER TABLE ONLY activity.notifications
 
 
 --
--- Name: organization_members organization_members_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: organization_members organization_members_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.organization_members
@@ -9969,7 +10254,7 @@ ALTER TABLE ONLY activity.organization_members
 
 
 --
--- Name: organizations organizations_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: organizations organizations_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.organizations
@@ -9977,7 +10262,7 @@ ALTER TABLE ONLY activity.organizations
 
 
 --
--- Name: organizations organizations_slug_key; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: organizations organizations_slug_key; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.organizations
@@ -9985,7 +10270,7 @@ ALTER TABLE ONLY activity.organizations
 
 
 --
--- Name: participants participants_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: participants participants_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.participants
@@ -9993,7 +10278,23 @@ ALTER TABLE ONLY activity.participants
 
 
 --
--- Name: posts posts_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: permission_audit_log permission_audit_log_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
+--
+
+ALTER TABLE ONLY activity.permission_audit_log
+    ADD CONSTRAINT permission_audit_log_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: permissions permissions_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
+--
+
+ALTER TABLE ONLY activity.permissions
+    ADD CONSTRAINT permissions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: posts posts_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.posts
@@ -10001,7 +10302,7 @@ ALTER TABLE ONLY activity.posts
 
 
 --
--- Name: private_chats private_chats_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: private_chats private_chats_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.private_chats
@@ -10009,7 +10310,7 @@ ALTER TABLE ONLY activity.private_chats
 
 
 --
--- Name: private_chats private_chats_user_id_1_user_id_2_key; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: private_chats private_chats_user_id_1_user_id_2_key; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.private_chats
@@ -10017,7 +10318,7 @@ ALTER TABLE ONLY activity.private_chats
 
 
 --
--- Name: profile_views profile_views_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: profile_views profile_views_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.profile_views
@@ -10025,7 +10326,7 @@ ALTER TABLE ONLY activity.profile_views
 
 
 --
--- Name: reactions reactions_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: reactions reactions_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.reactions
@@ -10033,7 +10334,7 @@ ALTER TABLE ONLY activity.reactions
 
 
 --
--- Name: reactions reactions_user_id_target_type_target_id_key; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: reactions reactions_user_id_target_type_target_id_key; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.reactions
@@ -10041,7 +10342,7 @@ ALTER TABLE ONLY activity.reactions
 
 
 --
--- Name: refresh_tokens refresh_tokens_jti_key; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: refresh_tokens refresh_tokens_jti_key; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.refresh_tokens
@@ -10049,7 +10350,7 @@ ALTER TABLE ONLY activity.refresh_tokens
 
 
 --
--- Name: refresh_tokens refresh_tokens_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: refresh_tokens refresh_tokens_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.refresh_tokens
@@ -10057,7 +10358,7 @@ ALTER TABLE ONLY activity.refresh_tokens
 
 
 --
--- Name: reports reports_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: reports reports_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.reports
@@ -10065,7 +10366,23 @@ ALTER TABLE ONLY activity.reports
 
 
 --
--- Name: user_badges user_badges_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: groups uq_group_name_per_org; Type: CONSTRAINT; Schema: activity; Owner: -
+--
+
+ALTER TABLE ONLY activity.groups
+    ADD CONSTRAINT uq_group_name_per_org UNIQUE (organization_id, name);
+
+
+--
+-- Name: permissions uq_permission_resource_action; Type: CONSTRAINT; Schema: activity; Owner: -
+--
+
+ALTER TABLE ONLY activity.permissions
+    ADD CONSTRAINT uq_permission_resource_action UNIQUE (resource, action);
+
+
+--
+-- Name: user_badges user_badges_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.user_badges
@@ -10073,7 +10390,7 @@ ALTER TABLE ONLY activity.user_badges
 
 
 --
--- Name: user_blocks user_blocks_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: user_blocks user_blocks_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.user_blocks
@@ -10081,7 +10398,7 @@ ALTER TABLE ONLY activity.user_blocks
 
 
 --
--- Name: user_favorites user_favorites_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: user_favorites user_favorites_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.user_favorites
@@ -10089,7 +10406,15 @@ ALTER TABLE ONLY activity.user_favorites
 
 
 --
--- Name: user_interests user_interests_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: user_groups user_groups_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
+--
+
+ALTER TABLE ONLY activity.user_groups
+    ADD CONSTRAINT user_groups_pkey PRIMARY KEY (user_id, group_id);
+
+
+--
+-- Name: user_interests user_interests_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.user_interests
@@ -10097,7 +10422,7 @@ ALTER TABLE ONLY activity.user_interests
 
 
 --
--- Name: user_settings user_settings_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: user_settings user_settings_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.user_settings
@@ -10105,7 +10430,7 @@ ALTER TABLE ONLY activity.user_settings
 
 
 --
--- Name: users users_email_key; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: users users_email_key; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.users
@@ -10113,7 +10438,7 @@ ALTER TABLE ONLY activity.users
 
 
 --
--- Name: users users_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: users users_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.users
@@ -10121,7 +10446,7 @@ ALTER TABLE ONLY activity.users
 
 
 --
--- Name: users users_username_key; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: users users_username_key; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.users
@@ -10129,7 +10454,7 @@ ALTER TABLE ONLY activity.users
 
 
 --
--- Name: waitlist_entries waitlist_entries_activity_id_user_id_key; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: waitlist_entries waitlist_entries_activity_id_user_id_key; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.waitlist_entries
@@ -10137,7 +10462,7 @@ ALTER TABLE ONLY activity.waitlist_entries
 
 
 --
--- Name: waitlist_entries waitlist_entries_pkey; Type: CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: waitlist_entries waitlist_entries_pkey; Type: CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.waitlist_entries
@@ -10145,700 +10470,777 @@ ALTER TABLE ONLY activity.waitlist_entries
 
 
 --
--- Name: idx_activities_category; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_activities_category; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_activities_category ON activity.activities USING btree (category_id);
 
 
 --
--- Name: idx_activities_city; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_activities_city; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_activities_city ON activity.activities USING btree (city) WHERE (city IS NOT NULL);
 
 
 --
--- Name: idx_activities_joinable_free; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_activities_joinable_free; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_activities_joinable_free ON activity.activities USING btree (joinable_at_free) WHERE (joinable_at_free IS NOT NULL);
 
 
 --
--- Name: idx_activities_language; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_activities_language; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_activities_language ON activity.activities USING btree (language);
 
 
 --
--- Name: idx_activities_organizer; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_activities_organizer; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_activities_organizer ON activity.activities USING btree (organizer_user_id);
 
 
 --
--- Name: idx_activities_privacy; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_activities_privacy; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_activities_privacy ON activity.activities USING btree (activity_privacy_level);
 
 
 --
--- Name: idx_activities_scheduled; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_activities_scheduled; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_activities_scheduled ON activity.activities USING btree (scheduled_at) WHERE (status = 'published'::activity.activity_status);
 
 
 --
--- Name: idx_activities_status; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_activities_status; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_activities_status ON activity.activities USING btree (status);
 
 
 --
--- Name: idx_activities_type; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_activities_type; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_activities_type ON activity.activities USING btree (activity_type);
 
 
 --
--- Name: idx_activity_invitations_activity; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_activity_invitations_activity; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_activity_invitations_activity ON activity.activity_invitations USING btree (activity_id, status);
 
 
 --
--- Name: idx_activity_invitations_expires; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_activity_invitations_expires; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_activity_invitations_expires ON activity.activity_invitations USING btree (expires_at) WHERE ((expires_at IS NOT NULL) AND (status = 'pending'::activity.invitation_status));
 
 
 --
--- Name: idx_activity_invitations_invited_by; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_activity_invitations_invited_by; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_activity_invitations_invited_by ON activity.activity_invitations USING btree (invited_by_user_id);
 
 
 --
--- Name: idx_activity_invitations_user; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_activity_invitations_user; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_activity_invitations_user ON activity.activity_invitations USING btree (user_id, status);
 
 
 --
--- Name: idx_activity_locations_coords; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_activity_locations_coords; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_activity_locations_coords ON activity.activity_locations USING btree (latitude, longitude) WHERE ((latitude IS NOT NULL) AND (longitude IS NOT NULL));
 
 
 --
--- Name: idx_activity_reviews_activity; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_activity_reviews_activity; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_activity_reviews_activity ON activity.activity_reviews USING btree (activity_id);
 
 
 --
--- Name: idx_activity_reviews_reviewer; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_activity_reviews_reviewer; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_activity_reviews_reviewer ON activity.activity_reviews USING btree (reviewer_user_id);
 
 
 --
--- Name: idx_activity_tags_tag; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_activity_tags_tag; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_activity_tags_tag ON activity.activity_tags USING btree (tag);
 
 
 --
--- Name: idx_attendance_confirmations_activity; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_attendance_confirmations_activity; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_attendance_confirmations_activity ON activity.attendance_confirmations USING btree (activity_id);
 
 
 --
--- Name: idx_attendance_confirmations_confirmed; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_attendance_confirmations_confirmed; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_attendance_confirmations_confirmed ON activity.attendance_confirmations USING btree (confirmed_user_id);
 
 
 --
--- Name: idx_categories_active; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_audit_log_actor_user_id; Type: INDEX; Schema: activity; Owner: -
+--
+
+CREATE INDEX idx_audit_log_actor_user_id ON activity.permission_audit_log USING btree (actor_user_id);
+
+
+--
+-- Name: idx_audit_log_created_at; Type: INDEX; Schema: activity; Owner: -
+--
+
+CREATE INDEX idx_audit_log_created_at ON activity.permission_audit_log USING btree (created_at DESC);
+
+
+--
+-- Name: idx_audit_log_organization_id; Type: INDEX; Schema: activity; Owner: -
+--
+
+CREATE INDEX idx_audit_log_organization_id ON activity.permission_audit_log USING btree (organization_id);
+
+
+--
+-- Name: idx_categories_active; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_categories_active ON activity.categories USING btree (is_active, display_order) WHERE (is_active = true);
 
 
 --
--- Name: idx_comments_author; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_comments_author; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_comments_author ON activity.comments USING btree (author_user_id);
 
 
 --
--- Name: idx_comments_parent; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_comments_parent; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_comments_parent ON activity.comments USING btree (parent_comment_id) WHERE (parent_comment_id IS NOT NULL);
 
 
 --
--- Name: idx_comments_post; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_comments_post; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_comments_post ON activity.comments USING btree (post_id, created_at);
 
 
 --
--- Name: idx_communities_org; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_communities_org; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_communities_org ON activity.communities USING btree (organization_id);
 
 
 --
--- Name: idx_communities_status; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_communities_status; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_communities_status ON activity.communities USING btree (status) WHERE (status = 'active'::activity.community_status);
 
 
 --
--- Name: idx_community_activities_activity; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_community_activities_activity; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_community_activities_activity ON activity.community_activities USING btree (activity_id);
 
 
 --
--- Name: idx_community_members_status; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_community_members_status; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_community_members_status ON activity.community_members USING btree (community_id, status);
 
 
 --
--- Name: idx_community_members_user; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_community_members_user; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_community_members_user ON activity.community_members USING btree (user_id);
 
 
 --
--- Name: idx_community_tags_tag; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_community_tags_tag; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_community_tags_tag ON activity.community_tags USING btree (tag);
 
 
 --
--- Name: idx_friendships_user1_status; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_friendships_user1_status; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_friendships_user1_status ON activity.friendships USING btree (user_id_1, status);
 
 
 --
--- Name: idx_friendships_user2_status; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_friendships_user2_status; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_friendships_user2_status ON activity.friendships USING btree (user_id_2, status);
 
 
 --
--- Name: idx_media_assets_type; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_group_permissions_group_id; Type: INDEX; Schema: activity; Owner: -
+--
+
+CREATE INDEX idx_group_permissions_group_id ON activity.group_permissions USING btree (group_id);
+
+
+--
+-- Name: idx_group_permissions_permission_id; Type: INDEX; Schema: activity; Owner: -
+--
+
+CREATE INDEX idx_group_permissions_permission_id ON activity.group_permissions USING btree (permission_id);
+
+
+--
+-- Name: idx_groups_created_by; Type: INDEX; Schema: activity; Owner: -
+--
+
+CREATE INDEX idx_groups_created_by ON activity.groups USING btree (created_by);
+
+
+--
+-- Name: idx_groups_organization_id; Type: INDEX; Schema: activity; Owner: -
+--
+
+CREATE INDEX idx_groups_organization_id ON activity.groups USING btree (organization_id);
+
+
+--
+-- Name: idx_media_assets_type; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_media_assets_type ON activity.media_assets USING btree (asset_type);
 
 
 --
--- Name: idx_media_assets_user; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_media_assets_user; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_media_assets_user ON activity.media_assets USING btree (user_id, created_at DESC);
 
 
 --
--- Name: idx_notification_preferences_user; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_notification_preferences_user; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_notification_preferences_user ON activity.notification_preferences USING btree (user_id);
 
 
 --
--- Name: idx_notifications_created; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_notifications_created; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_notifications_created ON activity.notifications USING btree (created_at) WHERE (status = 'unread'::activity.notification_status);
 
 
 --
--- Name: idx_notifications_user_status; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_notifications_user_status; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_notifications_user_status ON activity.notifications USING btree (user_id, status, created_at DESC);
 
 
 --
--- Name: idx_org_members_org_id; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_org_members_org_id; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_org_members_org_id ON activity.organization_members USING btree (organization_id);
 
 
 --
--- Name: idx_org_members_role; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_org_members_role; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_org_members_role ON activity.organization_members USING btree (role);
 
 
 --
--- Name: idx_org_members_user; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_org_members_user; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_org_members_user ON activity.organization_members USING btree (user_id);
 
 
 --
--- Name: idx_org_members_user_id; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_org_members_user_id; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_org_members_user_id ON activity.organization_members USING btree (user_id);
 
 
 --
--- Name: idx_org_members_user_org; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_org_members_user_org; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_org_members_user_org ON activity.organization_members USING btree (user_id, organization_id);
 
 
 --
--- Name: idx_organizations_created_at; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_organizations_created_at; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_organizations_created_at ON activity.organizations USING btree (created_at);
 
 
 --
--- Name: idx_participants_attendance; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_participants_attendance; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_participants_attendance ON activity.participants USING btree (attendance_status) WHERE (attendance_status <> 'registered'::activity.attendance_status);
 
 
 --
--- Name: idx_participants_status; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_participants_status; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_participants_status ON activity.participants USING btree (participation_status);
 
 
 --
--- Name: idx_participants_user; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_participants_user; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_participants_user ON activity.participants USING btree (user_id);
 
 
 --
--- Name: idx_posts_activity; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_permissions_resource_action; Type: INDEX; Schema: activity; Owner: -
+--
+
+CREATE INDEX idx_permissions_resource_action ON activity.permissions USING btree (resource, action);
+
+
+--
+-- Name: idx_posts_activity; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_posts_activity ON activity.posts USING btree (activity_id) WHERE (activity_id IS NOT NULL);
 
 
 --
--- Name: idx_posts_author; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_posts_author; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_posts_author ON activity.posts USING btree (author_user_id);
 
 
 --
--- Name: idx_posts_community; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_posts_community; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_posts_community ON activity.posts USING btree (community_id, status, created_at DESC);
 
 
 --
--- Name: idx_private_chats_external; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_private_chats_external; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_private_chats_external ON activity.private_chats USING btree (external_chat_id);
 
 
 --
--- Name: idx_private_chats_user1; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_private_chats_user1; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_private_chats_user1 ON activity.private_chats USING btree (user_id_1);
 
 
 --
--- Name: idx_private_chats_user2; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_private_chats_user2; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_private_chats_user2 ON activity.private_chats USING btree (user_id_2);
 
 
 --
--- Name: idx_profile_views_viewed; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_profile_views_viewed; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_profile_views_viewed ON activity.profile_views USING btree (viewed_user_id, viewed_at DESC);
 
 
 --
--- Name: idx_profile_views_viewer; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_profile_views_viewer; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_profile_views_viewer ON activity.profile_views USING btree (viewer_user_id);
 
 
 --
--- Name: idx_reactions_target; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_reactions_target; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_reactions_target ON activity.reactions USING btree (target_type, target_id);
 
 
 --
--- Name: idx_reactions_user; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_reactions_user; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_reactions_user ON activity.reactions USING btree (user_id);
 
 
 --
--- Name: idx_refresh_tokens_expires; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_refresh_tokens_expires; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_refresh_tokens_expires ON activity.refresh_tokens USING btree (expires_at);
 
 
 --
--- Name: idx_refresh_tokens_jti; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_refresh_tokens_jti; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_refresh_tokens_jti ON activity.refresh_tokens USING btree (jti);
 
 
 --
--- Name: idx_refresh_tokens_user_id; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_refresh_tokens_user_id; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_refresh_tokens_user_id ON activity.refresh_tokens USING btree (user_id);
 
 
 --
--- Name: idx_reports_reported_user; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_reports_reported_user; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_reports_reported_user ON activity.reports USING btree (reported_user_id) WHERE (reported_user_id IS NOT NULL);
 
 
 --
--- Name: idx_reports_reporter; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_reports_reporter; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_reports_reporter ON activity.reports USING btree (reporter_user_id);
 
 
 --
--- Name: idx_reports_status; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_reports_status; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_reports_status ON activity.reports USING btree (status, created_at);
 
 
 --
--- Name: idx_reports_target; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_reports_target; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_reports_target ON activity.reports USING btree (target_type, target_id);
 
 
 --
--- Name: idx_user_badges_category; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_user_badges_category; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_user_badges_category ON activity.user_badges USING btree (badge_category);
 
 
 --
--- Name: idx_user_badges_type; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_user_badges_type; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_user_badges_type ON activity.user_badges USING btree (badge_type);
 
 
 --
--- Name: idx_user_badges_user; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_user_badges_user; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_user_badges_user ON activity.user_badges USING btree (user_id, earned_at DESC);
 
 
 --
--- Name: idx_user_blocks_blocked; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_user_blocks_blocked; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_user_blocks_blocked ON activity.user_blocks USING btree (blocked_user_id);
 
 
 --
--- Name: idx_user_blocks_blocker; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_user_blocks_blocker; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_user_blocks_blocker ON activity.user_blocks USING btree (blocker_user_id);
 
 
 --
--- Name: idx_user_favorites_favorited; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_user_favorites_favorited; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_user_favorites_favorited ON activity.user_favorites USING btree (favorited_user_id);
 
 
 --
--- Name: idx_user_interests_tag; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_user_groups_group_id; Type: INDEX; Schema: activity; Owner: -
+--
+
+CREATE INDEX idx_user_groups_group_id ON activity.user_groups USING btree (group_id);
+
+
+--
+-- Name: idx_user_groups_user_group; Type: INDEX; Schema: activity; Owner: -
+--
+
+CREATE INDEX idx_user_groups_user_group ON activity.user_groups USING btree (user_id, group_id);
+
+
+--
+-- Name: idx_user_groups_user_id; Type: INDEX; Schema: activity; Owner: -
+--
+
+CREATE INDEX idx_user_groups_user_id ON activity.user_groups USING btree (user_id);
+
+
+--
+-- Name: idx_user_interests_tag; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_user_interests_tag ON activity.user_interests USING btree (interest_tag);
 
 
 --
--- Name: idx_user_settings_ghost_mode; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_user_settings_ghost_mode; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_user_settings_ghost_mode ON activity.user_settings USING btree (ghost_mode) WHERE (ghost_mode = true);
 
 
 --
--- Name: idx_users_captain; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_users_captain; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_users_captain ON activity.users USING btree (is_captain) WHERE (is_captain = true);
 
 
 --
--- Name: idx_users_email; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_users_email; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_users_email ON activity.users USING btree (email);
 
 
 --
--- Name: idx_users_main_photo_moderation; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_users_main_photo_moderation; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_users_main_photo_moderation ON activity.users USING btree (main_photo_moderation_status) WHERE (main_photo_moderation_status = 'pending'::activity.photo_moderation_status);
 
 
 --
--- Name: idx_users_roles; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_users_roles; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_users_roles ON activity.users USING gin (roles);
 
 
 --
--- Name: idx_users_status; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_users_status; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_users_status ON activity.users USING btree (status) WHERE (status <> 'active'::activity.user_status);
 
 
 --
--- Name: idx_users_subscription; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_users_subscription; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_users_subscription ON activity.users USING btree (subscription_level, subscription_expires_at);
 
 
 --
--- Name: idx_users_username; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_users_username; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_users_username ON activity.users USING btree (username);
 
 
 --
--- Name: idx_users_verified; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_users_verified; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_users_verified ON activity.users USING btree (is_verified) WHERE (is_verified = true);
 
 
 --
--- Name: idx_waitlist_activity_position; Type: INDEX; Schema: activity; Owner: postgres
+-- Name: idx_waitlist_activity_position; Type: INDEX; Schema: activity; Owner: -
 --
 
 CREATE INDEX idx_waitlist_activity_position ON activity.waitlist_entries USING btree (activity_id, "position");
 
 
 --
--- Name: activities set_activities_timestamp; Type: TRIGGER; Schema: activity; Owner: postgres
+-- Name: activities set_activities_timestamp; Type: TRIGGER; Schema: activity; Owner: -
 --
 
 CREATE TRIGGER set_activities_timestamp BEFORE UPDATE ON activity.activities FOR EACH ROW EXECUTE FUNCTION activity.update_timestamp();
 
 
 --
--- Name: activity_invitations set_activity_invitations_timestamp; Type: TRIGGER; Schema: activity; Owner: postgres
+-- Name: activity_invitations set_activity_invitations_timestamp; Type: TRIGGER; Schema: activity; Owner: -
 --
 
 CREATE TRIGGER set_activity_invitations_timestamp BEFORE UPDATE ON activity.activity_invitations FOR EACH ROW EXECUTE FUNCTION activity.update_timestamp();
 
 
 --
--- Name: activity_locations set_activity_locations_timestamp; Type: TRIGGER; Schema: activity; Owner: postgres
+-- Name: activity_locations set_activity_locations_timestamp; Type: TRIGGER; Schema: activity; Owner: -
 --
 
 CREATE TRIGGER set_activity_locations_timestamp BEFORE UPDATE ON activity.activity_locations FOR EACH ROW EXECUTE FUNCTION activity.update_timestamp();
 
 
 --
--- Name: activity_reviews set_activity_reviews_timestamp; Type: TRIGGER; Schema: activity; Owner: postgres
+-- Name: activity_reviews set_activity_reviews_timestamp; Type: TRIGGER; Schema: activity; Owner: -
 --
 
 CREATE TRIGGER set_activity_reviews_timestamp BEFORE UPDATE ON activity.activity_reviews FOR EACH ROW EXECUTE FUNCTION activity.update_timestamp();
 
 
 --
--- Name: categories set_categories_timestamp; Type: TRIGGER; Schema: activity; Owner: postgres
+-- Name: categories set_categories_timestamp; Type: TRIGGER; Schema: activity; Owner: -
 --
 
 CREATE TRIGGER set_categories_timestamp BEFORE UPDATE ON activity.categories FOR EACH ROW EXECUTE FUNCTION activity.update_timestamp();
 
 
 --
--- Name: comments set_comments_timestamp; Type: TRIGGER; Schema: activity; Owner: postgres
+-- Name: comments set_comments_timestamp; Type: TRIGGER; Schema: activity; Owner: -
 --
 
 CREATE TRIGGER set_comments_timestamp BEFORE UPDATE ON activity.comments FOR EACH ROW EXECUTE FUNCTION activity.update_timestamp();
 
 
 --
--- Name: communities set_communities_timestamp; Type: TRIGGER; Schema: activity; Owner: postgres
+-- Name: communities set_communities_timestamp; Type: TRIGGER; Schema: activity; Owner: -
 --
 
 CREATE TRIGGER set_communities_timestamp BEFORE UPDATE ON activity.communities FOR EACH ROW EXECUTE FUNCTION activity.update_timestamp();
 
 
 --
--- Name: community_activities set_community_activities_timestamp; Type: TRIGGER; Schema: activity; Owner: postgres
+-- Name: community_activities set_community_activities_timestamp; Type: TRIGGER; Schema: activity; Owner: -
 --
 
 CREATE TRIGGER set_community_activities_timestamp BEFORE UPDATE ON activity.community_activities FOR EACH ROW EXECUTE FUNCTION activity.update_timestamp();
 
 
 --
--- Name: community_members set_community_members_timestamp; Type: TRIGGER; Schema: activity; Owner: postgres
+-- Name: community_members set_community_members_timestamp; Type: TRIGGER; Schema: activity; Owner: -
 --
 
 CREATE TRIGGER set_community_members_timestamp BEFORE UPDATE ON activity.community_members FOR EACH ROW EXECUTE FUNCTION activity.update_timestamp();
 
 
 --
--- Name: friendships set_friendships_timestamp; Type: TRIGGER; Schema: activity; Owner: postgres
+-- Name: friendships set_friendships_timestamp; Type: TRIGGER; Schema: activity; Owner: -
 --
 
 CREATE TRIGGER set_friendships_timestamp BEFORE UPDATE ON activity.friendships FOR EACH ROW EXECUTE FUNCTION activity.update_timestamp();
 
 
 --
--- Name: organization_members set_organization_members_timestamp; Type: TRIGGER; Schema: activity; Owner: postgres
+-- Name: organization_members set_organization_members_timestamp; Type: TRIGGER; Schema: activity; Owner: -
 --
 
 CREATE TRIGGER set_organization_members_timestamp BEFORE UPDATE ON activity.organization_members FOR EACH ROW EXECUTE FUNCTION activity.update_timestamp();
 
 
 --
--- Name: organizations set_organizations_timestamp; Type: TRIGGER; Schema: activity; Owner: postgres
+-- Name: organizations set_organizations_timestamp; Type: TRIGGER; Schema: activity; Owner: -
 --
 
 CREATE TRIGGER set_organizations_timestamp BEFORE UPDATE ON activity.organizations FOR EACH ROW EXECUTE FUNCTION activity.update_timestamp();
 
 
 --
--- Name: participants set_participants_timestamp; Type: TRIGGER; Schema: activity; Owner: postgres
+-- Name: participants set_participants_timestamp; Type: TRIGGER; Schema: activity; Owner: -
 --
 
 CREATE TRIGGER set_participants_timestamp BEFORE UPDATE ON activity.participants FOR EACH ROW EXECUTE FUNCTION activity.update_timestamp();
 
 
 --
--- Name: posts set_posts_timestamp; Type: TRIGGER; Schema: activity; Owner: postgres
+-- Name: posts set_posts_timestamp; Type: TRIGGER; Schema: activity; Owner: -
 --
 
 CREATE TRIGGER set_posts_timestamp BEFORE UPDATE ON activity.posts FOR EACH ROW EXECUTE FUNCTION activity.update_timestamp();
 
 
 --
--- Name: reports set_reports_timestamp; Type: TRIGGER; Schema: activity; Owner: postgres
+-- Name: reports set_reports_timestamp; Type: TRIGGER; Schema: activity; Owner: -
 --
 
 CREATE TRIGGER set_reports_timestamp BEFORE UPDATE ON activity.reports FOR EACH ROW EXECUTE FUNCTION activity.update_timestamp();
 
 
 --
--- Name: user_interests set_user_interests_timestamp; Type: TRIGGER; Schema: activity; Owner: postgres
+-- Name: user_interests set_user_interests_timestamp; Type: TRIGGER; Schema: activity; Owner: -
 --
 
 CREATE TRIGGER set_user_interests_timestamp BEFORE UPDATE ON activity.user_interests FOR EACH ROW EXECUTE FUNCTION activity.update_timestamp();
 
 
 --
--- Name: user_settings set_user_settings_timestamp; Type: TRIGGER; Schema: activity; Owner: postgres
+-- Name: user_settings set_user_settings_timestamp; Type: TRIGGER; Schema: activity; Owner: -
 --
 
 CREATE TRIGGER set_user_settings_timestamp BEFORE UPDATE ON activity.user_settings FOR EACH ROW EXECUTE FUNCTION activity.update_timestamp();
 
 
 --
--- Name: users set_users_timestamp; Type: TRIGGER; Schema: activity; Owner: postgres
+-- Name: users set_users_timestamp; Type: TRIGGER; Schema: activity; Owner: -
 --
 
 CREATE TRIGGER set_users_timestamp BEFORE UPDATE ON activity.users FOR EACH ROW EXECUTE FUNCTION activity.update_timestamp();
 
 
 --
--- Name: waitlist_entries set_waitlist_entries_timestamp; Type: TRIGGER; Schema: activity; Owner: postgres
+-- Name: waitlist_entries set_waitlist_entries_timestamp; Type: TRIGGER; Schema: activity; Owner: -
 --
 
 CREATE TRIGGER set_waitlist_entries_timestamp BEFORE UPDATE ON activity.waitlist_entries FOR EACH ROW EXECUTE FUNCTION activity.update_timestamp();
 
 
 --
--- Name: organizations trigger_organizations_updated_at; Type: TRIGGER; Schema: activity; Owner: postgres
+-- Name: organizations trigger_organizations_updated_at; Type: TRIGGER; Schema: activity; Owner: -
 --
 
 CREATE TRIGGER trigger_organizations_updated_at BEFORE UPDATE ON activity.organizations FOR EACH ROW EXECUTE FUNCTION activity.update_organizations_updated_at();
 
 
 --
--- Name: activities activities_category_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: activities activities_category_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.activities
@@ -10846,7 +11248,7 @@ ALTER TABLE ONLY activity.activities
 
 
 --
--- Name: activities activities_organizer_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: activities activities_organizer_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.activities
@@ -10854,7 +11256,7 @@ ALTER TABLE ONLY activity.activities
 
 
 --
--- Name: activity_invitations activity_invitations_activity_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: activity_invitations activity_invitations_activity_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.activity_invitations
@@ -10862,7 +11264,7 @@ ALTER TABLE ONLY activity.activity_invitations
 
 
 --
--- Name: activity_invitations activity_invitations_invited_by_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: activity_invitations activity_invitations_invited_by_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.activity_invitations
@@ -10870,7 +11272,7 @@ ALTER TABLE ONLY activity.activity_invitations
 
 
 --
--- Name: activity_invitations activity_invitations_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: activity_invitations activity_invitations_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.activity_invitations
@@ -10878,7 +11280,7 @@ ALTER TABLE ONLY activity.activity_invitations
 
 
 --
--- Name: activity_locations activity_locations_activity_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: activity_locations activity_locations_activity_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.activity_locations
@@ -10886,7 +11288,7 @@ ALTER TABLE ONLY activity.activity_locations
 
 
 --
--- Name: activity_reviews activity_reviews_activity_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: activity_reviews activity_reviews_activity_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.activity_reviews
@@ -10894,7 +11296,7 @@ ALTER TABLE ONLY activity.activity_reviews
 
 
 --
--- Name: activity_reviews activity_reviews_reviewer_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: activity_reviews activity_reviews_reviewer_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.activity_reviews
@@ -10902,7 +11304,7 @@ ALTER TABLE ONLY activity.activity_reviews
 
 
 --
--- Name: activity_tags activity_tags_activity_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: activity_tags activity_tags_activity_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.activity_tags
@@ -10910,7 +11312,7 @@ ALTER TABLE ONLY activity.activity_tags
 
 
 --
--- Name: attendance_confirmations attendance_confirmations_activity_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: attendance_confirmations attendance_confirmations_activity_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.attendance_confirmations
@@ -10918,7 +11320,7 @@ ALTER TABLE ONLY activity.attendance_confirmations
 
 
 --
--- Name: attendance_confirmations attendance_confirmations_confirmed_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: attendance_confirmations attendance_confirmations_confirmed_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.attendance_confirmations
@@ -10926,7 +11328,7 @@ ALTER TABLE ONLY activity.attendance_confirmations
 
 
 --
--- Name: attendance_confirmations attendance_confirmations_confirmer_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: attendance_confirmations attendance_confirmations_confirmer_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.attendance_confirmations
@@ -10934,7 +11336,7 @@ ALTER TABLE ONLY activity.attendance_confirmations
 
 
 --
--- Name: comments comments_author_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: comments comments_author_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.comments
@@ -10942,7 +11344,7 @@ ALTER TABLE ONLY activity.comments
 
 
 --
--- Name: comments comments_parent_comment_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: comments comments_parent_comment_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.comments
@@ -10950,7 +11352,7 @@ ALTER TABLE ONLY activity.comments
 
 
 --
--- Name: comments comments_post_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: comments comments_post_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.comments
@@ -10958,7 +11360,7 @@ ALTER TABLE ONLY activity.comments
 
 
 --
--- Name: communities communities_creator_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: communities communities_creator_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.communities
@@ -10966,7 +11368,7 @@ ALTER TABLE ONLY activity.communities
 
 
 --
--- Name: communities communities_organization_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: communities communities_organization_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.communities
@@ -10974,7 +11376,7 @@ ALTER TABLE ONLY activity.communities
 
 
 --
--- Name: community_activities community_activities_activity_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: community_activities community_activities_activity_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.community_activities
@@ -10982,7 +11384,7 @@ ALTER TABLE ONLY activity.community_activities
 
 
 --
--- Name: community_activities community_activities_community_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: community_activities community_activities_community_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.community_activities
@@ -10990,7 +11392,7 @@ ALTER TABLE ONLY activity.community_activities
 
 
 --
--- Name: community_members community_members_community_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: community_members community_members_community_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.community_members
@@ -10998,7 +11400,7 @@ ALTER TABLE ONLY activity.community_members
 
 
 --
--- Name: community_members community_members_invited_by_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: community_members community_members_invited_by_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.community_members
@@ -11006,7 +11408,7 @@ ALTER TABLE ONLY activity.community_members
 
 
 --
--- Name: community_members community_members_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: community_members community_members_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.community_members
@@ -11014,7 +11416,7 @@ ALTER TABLE ONLY activity.community_members
 
 
 --
--- Name: community_tags community_tags_community_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: community_tags community_tags_community_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.community_tags
@@ -11022,7 +11424,7 @@ ALTER TABLE ONLY activity.community_tags
 
 
 --
--- Name: friendships friendships_initiated_by_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: friendships friendships_initiated_by_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.friendships
@@ -11030,7 +11432,7 @@ ALTER TABLE ONLY activity.friendships
 
 
 --
--- Name: friendships friendships_user_id_1_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: friendships friendships_user_id_1_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.friendships
@@ -11038,7 +11440,7 @@ ALTER TABLE ONLY activity.friendships
 
 
 --
--- Name: friendships friendships_user_id_2_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: friendships friendships_user_id_2_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.friendships
@@ -11046,7 +11448,47 @@ ALTER TABLE ONLY activity.friendships
 
 
 --
--- Name: media_assets media_assets_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: group_permissions group_permissions_granted_by_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
+--
+
+ALTER TABLE ONLY activity.group_permissions
+    ADD CONSTRAINT group_permissions_granted_by_fkey FOREIGN KEY (granted_by) REFERENCES activity.users(user_id) ON DELETE RESTRICT;
+
+
+--
+-- Name: group_permissions group_permissions_group_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
+--
+
+ALTER TABLE ONLY activity.group_permissions
+    ADD CONSTRAINT group_permissions_group_id_fkey FOREIGN KEY (group_id) REFERENCES activity.groups(id) ON DELETE CASCADE;
+
+
+--
+-- Name: group_permissions group_permissions_permission_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
+--
+
+ALTER TABLE ONLY activity.group_permissions
+    ADD CONSTRAINT group_permissions_permission_id_fkey FOREIGN KEY (permission_id) REFERENCES activity.permissions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: groups groups_created_by_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
+--
+
+ALTER TABLE ONLY activity.groups
+    ADD CONSTRAINT groups_created_by_fkey FOREIGN KEY (created_by) REFERENCES activity.users(user_id) ON DELETE RESTRICT;
+
+
+--
+-- Name: groups groups_organization_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
+--
+
+ALTER TABLE ONLY activity.groups
+    ADD CONSTRAINT groups_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES activity.organizations(organization_id) ON DELETE CASCADE;
+
+
+--
+-- Name: media_assets media_assets_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.media_assets
@@ -11054,7 +11496,7 @@ ALTER TABLE ONLY activity.media_assets
 
 
 --
--- Name: notification_preferences notification_preferences_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: notification_preferences notification_preferences_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.notification_preferences
@@ -11062,7 +11504,7 @@ ALTER TABLE ONLY activity.notification_preferences
 
 
 --
--- Name: notifications notifications_actor_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: notifications notifications_actor_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.notifications
@@ -11070,7 +11512,7 @@ ALTER TABLE ONLY activity.notifications
 
 
 --
--- Name: notifications notifications_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: notifications notifications_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.notifications
@@ -11078,7 +11520,7 @@ ALTER TABLE ONLY activity.notifications
 
 
 --
--- Name: organization_members organization_members_organization_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: organization_members organization_members_organization_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.organization_members
@@ -11086,7 +11528,7 @@ ALTER TABLE ONLY activity.organization_members
 
 
 --
--- Name: organization_members organization_members_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: organization_members organization_members_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.organization_members
@@ -11094,7 +11536,7 @@ ALTER TABLE ONLY activity.organization_members
 
 
 --
--- Name: participants participants_activity_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: participants participants_activity_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.participants
@@ -11102,7 +11544,7 @@ ALTER TABLE ONLY activity.participants
 
 
 --
--- Name: participants participants_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: participants participants_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.participants
@@ -11110,7 +11552,47 @@ ALTER TABLE ONLY activity.participants
 
 
 --
--- Name: posts posts_activity_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: permission_audit_log permission_audit_log_actor_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
+--
+
+ALTER TABLE ONLY activity.permission_audit_log
+    ADD CONSTRAINT permission_audit_log_actor_user_id_fkey FOREIGN KEY (actor_user_id) REFERENCES activity.users(user_id) ON DELETE RESTRICT;
+
+
+--
+-- Name: permission_audit_log permission_audit_log_group_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
+--
+
+ALTER TABLE ONLY activity.permission_audit_log
+    ADD CONSTRAINT permission_audit_log_group_id_fkey FOREIGN KEY (group_id) REFERENCES activity.groups(id) ON DELETE SET NULL;
+
+
+--
+-- Name: permission_audit_log permission_audit_log_organization_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
+--
+
+ALTER TABLE ONLY activity.permission_audit_log
+    ADD CONSTRAINT permission_audit_log_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES activity.organizations(organization_id) ON DELETE CASCADE;
+
+
+--
+-- Name: permission_audit_log permission_audit_log_permission_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
+--
+
+ALTER TABLE ONLY activity.permission_audit_log
+    ADD CONSTRAINT permission_audit_log_permission_id_fkey FOREIGN KEY (permission_id) REFERENCES activity.permissions(id) ON DELETE SET NULL;
+
+
+--
+-- Name: permission_audit_log permission_audit_log_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
+--
+
+ALTER TABLE ONLY activity.permission_audit_log
+    ADD CONSTRAINT permission_audit_log_user_id_fkey FOREIGN KEY (user_id) REFERENCES activity.users(user_id) ON DELETE SET NULL;
+
+
+--
+-- Name: posts posts_activity_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.posts
@@ -11118,7 +11600,7 @@ ALTER TABLE ONLY activity.posts
 
 
 --
--- Name: posts posts_author_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: posts posts_author_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.posts
@@ -11126,7 +11608,7 @@ ALTER TABLE ONLY activity.posts
 
 
 --
--- Name: posts posts_community_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: posts posts_community_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.posts
@@ -11134,7 +11616,7 @@ ALTER TABLE ONLY activity.posts
 
 
 --
--- Name: private_chats private_chats_user_id_1_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: private_chats private_chats_user_id_1_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.private_chats
@@ -11142,7 +11624,7 @@ ALTER TABLE ONLY activity.private_chats
 
 
 --
--- Name: private_chats private_chats_user_id_2_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: private_chats private_chats_user_id_2_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.private_chats
@@ -11150,7 +11632,7 @@ ALTER TABLE ONLY activity.private_chats
 
 
 --
--- Name: profile_views profile_views_viewed_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: profile_views profile_views_viewed_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.profile_views
@@ -11158,7 +11640,7 @@ ALTER TABLE ONLY activity.profile_views
 
 
 --
--- Name: profile_views profile_views_viewer_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: profile_views profile_views_viewer_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.profile_views
@@ -11166,7 +11648,7 @@ ALTER TABLE ONLY activity.profile_views
 
 
 --
--- Name: reactions reactions_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: reactions reactions_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.reactions
@@ -11174,7 +11656,7 @@ ALTER TABLE ONLY activity.reactions
 
 
 --
--- Name: refresh_tokens refresh_tokens_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: refresh_tokens refresh_tokens_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.refresh_tokens
@@ -11182,7 +11664,7 @@ ALTER TABLE ONLY activity.refresh_tokens
 
 
 --
--- Name: reports reports_reported_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: reports reports_reported_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.reports
@@ -11190,7 +11672,7 @@ ALTER TABLE ONLY activity.reports
 
 
 --
--- Name: reports reports_reporter_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: reports reports_reporter_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.reports
@@ -11198,7 +11680,7 @@ ALTER TABLE ONLY activity.reports
 
 
 --
--- Name: reports reports_reviewed_by_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: reports reports_reviewed_by_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.reports
@@ -11206,7 +11688,7 @@ ALTER TABLE ONLY activity.reports
 
 
 --
--- Name: user_badges user_badges_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: user_badges user_badges_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.user_badges
@@ -11214,7 +11696,7 @@ ALTER TABLE ONLY activity.user_badges
 
 
 --
--- Name: user_blocks user_blocks_blocked_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: user_blocks user_blocks_blocked_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.user_blocks
@@ -11222,7 +11704,7 @@ ALTER TABLE ONLY activity.user_blocks
 
 
 --
--- Name: user_blocks user_blocks_blocker_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: user_blocks user_blocks_blocker_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.user_blocks
@@ -11230,7 +11712,7 @@ ALTER TABLE ONLY activity.user_blocks
 
 
 --
--- Name: user_favorites user_favorites_favorited_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: user_favorites user_favorites_favorited_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.user_favorites
@@ -11238,7 +11720,7 @@ ALTER TABLE ONLY activity.user_favorites
 
 
 --
--- Name: user_favorites user_favorites_favoriting_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: user_favorites user_favorites_favoriting_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.user_favorites
@@ -11246,7 +11728,31 @@ ALTER TABLE ONLY activity.user_favorites
 
 
 --
--- Name: user_interests user_interests_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: user_groups user_groups_added_by_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
+--
+
+ALTER TABLE ONLY activity.user_groups
+    ADD CONSTRAINT user_groups_added_by_fkey FOREIGN KEY (added_by) REFERENCES activity.users(user_id) ON DELETE RESTRICT;
+
+
+--
+-- Name: user_groups user_groups_group_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
+--
+
+ALTER TABLE ONLY activity.user_groups
+    ADD CONSTRAINT user_groups_group_id_fkey FOREIGN KEY (group_id) REFERENCES activity.groups(id) ON DELETE CASCADE;
+
+
+--
+-- Name: user_groups user_groups_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
+--
+
+ALTER TABLE ONLY activity.user_groups
+    ADD CONSTRAINT user_groups_user_id_fkey FOREIGN KEY (user_id) REFERENCES activity.users(user_id) ON DELETE CASCADE;
+
+
+--
+-- Name: user_interests user_interests_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.user_interests
@@ -11254,7 +11760,7 @@ ALTER TABLE ONLY activity.user_interests
 
 
 --
--- Name: user_settings user_settings_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: user_settings user_settings_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.user_settings
@@ -11262,7 +11768,7 @@ ALTER TABLE ONLY activity.user_settings
 
 
 --
--- Name: waitlist_entries waitlist_entries_activity_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: waitlist_entries waitlist_entries_activity_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.waitlist_entries
@@ -11270,7 +11776,7 @@ ALTER TABLE ONLY activity.waitlist_entries
 
 
 --
--- Name: waitlist_entries waitlist_entries_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: postgres
+-- Name: waitlist_entries waitlist_entries_user_id_fkey; Type: FK CONSTRAINT; Schema: activity; Owner: -
 --
 
 ALTER TABLE ONLY activity.waitlist_entries
@@ -11278,274 +11784,8 @@ ALTER TABLE ONLY activity.waitlist_entries
 
 
 --
--- Name: SCHEMA activity; Type: ACL; Schema: -; Owner: postgres
---
-
-GRANT USAGE ON SCHEMA activity TO auth_api_user;
-
-
---
--- Name: FUNCTION sp_cleanup_unverified_users(p_days_old integer); Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT ALL ON FUNCTION activity.sp_cleanup_unverified_users(p_days_old integer) TO auth_api_user;
-
-
---
--- Name: FUNCTION sp_get_valid_refresh_token(p_token character varying); Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT ALL ON FUNCTION activity.sp_get_valid_refresh_token(p_token character varying) TO auth_api_user;
-
-
---
--- Name: FUNCTION sp_revoke_refresh_token(p_user_id uuid, p_token character varying); Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT ALL ON FUNCTION activity.sp_revoke_refresh_token(p_user_id uuid, p_token character varying) TO auth_api_user;
-
-
---
--- Name: FUNCTION sp_save_refresh_token(p_user_id uuid, p_token character varying, p_jti character varying, p_expires_at timestamp without time zone); Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT ALL ON FUNCTION activity.sp_save_refresh_token(p_user_id uuid, p_token character varying, p_jti character varying, p_expires_at timestamp without time zone) TO auth_api_user;
-
-
---
--- Name: TABLE activities; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.activities TO auth_api_user;
-
-
---
--- Name: TABLE activity_invitations; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.activity_invitations TO auth_api_user;
-
-
---
--- Name: TABLE activity_locations; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.activity_locations TO auth_api_user;
-
-
---
--- Name: TABLE activity_reviews; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.activity_reviews TO auth_api_user;
-
-
---
--- Name: TABLE activity_tags; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.activity_tags TO auth_api_user;
-
-
---
--- Name: TABLE attendance_confirmations; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.attendance_confirmations TO auth_api_user;
-
-
---
--- Name: TABLE categories; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.categories TO auth_api_user;
-
-
---
--- Name: TABLE comments; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.comments TO auth_api_user;
-
-
---
--- Name: TABLE communities; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.communities TO auth_api_user;
-
-
---
--- Name: TABLE community_activities; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.community_activities TO auth_api_user;
-
-
---
--- Name: TABLE community_members; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.community_members TO auth_api_user;
-
-
---
--- Name: TABLE community_tags; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.community_tags TO auth_api_user;
-
-
---
--- Name: TABLE friendships; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.friendships TO auth_api_user;
-
-
---
--- Name: TABLE media_assets; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.media_assets TO auth_api_user;
-
-
---
--- Name: TABLE notification_preferences; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.notification_preferences TO auth_api_user;
-
-
---
--- Name: TABLE notifications; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.notifications TO auth_api_user;
-
-
---
--- Name: TABLE organization_members; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.organization_members TO auth_api_user;
-
-
---
--- Name: TABLE organizations; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.organizations TO auth_api_user;
-
-
---
--- Name: TABLE participants; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.participants TO auth_api_user;
-
-
---
--- Name: TABLE posts; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.posts TO auth_api_user;
-
-
---
--- Name: TABLE private_chats; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.private_chats TO auth_api_user;
-
-
---
--- Name: TABLE profile_views; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.profile_views TO auth_api_user;
-
-
---
--- Name: TABLE reactions; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.reactions TO auth_api_user;
-
-
---
--- Name: TABLE refresh_tokens; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.refresh_tokens TO auth_api_user;
-
-
---
--- Name: TABLE reports; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.reports TO auth_api_user;
-
-
---
--- Name: TABLE user_badges; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.user_badges TO auth_api_user;
-
-
---
--- Name: TABLE user_blocks; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.user_blocks TO auth_api_user;
-
-
---
--- Name: TABLE user_favorites; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.user_favorites TO auth_api_user;
-
-
---
--- Name: TABLE user_interests; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.user_interests TO auth_api_user;
-
-
---
--- Name: TABLE user_settings; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.user_settings TO auth_api_user;
-
-
---
--- Name: TABLE users; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT ALL ON TABLE activity.users TO auth_api_user;
-
-
---
--- Name: TABLE waitlist_entries; Type: ACL; Schema: activity; Owner: postgres
---
-
-GRANT SELECT ON TABLE activity.waitlist_entries TO auth_api_user;
-
-
---
--- Name: DEFAULT PRIVILEGES FOR TABLES; Type: DEFAULT ACL; Schema: activity; Owner: postgres
---
-
-ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA activity GRANT SELECT ON TABLES TO auth_api_user;
-
-
---
 -- PostgreSQL database dump complete
 --
 
-\unrestrict nobbgSzeAg1RfFrkJ3bvM7wA2HcL8mycUEbd4ZBzmgf23F6dDK1jR2mT9fomim5
+\unrestrict 2kUYPNGabxbPmfg5Zdr7xLveJ6NXIfZicBUH0pP95QUGVDCXWFyMf7mAkDeVaZx
 
