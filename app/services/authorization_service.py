@@ -212,15 +212,30 @@ class AuthorizationService:
             try:
                 l2_cached = self.redis.get(l2_key)
                 if l2_cached:
-                    # L2 HIT! Check if permission exists in set
-                    permissions_set = json.loads(l2_cached)
+                    cache_data = json.loads(l2_cached)
+
+                    # Backward compatibility check (for old cache entries that are just lists)
+                    if isinstance(cache_data, list):
+                        # Old format: just a list of permissions
+                        permissions_set = set(cache_data)
+                        matched_groups_from_cache = None
+                        logger.debug("authz_l2_cache_legacy_format",
+                                    cache_key=l2_key,
+                                    user_id=str(request.user_id))
+                    else:
+                        # New format: dict with permissions list and groups_map
+                        permissions_set = set(cache_data.get("permissions", []))
+                        groups_map = cache_data.get("groups_map", {})
+                        matched_groups_from_cache = groups_map.get(request.permission)
+
                     authorized = request.permission in permissions_set
                     logger.debug("authz_l2_cache_hit",
                                 cache_key=l2_key,
                                 user_id=str(request.user_id),
                                 permission=request.permission,
                                 authorized=authorized,
-                                total_permissions=len(permissions_set))
+                                total_permissions=len(permissions_set),
+                                matched_groups=matched_groups_from_cache)
                     track_authz_check("l2_cache_hit", resource, action)
 
                     # Audit logging (fire-and-forget, NON-BLOCKING)
@@ -230,7 +245,7 @@ class AuthorizationService:
                         permission=request.permission,
                         authorized=authorized,
                         reason="User has permission" if authorized else "Permission not found in user's permissions",
-                        matched_groups=None,  # Not cached in L2
+                        matched_groups=matched_groups_from_cache,  # NOW FILLED! ✅
                         cache_source="l2_cache",
                         request_id=request.request_id,
                         resource_id=request.resource_id
@@ -239,7 +254,7 @@ class AuthorizationService:
                     return AuthorizationResponse(
                         authorized=authorized,
                         reason="User has permission" if authorized else "Permission not found in user's permissions",
-                        matched_groups=None  # Not cached in L2
+                        matched_groups=matched_groups_from_cache  # NOW FILLED! ✅
                     )
             except Exception as e:
                 logger.warning("authz_l2_cache_error", error=str(e), cache_key=l2_key)
@@ -319,13 +334,32 @@ class AuthorizationService:
                         request.user_id,
                         request.organization_id
                     )
-                    # Store as JSON set with 300 second TTL
+
+                    # Build a map of permission -> list of groups
+                    perms_to_groups = {}
+                    for detail in all_perms_response.details:
+                        perm_str = detail["permission"]
+                        group_name = detail["via_group"]
+
+                        if perm_str not in perms_to_groups:
+                            perms_to_groups[perm_str] = []
+
+                        # Add group to list if not already present
+                        if group_name and group_name not in perms_to_groups[perm_str]:
+                            perms_to_groups[perm_str].append(group_name)
+
+                    # Store both the simple list (for quick lookup) and the map
+                    cache_payload = {
+                        "permissions": all_perms_response.permissions,
+                        "groups_map": perms_to_groups
+                    }
                     permissions_list = all_perms_response.permissions
-                    self.redis.setex(l2_key, 300, json.dumps(permissions_list))
+                    self.redis.setex(l2_key, 300, json.dumps(cache_payload))
                     logger.info("authz_l2_cache_populated",
                                cache_key=l2_key,
                                user_id=str(request.user_id),
-                               permission_count=len(permissions_list))
+                               permission_count=len(permissions_list),
+                               groups_tracked=len(perms_to_groups))
             except Exception as e:
                 # L2 population error: log but don't fail request
                 logger.warning("authz_l2_cache_populate_error",
@@ -621,6 +655,10 @@ class AuthorizationService:
         - User removed from group
         - User permissions change
 
+        Invalidates BOTH:
+        - L1 cache: Individual permission checks (auth:check:*)
+        - L2 cache: All user permissions (auth:perms:*)
+
         Args:
             user_id: User ID
             org_id: Organization ID
@@ -629,16 +667,29 @@ class AuthorizationService:
             return
 
         try:
-            # Delete all permission check caches for this user in this org
-            pattern = f"auth:check:{user_id}:{org_id}:*"
-            keys = self.redis.keys(pattern)
+            total_keys_deleted = 0
 
-            if keys:
-                self.redis.delete(*keys)
+            # Delete L1 cache: Individual permission checks
+            l1_pattern = f"auth:check:{user_id}:{org_id}:*"
+            l1_keys = self.redis.keys(l1_pattern)
+            if l1_keys:
+                self.redis.delete(*l1_keys)
+                total_keys_deleted += len(l1_keys)
+
+            # Delete L2 cache: All user permissions (critical for matched_groups!)
+            l2_key = f"auth:perms:{user_id}:{org_id}"
+            l2_existed = self.redis.exists(l2_key)
+            if l2_existed:
+                self.redis.delete(l2_key)
+                total_keys_deleted += 1
+
+            if total_keys_deleted > 0:
                 logger.info("cache_invalidated_user",
                            user_id=str(user_id),
                            org_id=str(org_id),
-                           keys_deleted=len(keys))
+                           l1_keys_deleted=len(l1_keys) if l1_keys else 0,
+                           l2_cache_deleted=l2_existed,
+                           total_keys_deleted=total_keys_deleted)
             else:
                 logger.debug("cache_invalidation_no_keys",
                             user_id=str(user_id),
@@ -686,6 +737,61 @@ class AuthorizationService:
                         group_id=str(group_id),
                         org_id=str(org_id),
                         error=str(e))
+
+    def flush_all_authz_caches(self) -> dict:
+        """
+        Flush ALL authorization caches (L1 and L2) across the entire system.
+
+        WARNING: This is a DESTRUCTIVE operation that clears all cached
+        authorization data. Use only for:
+        - Testing/debugging
+        - Post-deployment cache resets
+        - Emergency cache invalidation
+
+        Returns:
+            dict with flush statistics (l1_keys_deleted, l2_keys_deleted, total)
+
+        Example:
+            stats = auth_service.flush_all_authz_caches()
+            # stats = {"l1_keys_deleted": 1234, "l2_keys_deleted": 56, "total": 1290}
+        """
+        if not self.cache_enabled or not self.redis:
+            logger.warning("flush_all_authz_caches_called_but_cache_disabled")
+            return {"l1_keys_deleted": 0, "l2_keys_deleted": 0, "total": 0}
+
+        try:
+            l1_keys_deleted = 0
+            l2_keys_deleted = 0
+
+            # Flush L1 cache: Individual permission checks (auth:check:*)
+            l1_pattern = "auth:check:*"
+            l1_keys = self.redis.keys(l1_pattern)
+            if l1_keys:
+                self.redis.delete(*l1_keys)
+                l1_keys_deleted = len(l1_keys)
+
+            # Flush L2 cache: All user permissions (auth:perms:*)
+            l2_pattern = "auth:perms:*"
+            l2_keys = self.redis.keys(l2_pattern)
+            if l2_keys:
+                self.redis.delete(*l2_keys)
+                l2_keys_deleted = len(l2_keys)
+
+            total = l1_keys_deleted + l2_keys_deleted
+
+            logger.info("flush_all_authz_caches_completed",
+                       l1_keys_deleted=l1_keys_deleted,
+                       l2_keys_deleted=l2_keys_deleted,
+                       total_keys_deleted=total)
+
+            return {
+                "l1_keys_deleted": l1_keys_deleted,
+                "l2_keys_deleted": l2_keys_deleted,
+                "total": total
+            }
+        except Exception as e:
+            logger.error("flush_all_authz_caches_error", error=str(e))
+            raise
 
 
 # ============================================================================
