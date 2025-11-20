@@ -25,7 +25,7 @@ services:
       - JWT_SECRET_KEY=your_very_long_secret_key_at_least_32_characters
       - ENCRYPTION_KEY=nI5MM1gTgRo2ZyNGMGkBreRJwVd-y7jq9fXhfPZnDE8=
       - EMAIL_SERVICE_URL=http://email-api:8010
-      - SERVICE_AUTH_TOKEN=st_dev_5555555555555555555555555555555555555555
+      - SERVICE_AUTH_TOKEN=5XFXyEFX5p4qxWK6pYGDibG3YM-r3WqagY3VzFkAVqW3WU00ngh8K7eh4ka-44VJ5WksrfDspeer2Hx8AQOk5A
       - FRONTEND_URL=http://localhost:3000
       - CORS_ORIGINS=http://localhost:3000
       - RATE_LIMIT_REGISTER_PER_HOUR=1000

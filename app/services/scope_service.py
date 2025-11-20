@@ -52,6 +52,10 @@ SCOPE_DESCRIPTIONS = {
     "organization:read": "View organization details",
     "organization:update": "Modify organization settings",
     "organization:manage_members": "Add or remove organization members",
+
+    # Chat scopes
+    "chat:read": "Berichten en groepsgesprekken bekijken",
+    "chat:write": "Berichten versturen en groepsgesprekken bewerken",
 }
 
 

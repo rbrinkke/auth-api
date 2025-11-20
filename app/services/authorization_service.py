@@ -394,11 +394,20 @@ class AuthorizationService:
             AuthorizationResponse from database
         """
         # Step 1: Check organization membership (security gate)
+        logger.debug("authz_checking_org_membership",
+                    user_id=str(request.user_id),
+                    organization_id=str(request.organization_id))
+
         is_member = await sp_is_organization_member(
             self.db,
             request.user_id,
             request.organization_id
         )
+
+        logger.debug("authz_org_membership_result",
+                    user_id=str(request.user_id),
+                    organization_id=str(request.organization_id),
+                    is_member=is_member)
 
         if not is_member:
             logger.info("authorization_denied_not_member",
@@ -427,6 +436,13 @@ class AuthorizationService:
             )
 
         # Step 2: Check permission via groups
+        logger.debug("authz_checking_permission",
+                    user_id=str(request.user_id),
+                    organization_id=str(request.organization_id),
+                    resource=resource,
+                    action=action,
+                    permission=request.permission)
+
         has_permission = await sp_user_has_permission(
             self.db,
             user_id=request.user_id,
@@ -434,6 +450,12 @@ class AuthorizationService:
             resource=resource,
             action=action
         )
+
+        logger.debug("authz_permission_check_result",
+                    user_id=str(request.user_id),
+                    organization_id=str(request.organization_id),
+                    permission=request.permission,
+                    has_permission=has_permission)
 
         if has_permission:
             # Get which groups granted the permission (for transparency)
