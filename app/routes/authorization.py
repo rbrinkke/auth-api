@@ -1,13 +1,12 @@
 """
-Authorization API - Image-API Compatible Endpoint
+Authorization API - Generic RBAC Endpoint
 
-Wrapper endpoint that provides image-api compatible authorization checking.
-Maps image-api's expected format to auth-api's existing authorization service.
+Provides RBAC-compliant authorization checking for all microservices.
+Supports both detailed checks (with groups array) and ultrathin group-specific checks.
 
-Key Endpoint:
-- POST /api/v1/authorization/check: Image-API compatible authorization
-
-This wraps the existing POST /api/auth/authorize endpoint.
+Key Endpoints:
+- POST /api/v1/authorization/check: Detailed authorization (returns groups array)
+- POST /api/v1/authorization/check-group: Ultrathin group-specific check (simple boolean)
 """
 
 import logging
@@ -31,21 +30,35 @@ logger = logging.getLogger(__name__)
 limiter = get_limiter()
 
 # ============================================================================
-# Data Models (Image-API Compatible Format)
+# Data Models (Generic RBAC Format)
 # ============================================================================
 
-class ImageAPIAuthorizationRequest(BaseModel):
-    """Authorization request in image-api format."""
+class RBACAuthorizationRequest(BaseModel):
+    """Authorization request for generic RBAC system (detailed check)."""
     org_id: str # Organization UUID string
     user_id: str # User UUID string
-    permission: str # Permission string (e.g., "image:upload")
+    permission: str # Permission string (e.g., "chat:read", "activity:create")
+    resource_id: Optional[str] = None # Optional resource UUID (legacy field)
 
 
-class ImageAPIAuthorizationResponse(BaseModel):
-    """Authorization response in image-api format."""
+class RBACAuthorizationResponse(BaseModel):
+    """Authorization response with detailed information (groups array, reason)."""
     allowed: bool
     groups: list[str] | None = None
     reason: str | None = None
+
+
+class RBACGroupAuthorizationRequest(BaseModel):
+    """Ultrathin group-specific authorization request."""
+    org_id: str       # Organization UUID string
+    user_id: str      # User UUID string
+    group_id: str     # Group UUID string (specific group to check)
+    permission: str   # Permission string (e.g., "chat:read")
+
+
+class RBACGroupAuthorizationResponse(BaseModel):
+    """Ultrathin authorization response (boolean only)."""
+    allowed: bool     # Simple yes/no answer
 
 
 # ============================================================================
@@ -158,35 +171,42 @@ async def verify_service_authentication(
 
 
 # ============================================================================
-# IMAGE-API COMPATIBLE ENDPOINT
+# RBAC AUTHORIZATION ENDPOINTS
 # ============================================================================
 
 @router.post(
     "/check",
-    response_model=ImageAPIAuthorizationResponse,
-    summary="Authorization Check (Image-API Compatible)",
-    description="Check if user has permission using strict UUIDs and centralized RBAC logic. Requires service authentication."
+    response_model=RBACAuthorizationResponse,
+    summary="Authorization Check (Detailed)",
+    description="Check if user has permission with detailed response (groups array, reason). Requires service authentication."
 )
 @limiter.limit("100/minute")
 async def check_authorization(
-    request_data: ImageAPIAuthorizationRequest,
+    request_data: RBACAuthorizationRequest,
     request: Request,
     auth: dict = Depends(verify_service_authentication),
     db: asyncpg.Connection = Depends(get_db_connection),
     redis_client: redis.Redis = Depends(get_redis_client)
 ):
     """
-    Check if user has permission in organization (Image-API compatible format).
+    Check if user has permission in organization (detailed response with groups array).
 
     **SECURITY**: This endpoint requires service authentication (X-Service-Token or OAuth Bearer).
-    Only authenticated services (like image-api) can call this endpoint.
+    Only authenticated services can call this endpoint.
 
     Production behavior:
     1. Validates service authentication (API Key or OAuth token with authz:check scope).
     2. Validates that org_id and user_id are valid UUIDs.
     3. Checks Redis cache / Database via AuthorizationService.
-    4. Returns 200 OK with {"allowed": true/false} (no 403 exceptions for logic denials).
+    4. Returns 200 OK with detailed response (allowed, groups, reason).
     5. Logs authentication method and request details for audit trail.
+
+    Response Format:
+    {
+      "allowed": true,
+      "groups": ["vrienden", "moderators"],  // Which groups grant the permission
+      "reason": "User has permission via group membership"
+    }
     """
     try:
         # Log authenticated service request (audit trail)
@@ -208,7 +228,7 @@ async def check_authorization(
                 "Invalid UUID format received",
                 extra={"user_id": request_data.user_id, "org_id": request_data.org_id}
             )
-            return ImageAPIAuthorizationResponse(
+            return RBACAuthorizationResponse(
                 allowed=False,
                 reason="Invalid ID format: UUID required"
             )
@@ -225,7 +245,7 @@ async def check_authorization(
         result = await service.authorize(auth_request)
 
         # 4. Return Response (Always 200 OK)
-        return ImageAPIAuthorizationResponse(
+        return RBACAuthorizationResponse(
             allowed=result.authorized,
             groups=result.matched_groups,
             reason=result.reason
@@ -245,3 +265,103 @@ async def check_authorization(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Authorization service error"
         )
+
+
+@router.post(
+    "/check-group",
+    response_model=RBACGroupAuthorizationResponse,
+    summary="Authorization Check in Group (Ultrathin)",
+    description="Check if user has permission in specific group. Returns simple boolean for fast microservice checks."
+)
+@limiter.limit("100/minute")
+async def check_authorization_in_group(
+    request_data: RBACGroupAuthorizationRequest,
+    request: Request,
+    auth: dict = Depends(verify_service_authentication),
+    db: asyncpg.Connection = Depends(get_db_connection),
+    redis_client: redis.Redis = Depends(get_redis_client)
+):
+    """
+    Ultrathin group-specific authorization check.
+
+    **SECURITY**: This endpoint requires service authentication (X-Service-Token or OAuth Bearer).
+    Only authenticated services can call this endpoint.
+
+    Perfect for microservices (like chat-api) that need:
+    - Fast yes/no answers (no complex response parsing)
+    - Group-specific permission checks
+    - Minimal latency overhead
+
+    Production behavior:
+    1. Validates service authentication
+    2. Validates UUIDs (org_id, user_id, group_id)
+    3. Checks permission in SPECIFIC group via database
+    4. Returns simple {"allowed": true/false}
+    5. Fail-closed: returns false on errors
+
+    Response Format:
+    {
+      "allowed": true  // Simple boolean only - no groups array, no reason
+    }
+
+    Example Request:
+    {
+      "org_id": "99999999-9999-9999-9999-999999999999",
+      "user_id": "019a8b88-28cf-71db-a73e-18e49a21fc16",
+      "group_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "permission": "chat:read"
+    }
+    """
+    try:
+        # Log request
+        logger.info(
+            "authz_group_check_request",
+            extra={
+                "auth_method": auth["method"],
+                "user_id": request_data.user_id,
+                "org_id": request_data.org_id,
+                "group_id": request_data.group_id,
+                "permission": request_data.permission
+            }
+        )
+
+        # Validate UUIDs
+        try:
+            user_uuid = UUID(request_data.user_id)
+            org_uuid = UUID(request_data.org_id)
+            group_uuid = UUID(request_data.group_id)
+        except ValueError:
+            logger.warning(
+                "authz_group_check_invalid_uuid",
+                extra={
+                    "user_id": request_data.user_id,
+                    "org_id": request_data.org_id,
+                    "group_id": request_data.group_id
+                }
+            )
+            return RBACGroupAuthorizationResponse(allowed=False)
+
+        # Call ultrathin authorization service
+        service = AuthorizationService(db, redis_client)
+        allowed = await service.authorize_in_group(
+            user_id=user_uuid,
+            org_id=org_uuid,
+            group_id=group_uuid,
+            permission=request_data.permission
+        )
+
+        return RBACGroupAuthorizationResponse(allowed=allowed)
+
+    except Exception as e:
+        logger.error(
+            "authz_group_check_error",
+            extra={
+                "error": str(e),
+                "user_id": request_data.user_id,
+                "org_id": request_data.org_id,
+                "group_id": request_data.group_id,
+                "permission": request_data.permission
+            }
+        )
+        # Fail closed
+        return RBACGroupAuthorizationResponse(allowed=False)

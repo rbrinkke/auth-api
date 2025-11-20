@@ -664,6 +664,87 @@ class AuthorizationService:
         response = await self.authorize(request)
         return response.authorized
 
+    async def authorize_in_group(
+        self,
+        user_id: UUID,
+        org_id: UUID,
+        group_id: UUID,
+        permission: str
+    ) -> bool:
+        """
+        Ultrathin group-specific authorization check.
+
+        Returns simple boolean - no groups array, no reason, no caching complexity.
+        Perfect for microservices (chat-api, image-api, etc.) that need fast
+        yes/no answers for group-based access control.
+
+        This function:
+        - Does NOT use cache (measure first, optimize later)
+        - Returns simple boolean only
+        - Checks permission in SPECIFIC group only
+        - Fail-closed: returns False on errors
+
+        Args:
+            user_id: User UUID
+            org_id: Organization UUID
+            group_id: Group UUID (specific group to check)
+            permission: Permission string (e.g., "chat:read")
+
+        Returns:
+            bool: True if user has permission in that specific group
+
+        Example:
+            allowed = await service.authorize_in_group(
+                user_id, org_id, vrienden_group_id, "chat:read"
+            )
+            if allowed:
+                # User can read chat in vrienden group
+                grant_access()
+            else:
+                # User cannot read chat in vrienden group
+                deny_access()
+        """
+        # Parse permission
+        try:
+            resource, action = permission.split(":", 1)
+        except ValueError:
+            logger.warning("authorize_in_group_invalid_format",
+                          permission=permission,
+                          user_id=str(user_id),
+                          group_id=str(group_id))
+            return False
+
+        # Import at method level to avoid circular dependency
+        from app.models.group import sp_user_has_permission_in_group
+
+        # Simple database check (no cache for now - measure first!)
+        try:
+            allowed = await sp_user_has_permission_in_group(
+                self.db,
+                user_id=user_id,
+                org_id=org_id,
+                group_id=group_id,
+                resource=resource,
+                action=action
+            )
+
+            logger.debug("authorize_in_group_result",
+                        user_id=str(user_id),
+                        org_id=str(org_id),
+                        group_id=str(group_id),
+                        permission=permission,
+                        allowed=allowed)
+
+            return allowed
+        except Exception as e:
+            logger.error("authorize_in_group_error",
+                        error=str(e),
+                        user_id=str(user_id),
+                        org_id=str(org_id),
+                        group_id=str(group_id),
+                        permission=permission)
+            return False  # Fail closed!
+
     # ========================================================================
     # Cache Invalidation Methods (Phase 2)
     # ========================================================================

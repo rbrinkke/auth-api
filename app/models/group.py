@@ -570,3 +570,48 @@ async def sp_get_user_permissions(
     )
 
     return [UserPermissionRecord(r) for r in results]
+
+
+async def sp_user_has_permission_in_group(
+    conn: asyncpg.Connection,
+    user_id: UUID,
+    org_id: UUID,
+    group_id: UUID,
+    resource: str,
+    action: str
+) -> bool:
+    """
+    Check if user has specific permission in specific group (ULTRATHIN).
+
+    This is the group-specific authorization function for microservices.
+    Returns True if:
+    1. User is member of organization
+    2. User is member of the specific group
+    3. That group has the permission
+
+    Perfect for chat-api, image-api, etc. that need fast yes/no answers
+    for group-based access control.
+
+    Args:
+        conn: Database connection
+        user_id: User UUID
+        org_id: Organization UUID
+        group_id: Group UUID (specific group to check)
+        resource: Resource name (e.g., "chat")
+        action: Action name (e.g., "read")
+
+    Returns:
+        bool: True if user has permission in that specific group
+
+    Example:
+        # Check if user can read chat in "vrienden" group
+        allowed = await sp_user_has_permission_in_group(
+            conn, user_id, org_id, vrienden_group_id, "chat", "read"
+        )
+    """
+    result = await conn.fetchval(
+        "SELECT activity.sp_user_has_permission_in_group($1, $2, $3, $4, $5)",
+        user_id, org_id, group_id, resource.lower(), action.lower()
+    )
+
+    return bool(result)
